@@ -21,7 +21,7 @@ keywords = ["home-assistant", "unraid", "hacs", "integration"]
 
 dependencies = [
     "pydantic>=2.12.2,<3.0.0",
-    "websockets>=16.0,<17.0.0",
+    "websockets>=16.0,<18.0.0",
 ]
 
 [project.optional-dependencies]
