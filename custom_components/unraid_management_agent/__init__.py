@@ -21,7 +21,9 @@ from .api import UnraidClient, UnraidConnectionError, UnraidWebSocketClient
 from .cleanup import async_cleanup_stale_entities
 from .const import (
     CONF_ENABLE_WEBSOCKET,
+    CONF_READ_ONLY,
     DEFAULT_ENABLE_WEBSOCKET,
+    DEFAULT_READ_ONLY,
     DOMAIN,
     MANUFACTURER,
 )
@@ -266,6 +268,33 @@ PLATFORMS: list[Platform] = [
     Platform.EVENT,
 ]
 
+# Platforms that only report state. In read-only mode nothing that can change
+# the server (switches, buttons, numbers) is created.
+READ_ONLY_PLATFORMS: list[Platform] = [
+    Platform.SENSOR,
+    Platform.BINARY_SENSOR,
+    Platform.EVENT,
+]
+CONTROL_DOMAINS: frozenset[str] = frozenset(
+    str(platform) for platform in PLATFORMS if platform not in READ_ONLY_PLATFORMS
+)
+
+
+def _is_read_only(entry: UnraidConfigEntry) -> bool:
+    """Return True when the entry is configured to only create sensors."""
+    return bool(entry.options.get(CONF_READ_ONLY, DEFAULT_READ_ONLY))
+
+
+@callback
+def _async_remove_control_entities(
+    hass: HomeAssistant, entry: UnraidConfigEntry
+) -> None:
+    """Remove switch/button/number entities left from before read-only was enabled."""
+    registry = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if entity.domain in CONTROL_DOMAINS:
+            registry.async_remove(entity.entity_id)
+
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up Unraid Management Agent integration."""
@@ -313,7 +342,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
     await _async_migrate_legacy_entity_unique_ids(hass, entry, coordinator)
 
     # Store runtime data using the new pattern
-    entry.runtime_data = UnraidRuntimeData(coordinator=coordinator, client=client)
+    read_only = _is_read_only(entry)
+    platforms = READ_ONLY_PLATFORMS if read_only else PLATFORMS
+    entry.runtime_data = UnraidRuntimeData(
+        coordinator=coordinator, client=client, platforms=platforms
+    )
+    if read_only:
+        _async_remove_control_entities(hass, entry)
 
     # Register the server device up front: per-VM devices link to it by
     # registry id (via_device_id), so it must exist before any platform loads.
@@ -326,7 +361,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
     )
 
     # Set up platforms
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(entry, platforms)
 
     # Start WebSocket for real-time updates
     if enable_websocket:
@@ -345,7 +380,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
 
 async def async_unload_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bool:
     """Unload a config entry."""
-    if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
+    if unload_ok := await hass.config_entries.async_unload_platforms(
+        entry, entry.runtime_data.platforms or PLATFORMS
+    ):
         # Stop WebSocket if running
         await entry.runtime_data.coordinator.async_stop_websocket()
         # Close the client session
@@ -375,6 +412,12 @@ async def async_setup_services(hass: HomeAssistant) -> None:
             )
         # Use the first entry's coordinator (services are domain-wide)
         entry: UnraidConfigEntry = entries[0]
+        # Every service changes the server, so none run in read-only mode
+        if _is_read_only(entry):
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="read_only_mode",
+            )
         return entry.runtime_data.coordinator
 
     async def _async_service_call(
