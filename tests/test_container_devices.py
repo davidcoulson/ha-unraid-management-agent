@@ -46,3 +46,19 @@ async def test_containers_are_child_devices_of_the_server(
     # Containers do not show up as separate main devices
     main_devices = dr.async_entries_for_config_entry(devices, ENTRY_ID)
     assert all("_container_" not in next(iter(d.identifiers))[1] for d in main_devices)
+
+
+@pytest.mark.usefixtures(
+    "mock_unraid_client_class", "mock_unraid_websocket_client_class"
+)
+async def test_container_sensor_entity_ids_do_not_collide(
+    hass: HomeAssistant, mock_config_entry
+) -> None:
+    """Memory (bytes) and memory usage (%) get distinct entity IDs."""
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    entities = er.async_get(hass)
+    assert entities.async_get("sensor.unraid_test_plex_memory") is not None
+    assert entities.async_get("sensor.unraid_test_plex_memory_usage") is not None
+    assert entities.async_get("sensor.unraid_test_plex_memory_2") is None
