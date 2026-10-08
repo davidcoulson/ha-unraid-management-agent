@@ -235,8 +235,9 @@ class UnraidWebSocketClient:
                             error = ValueError(f"Failed to parse message: {message!r}")
                             await self._call_callback(self.on_error, error)
                         except websockets.exceptions.ConnectionClosed as err:
-                            disconnect_code = getattr(err, "code", None)
-                            disconnect_reason = getattr(err, "reason", None)
+                            close_frame = getattr(err, "rcvd", None)
+                            disconnect_code = getattr(close_frame, "code", None)
+                            disconnect_reason = getattr(close_frame, "reason", None)
                             break
 
             except Exception as e:
