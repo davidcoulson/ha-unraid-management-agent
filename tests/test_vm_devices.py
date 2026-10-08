@@ -193,6 +193,26 @@ async def test_vm_added_later_gets_sensors(
     assert hass.states.get("sensor.k3s_ag_2_state").state == "running"
 
 
+@pytest.mark.usefixtures("vm_client", "mock_unraid_websocket_client_class")
+async def test_renamed_vm_is_not_confused_with_one_reusing_its_name(
+    hass: HomeAssistant, mock_config_entry
+) -> None:
+    """The VM identifier wins over a name match on another VM."""
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    # Windows 10 is renamed; a new VM (listed first) takes its old name
+    await _push_vms(
+        hass,
+        mock_config_entry,
+        [
+            _vm(vm_id="aaaa", name="Windows 10", state="shut off"),
+            _vm(name="Windows 10 (old)"),
+        ],
+    )
+    assert hass.states.get("sensor.windows_10_state").state == "running"
+
+
 def test_zfs_pool_usage_from_allocated_bytes() -> None:
     """The agent reports pool usage as allocated_bytes (zpool ALLOC)."""
     pool = ZFSPool.model_validate(
