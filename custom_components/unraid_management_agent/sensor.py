@@ -42,6 +42,7 @@ from homeassistant.util import slugify as ha_slugify
 from . import UnraidConfigEntry, UnraidDataUpdateCoordinator
 from .api import EnergyIntegrator, RateCalculator, parse_timestamp
 from .api.formatting import format_bytes, format_duration
+from .api.models import TemperatureInfo
 from .cleanup import async_prune_seen_names
 from .const import (
     ATTR_ARRAY_STATE,
@@ -1739,6 +1740,85 @@ class UnraidSystemStatusSensor(UnraidBaseEntity, SensorEntity):
 # =============================================================================
 # Dynamic Sensor Entity Classes (for sensors needing runtime context)
 # =============================================================================
+
+
+def _hwmon_temperature_sensors(
+    coordinator: UnraidDataUpdateCoordinator, system: Any
+) -> list[UnraidHwmonTemperatureSensor]:
+    """
+    Create one (disabled by default) sensor per hwmon temperature channel.
+
+    Keys use the short chip name ('octo_temp1') and fall back to the full
+    chip name with its bus address when several chips share a short name
+    (several 'nvme' drives), so they stay stable across agent restarts.
+    """
+    readings = [
+        reading
+        for reading in (getattr(system, "temperatures", None) or [])
+        if isinstance(reading, TemperatureInfo) and reading.hwmon_feature
+    ]
+
+    def short_key(reading: TemperatureInfo) -> str:
+        chip = (reading.source or "hwmon").split("-")[0]
+        return f"{chip}_{reading.hwmon_feature}"
+
+    counts: dict[str, int] = {}
+    for reading in readings:
+        counts[short_key(reading)] = counts.get(short_key(reading), 0) + 1
+
+    sensors: list[UnraidHwmonTemperatureSensor] = []
+    seen: set[str] = set()
+    for reading in sorted(readings, key=lambda r: r.name or ""):
+        chip = reading.source or "hwmon"
+        if counts[short_key(reading)] == 1:
+            chip = chip.split("-")[0]
+        key = ha_slugify(f"{chip}_{reading.hwmon_feature}")
+        if key in seen:
+            continue
+        seen.add(key)
+        sensors.append(
+            UnraidHwmonTemperatureSensor(
+                coordinator, reading.name or "", key, f"{chip} {reading.label}"
+            )
+        )
+    return sensors
+
+
+class UnraidHwmonTemperatureSensor(UnraidBaseEntity, SensorEntity):
+    """Temperature of one hwmon channel (lm-sensors) on the server."""
+
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_suggested_display_precision = 1
+    _attr_entity_registry_enabled_default = False
+    _attr_translation_key = "hwmon_temperature"
+
+    def __init__(
+        self,
+        coordinator: UnraidDataUpdateCoordinator,
+        reading_name: str,
+        key: str,
+        display_name: str,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, f"temperature_{key}")
+        self._reading_name = reading_name
+        self._attr_translation_placeholders = {"name": display_name}
+        self._attr_extra_state_attributes = {"sensor": reading_name}
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the temperature."""
+        data = self.coordinator.data
+        system = data.system if data else None
+        for reading in (getattr(system, "temperatures", None) or []) if system else []:
+            if (
+                isinstance(reading, TemperatureInfo)
+                and reading.name == self._reading_name
+            ):
+                return reading.value_celsius
+        return None
 
 
 class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
@@ -3840,6 +3920,8 @@ async def async_setup_entry(
                 normalized_key = normalized
             seen_names.add(normalized_key)
             entities.append(UnraidFanSensor(coordinator, entry, fan_name, normalized))
+
+        entities.extend(_hwmon_temperature_sensors(coordinator, data.system))
 
     # GPU sensors - only if gpu collector is enabled
     if coordinator.is_collector_enabled("gpu") and data and data.gpu:
