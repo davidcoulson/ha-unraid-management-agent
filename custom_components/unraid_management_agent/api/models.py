@@ -103,6 +103,48 @@ class TemperatureInfo(BaseModel):
 
     model_config = {"frozen": True, "extra": "allow"}
 
+    @property
+    def hwmon_feature(self) -> str | None:
+        """
+        Return the hwmon channel ('temp1') or None if this is not a temperature.
+
+        Agents before the fix for ruaan-deysel/unraid-management-agent#177 also
+        list voltage (inN), current (currN) and power (powerN) inputs here.
+
+        Example:
+            >>> TemperatureInfo(name="octo-hid-3-3_Coolant_Temp_temp1_input").hwmon_feature
+            'temp1'
+            >>> TemperatureInfo(name="octo-hid-3-3_Fan_1_voltage_in0_input").hwmon_feature
+
+        """
+        if not self.name:
+            return None
+        match = _HWMON_TEMP_RE.search(self.name)
+        return match.group(1) if match else None
+
+    @property
+    def label(self) -> str | None:
+        """
+        Return the sensor label between the chip name and the channel.
+
+        Example:
+            >>> TemperatureInfo(
+            ...     name="octo-hid-3-3_Coolant_Temp_temp1_input", source="octo-hid-3-3"
+            ... ).label
+            'Coolant Temp'
+
+        """
+        feature = self.hwmon_feature
+        if feature is None or self.name is None:
+            return None
+        label = self.name[: -len(f"{feature}_input")].rstrip("_")
+        if self.source and label.startswith(self.source):
+            label = label[len(self.source) :]
+        return label.strip("_").replace("_", " ") or feature
+
+
+_HWMON_TEMP_RE = re.compile(r"(?:^|_)(temp\d+)_input$")
+
 
 class CpuPowerState(BaseModel):
     """CPU power state and frequency information."""
