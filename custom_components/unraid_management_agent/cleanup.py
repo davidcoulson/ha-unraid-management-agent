@@ -53,6 +53,7 @@ _DYNAMIC_KEY_PREFIXES: tuple[str, ...] = (
     "vm_",
     "disk_",
     "fan_",  # covers fan_{name} sensors and fan_speed_{id} numbers
+    "temperature_",  # per-channel hwmon temperature sensors
     "gpu_",
     "network_service_",
     "network_",  # per-interface binary sensors + rx/tx sensors
@@ -186,6 +187,13 @@ def _build_valid_dynamic_entity_keys(data: UnraidData) -> set[str]:
             seen_normalized.add(normalized)
             sanitized = normalized.lower().replace(" ", "_")
             keys.add(f"fan_{sanitized}")  # sensor
+
+    # ── hwmon temperature channels (from system info) ─────────────────────────
+    if data.system:
+        for reading in data.system.temperatures or []:
+            hwmon_key = getattr(reading, "hwmon_key", None)
+            if hwmon_key:
+                keys.add(f"temperature_{slugify(hwmon_key)}")  # sensor
 
     # ── Fan speed numbers (from fan_control) ──────────────────────────────────
     if data.fan_control and data.fan_control.fans:
@@ -331,6 +339,8 @@ def _unavailable_data_prefixes(data: UnraidData) -> set[str]:
     # fan_control); protect the whole prefix if either source is unavailable.
     if data.system is None or data.fan_control is None:
         prefixes.add("fan_")
+    if data.system is None:
+        prefixes.add("temperature_")
     if data.gpu is None:
         prefixes.add("gpu_")
     if data.network is None:

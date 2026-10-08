@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Per-channel hwmon temperature sensors** ([#144](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/144), contributed by @davidcoulson):
+  One sensor per lm-sensors `temp*_input` channel in the agent's `temperatures`
+  list (for example a coolant probe on an Aquacomputer Octo, NVMe, NIC and CCD
+  temperatures), named from the `sensors.conf` label. Disabled by default, since
+  a typical server has dozens. Unique IDs use the full chip name and channel, so
+  they stay stable when other chips come and go. Channels that appear later are
+  added without a reload, removed channels are cleaned up like other dynamic
+  entities, and the sensors do not depend on the fan control option. Voltage,
+  current and power readings that older agents list as temperatures are skipped.
+
 ## [2026.6.5] — 2026-06-17
 
 ### Fixed
