@@ -777,6 +777,8 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
             _LOGGER.debug("WebSocket already running")
             return
 
+        self._websocket_disconnect_logged = False
+
         try:
             # Create the vendored WebSocket client with auto-reconnect
             self._ws_client = UnraidWebSocketClient(

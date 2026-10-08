@@ -579,6 +579,23 @@ class TestCoordinatorWebSocketManagement:
         assert coordinator._ws_client is mock_ws
         assert coordinator._ws_task is not None
 
+    @pytest.mark.asyncio
+    async def test_async_start_websocket_resets_disconnect_state(
+        self, coordinator
+    ) -> None:
+        """Test WebSocket start resets previous disconnect warning state."""
+        coordinator._websocket_disconnect_logged = True
+        mock_ws = MagicMock()
+        mock_ws.start = AsyncMock()
+
+        with patch(
+            "custom_components.unraid_management_agent.coordinator.UnraidWebSocketClient",
+            return_value=mock_ws,
+        ):
+            await coordinator.async_start_websocket()
+
+        assert coordinator._websocket_disconnect_logged is False
+
     def test_handle_ws_disconnect_logs_once_then_debug(
         self, coordinator, caplog: pytest.LogCaptureFixture
     ) -> None:
