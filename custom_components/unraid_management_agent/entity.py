@@ -138,16 +138,24 @@ def find_vm(
     vm_identifier: str | None,
     vm_name: str | None,
 ) -> Any | None:
-    """Find a VM in coordinator data by stable identifier, falling back to name."""
+    """
+    Find a VM in coordinator data by stable identifier, falling back to name.
+
+    The identifier is matched across all VMs first, so a VM that was renamed
+    is not confused with another VM that has since taken its old name.
+    """
     data = coordinator.data
     if not data or not data.vms:
         return None
-    for vm in data.vms:
-        current_identifier = getattr(vm, "id", None) or getattr(vm, "name", None)
-        if vm_identifier is not None and current_identifier == vm_identifier:
-            return vm
-        if vm_name is not None and getattr(vm, "name", None) == vm_name:
-            return vm
+    if vm_identifier is not None:
+        for vm in data.vms:
+            current = getattr(vm, "id", None) or getattr(vm, "name", None)
+            if current == vm_identifier:
+                return vm
+    if vm_name is not None:
+        for vm in data.vms:
+            if getattr(vm, "name", None) == vm_name:
+                return vm
     return None
 
 
