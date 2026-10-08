@@ -209,7 +209,7 @@
         "name": "Memory"
       },
       "container_memory_percent": {
-        "name": "Memory %"
+        "name": "Memory usage"
       },
       "registration_type": {
         "name": "Registration Type"
