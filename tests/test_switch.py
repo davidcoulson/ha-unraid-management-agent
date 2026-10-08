@@ -45,12 +45,12 @@ async def test_container_switch(
     await hass.async_block_till_done()
 
     # Check plex container switch (running)
-    state = hass.states.get("switch.unraid_test_container_plex")
+    state = hass.states.get("switch.unraid_test_plex_running")
     if state:
         assert state.state == STATE_ON
 
     # Check sonarr container switch (stopped)
-    state = hass.states.get("switch.unraid_test_container_sonarr")
+    state = hass.states.get("switch.unraid_test_sonarr_running")
     if state:
         assert state.state == STATE_OFF
 
@@ -95,7 +95,7 @@ async def test_container_switch_turn_on(
     await hass.services.async_call(
         "switch",
         "turn_on",
-        {"entity_id": "switch.unraid_test_container_sonarr"},
+        {"entity_id": "switch.unraid_test_sonarr_running"},
         blocking=True,
     )
 
@@ -119,7 +119,7 @@ async def test_container_switch_turn_off(
     await hass.services.async_call(
         "switch",
         "turn_off",
-        {"entity_id": "switch.unraid_test_container_plex"},
+        {"entity_id": "switch.unraid_test_plex_running"},
         blocking=True,
     )
 
@@ -191,7 +191,7 @@ async def test_switch_attributes(
     await hass.async_block_till_done()
 
     # Check container switch has extra attributes
-    state = hass.states.get("switch.unraid_test_container_plex")
+    state = hass.states.get("switch.unraid_test_plex_running")
     if state:
         attrs = state.attributes
         assert "image" in attrs or "container_id" in attrs or "friendly_name" in attrs
@@ -226,7 +226,7 @@ async def test_container_switch_turn_on_error(
         await hass.services.async_call(
             "switch",
             "turn_on",
-            {"entity_id": "switch.unraid_test_container_sonarr"},
+            {"entity_id": "switch.unraid_test_sonarr_running"},
             blocking=True,
         )
 
@@ -254,7 +254,7 @@ async def test_container_switch_turn_off_error(
         await hass.services.async_call(
             "switch",
             "turn_off",
-            {"entity_id": "switch.unraid_test_container_plex"},
+            {"entity_id": "switch.unraid_test_plex_running"},
             blocking=True,
         )
 
@@ -329,12 +329,12 @@ async def test_container_switch_turn_on_state_confirmation(
     await hass.services.async_call(
         "switch",
         "turn_on",
-        {"entity_id": "switch.unraid_test_container_sonarr"},
+        {"entity_id": "switch.unraid_test_sonarr_running"},
         blocking=True,
     )
 
     # The optimistic state should show ON
-    state = hass.states.get("switch.unraid_test_container_sonarr")
+    state = hass.states.get("switch.unraid_test_sonarr_running")
     assert state is not None
     assert state.state == STATE_ON
 
@@ -360,12 +360,12 @@ async def test_container_switch_turn_off_state_confirmation(
     await hass.services.async_call(
         "switch",
         "turn_off",
-        {"entity_id": "switch.unraid_test_container_plex"},
+        {"entity_id": "switch.unraid_test_plex_running"},
         blocking=True,
     )
 
     # The optimistic state should show OFF
-    state = hass.states.get("switch.unraid_test_container_plex")
+    state = hass.states.get("switch.unraid_test_plex_running")
     assert state is not None
     assert state.state == STATE_OFF
 
@@ -442,7 +442,7 @@ async def test_container_switch_turn_on_timeout(
     await hass.services.async_call(
         "switch",
         "turn_on",
-        {"entity_id": "switch.unraid_test_container_sonarr"},
+        {"entity_id": "switch.unraid_test_sonarr_running"},
         blocking=True,
     )
 

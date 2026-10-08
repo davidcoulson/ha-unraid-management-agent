@@ -64,7 +64,12 @@ from .const import (
     DEFAULT_ENABLE_FAN_CONTROL,
 )
 from .coordinator import UnraidData
-from .entity import UnraidBaseEntity, build_vm_device_info, find_vm
+from .entity import (
+    UnraidBaseEntity,
+    build_container_device_info,
+    build_vm_device_info,
+    find_vm,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -3085,6 +3090,9 @@ class UnraidContainerSensorBase(UnraidBaseEntity, SensorEntity):
         safe_name = re.sub(r"[^a-z0-9_]", "_", container_name.lower())
         super().__init__(coordinator, f"container_{safe_name}_{sensor_type}")
         self._container_name = container_name
+        self._attr_device_info = build_container_device_info(
+            coordinator, container_name
+        )
 
     def _find_container(self) -> Any | None:
         """Find the container in coordinator data by name."""
@@ -3118,7 +3126,6 @@ class UnraidContainerCPUSensor(UnraidContainerSensorBase):
         """Initialize the sensor."""
         super().__init__(coordinator, container_name, "cpu")
         self._attr_translation_key = "container_cpu"
-        self._attr_translation_placeholders = {"container_name": container_name}
 
     @property
     def native_value(self) -> float | None:
@@ -3148,7 +3155,6 @@ class UnraidContainerMemorySensor(UnraidContainerSensorBase):
         """Initialize the sensor."""
         super().__init__(coordinator, container_name, "memory")
         self._attr_translation_key = "container_memory"
-        self._attr_translation_placeholders = {"container_name": container_name}
 
     @property
     def native_value(self) -> float | None:
@@ -3194,7 +3200,6 @@ class UnraidContainerMemoryPercentSensor(UnraidContainerSensorBase):
         """Initialize the sensor."""
         super().__init__(coordinator, container_name, "memory_percent")
         self._attr_translation_key = "container_memory_percent"
-        self._attr_translation_placeholders = {"container_name": container_name}
 
     @property
     def native_value(self) -> float | None:
@@ -3225,7 +3230,7 @@ class UnraidContainerRestartCountSensor(UnraidContainerSensorBase):
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, container_name, "restart_count")
-        self._attr_name = f"{container_name} Restart Count"
+        self._attr_translation_key = "container_restart_count"
 
     @property
     def native_value(self) -> int | None:
@@ -3255,11 +3260,10 @@ class UnraidContainerNetworkRateSensor(UnraidContainerSensorBase):
         """Initialize the sensor."""
         self._direction = direction
         super().__init__(coordinator, container_name, f"network_{direction}_rate")
+        self._attr_translation_key = f"container_network_{direction}_rate"
         if direction == "rx":
-            self._attr_name = f"{container_name} Network RX"
             self._attr_icon = "mdi:download-network"
         else:
-            self._attr_name = f"{container_name} Network TX"
             self._attr_icon = "mdi:upload-network"
 
     @property

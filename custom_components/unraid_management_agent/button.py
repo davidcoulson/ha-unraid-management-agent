@@ -18,7 +18,12 @@ from homeassistant.util import slugify
 
 from . import UnraidConfigEntry, UnraidDataUpdateCoordinator
 from .const import DOMAIN
-from .entity import UnraidBaseEntity, UnraidEntityDescription, build_vm_device_info
+from .entity import (
+    UnraidBaseEntity,
+    UnraidEntityDescription,
+    build_container_device_info,
+    build_vm_device_info,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -329,7 +334,9 @@ class UnraidContainerRestartButton(UnraidBaseEntity, ButtonEntity):
         safe_name = slugify(container_name)
         super().__init__(coordinator, f"container_{safe_name}_restart")
         self._attr_translation_key = "container_restart"
-        self._attr_translation_placeholders = {"container_name": container_name}
+        self._attr_device_info = build_container_device_info(
+            coordinator, container_name
+        )
 
     def _find_container(self) -> Any | None:
         """Find the container by name."""

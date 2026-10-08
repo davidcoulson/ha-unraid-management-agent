@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.const import CONF_HOST
 from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.device_registry import ChildDeviceInfo, DeviceInfo
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -106,6 +106,33 @@ def build_vm_device_info(
     return device_info
 
 
+def build_container_device_info(
+    coordinator: UnraidDataUpdateCoordinator,
+    container_name: str,
+) -> DeviceInfo | ChildDeviceInfo:
+    """
+    Build device info for a Docker container.
+
+    Containers are child devices of the Unraid server: they run on it and
+    there can be dozens, so they are grouped under the server instead of
+    being listed as separate devices. Keyed by name because container IDs
+    change whenever a container is recreated.
+    """
+    entry_id = coordinator.config_entry.entry_id
+    server = dr.async_get(coordinator.hass).async_get_device_by_identifier(
+        (DOMAIN, entry_id), entry_id
+    )
+    if server is None:
+        # The server device is registered during setup; if it is somehow
+        # missing, keep the entity on the server device instead.
+        return DeviceInfo(identifiers={(DOMAIN, entry_id)})
+    return ChildDeviceInfo(
+        identifiers={(DOMAIN, f"{entry_id}_container_{container_name}")},
+        name=container_name,
+        parent_device_id=server.id,
+    )
+
+
 def find_vm(
     coordinator: UnraidDataUpdateCoordinator,
     vm_identifier: str | None,
@@ -151,6 +178,7 @@ __all__ = [
     "UnraidBaseEntity",
     "UnraidEntity",
     "UnraidEntityDescription",
+    "build_container_device_info",
     "build_vm_device_info",
     "find_vm",
 ]

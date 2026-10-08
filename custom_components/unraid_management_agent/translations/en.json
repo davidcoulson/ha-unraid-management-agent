@@ -203,13 +203,13 @@
         "name": "ZFS Pool {pool_name} Health"
       },
       "container_cpu": {
-        "name": "{container_name} CPU"
+        "name": "CPU"
       },
       "container_memory": {
-        "name": "{container_name} Memory"
+        "name": "Memory"
       },
       "container_memory_percent": {
-        "name": "{container_name} Memory %"
+        "name": "Memory %"
       },
       "registration_type": {
         "name": "Registration Type"
@@ -267,6 +267,15 @@
       },
       "vm_disk_size": {
         "name": "Disk size"
+      },
+      "container_restart_count": {
+        "name": "Restart count"
+      },
+      "container_network_rx_rate": {
+        "name": "Network RX"
+      },
+      "container_network_tx_rate": {
+        "name": "Network TX"
       }
     },
     "binary_sensor": {
@@ -315,10 +324,10 @@
     },
     "switch": {
       "container": {
-        "name": "Container {name}"
+        "name": "Running"
       },
       "container_autostart": {
-        "name": "Container {name} Autostart"
+        "name": "Autostart"
       },
       "vm_power": {
         "name": "Power"
@@ -375,7 +384,7 @@
         "name": "Archive All Notifications"
       },
       "container_restart": {
-        "name": "Restart {container_name}"
+        "name": "Restart"
       },
       "vm_force_stop": {
         "name": "Force stop"

@@ -22,7 +22,12 @@ from .const import (
     ATTR_VM_VCPUS,
     DOMAIN,
 )
-from .entity import UnraidBaseEntity, build_vm_device_info, find_vm
+from .entity import (
+    UnraidBaseEntity,
+    build_container_device_info,
+    build_vm_device_info,
+    find_vm,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -154,7 +159,9 @@ class UnraidContainerSwitch(UnraidBaseEntity, SwitchEntity):
         safe_name = _make_unique_key(container_name)
         super().__init__(coordinator, f"container_{safe_name}")
         self._attr_translation_key = "container"
-        self._attr_translation_placeholders = {"name": container_name}
+        self._attr_device_info = build_container_device_info(
+            coordinator, container_name
+        )
         self._optimistic_state: bool | None = None
 
     @callback
@@ -465,7 +472,9 @@ class UnraidContainerAutostartSwitch(UnraidBaseEntity, SwitchEntity):
         safe_name = _make_unique_key(container_name)
         super().__init__(coordinator, f"container_{safe_name}_autostart")
         self._attr_translation_key = "container_autostart"
-        self._attr_translation_placeholders = {"name": container_name}
+        self._attr_device_info = build_container_device_info(
+            coordinator, container_name
+        )
         self._optimistic_state: bool | None = None
 
     @callback
