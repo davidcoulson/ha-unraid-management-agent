@@ -203,9 +203,14 @@ class UnraidWebSocketClient:
         while self._running:
             connection_error: Exception | None = None
             received_message = False
+            disconnect_code: int | None = None
+            disconnect_reason: str | None = None
 
             try:
-                async with websockets.connect(self.ws_url) as websocket:
+                async with websockets.connect(
+                    self.ws_url,
+                    ping_interval=None,
+                ) as websocket:
                     self._websocket = websocket
 
                     # Call on_connect callback
@@ -229,18 +234,24 @@ class UnraidWebSocketClient:
                         except json.JSONDecodeError:
                             error = ValueError(f"Failed to parse message: {message!r}")
                             await self._call_callback(self.on_error, error)
-                        except websockets.exceptions.ConnectionClosed:
+                        except websockets.exceptions.ConnectionClosed as err:
+                            disconnect_code = getattr(err, "code", None)
+                            disconnect_reason = getattr(err, "reason", None)
                             break
 
             except Exception as e:
                 connection_error = e
+                disconnect_reason = str(e)
                 await self._call_callback(self.on_error, e)
 
             finally:
                 self._websocket = None
 
             # Handle disconnection
-            await self._call_callback(self.on_disconnect)
+            if self._running:
+                await self._call_callback(
+                    self.on_disconnect, disconnect_code, disconnect_reason
+                )
 
             # If auto_reconnect is disabled, stop here
             if not self.auto_reconnect:

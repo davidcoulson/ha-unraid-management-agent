@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -562,11 +563,47 @@ class TestCoordinatorWebSocketManagement:
         with patch(
             "custom_components.unraid_management_agent.coordinator.UnraidWebSocketClient",
             return_value=mock_ws,
-        ):
+        ) as mock_ws_client_class:
             await coordinator.async_start_websocket()
 
+        mock_ws_client_class.assert_called_once_with(
+            host=coordinator.client.host,
+            port=coordinator.client.port,
+            on_message=coordinator._handle_raw_message,
+            on_connect=coordinator._handle_ws_connect,
+            on_disconnect=coordinator._handle_ws_disconnect,
+            auto_reconnect=True,
+            reconnect_delays=[1, 2, 5, 10, 30],
+            max_retries=10,
+        )
         assert coordinator._ws_client is mock_ws
         assert coordinator._ws_task is not None
+
+    def test_handle_ws_disconnect_logs_once_then_debug(
+        self, coordinator, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Test WebSocket disconnect logging includes close details and avoids spam."""
+        with caplog.at_level(logging.DEBUG):
+            coordinator._handle_ws_disconnect(1011, "keepalive ping timeout")
+            coordinator._handle_ws_disconnect(1011, "keepalive ping timeout")
+
+        warning_logs = [
+            record
+            for record in caplog.records
+            if record.levelno == logging.WARNING
+            and "WebSocket disconnected" in record.message
+        ]
+        debug_logs = [
+            record
+            for record in caplog.records
+            if record.levelno == logging.DEBUG
+            and "WebSocket disconnected" in record.message
+        ]
+
+        assert len(warning_logs) == 1
+        assert "code=1011" in warning_logs[0].message
+        assert "keepalive ping timeout" in warning_logs[0].message
+        assert len(debug_logs) == 1
 
     @pytest.mark.asyncio
     async def test_async_start_websocket_failure(self, coordinator) -> None:
