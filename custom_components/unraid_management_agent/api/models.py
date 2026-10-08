@@ -142,6 +142,29 @@ class TemperatureInfo(BaseModel):
             label = label[len(self.source) :]
         return label.strip("_").replace("_", " ") or feature
 
+    @property
+    def hwmon_key(self) -> str | None:
+        """
+        Return a stable identity for this temperature channel, or None.
+
+        The full chip name including its bus address plus the channel
+        ('octo-hid-3-3_temp1'), so it never depends on which other chips are
+        present. Readings without a source fall back to their full name.
+
+        Example:
+            >>> TemperatureInfo(
+            ...     name="nvme-pci-2800_Composite_temp1_input", source="nvme-pci-2800"
+            ... ).hwmon_key
+            'nvme-pci-2800_temp1'
+
+        """
+        feature = self.hwmon_feature
+        if feature is None or self.name is None:
+            return None
+        if self.source:
+            return f"{self.source}_{feature}"
+        return self.name.removesuffix("_input")
+
 
 _HWMON_TEMP_RE = re.compile(r"(?:^|_)(temp\d+)_input$")
 
