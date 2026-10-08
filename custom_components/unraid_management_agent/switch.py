@@ -22,7 +22,7 @@ from .const import (
     ATTR_VM_VCPUS,
     DOMAIN,
 )
-from .entity import UnraidBaseEntity
+from .entity import UnraidBaseEntity, build_vm_device_info, find_vm
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -309,8 +309,10 @@ class UnraidVMSwitch(UnraidBaseEntity, SwitchEntity):
         self._vm_name = vm_name
         safe_name = _make_vm_unique_key(vm_identifier, vm_name)
         super().__init__(coordinator, f"vm_{safe_name}")
-        self._attr_translation_key = "vm"
-        self._attr_translation_placeholders = {"name": vm_name}
+        self._attr_translation_key = "vm_power"
+        self._attr_device_info = build_vm_device_info(
+            coordinator, vm_identifier, vm_name
+        )
         self._optimistic_state: bool | None = None
 
     @callback
@@ -327,20 +329,11 @@ class UnraidVMSwitch(UnraidBaseEntity, SwitchEntity):
 
     def _find_vm(self) -> Any | None:
         """Find the VM in coordinator data by stable identifier."""
-        data = self.coordinator.data
-        if not data or not data.vms:
-            return None
-
-        vm_identifier = getattr(self, "_vm_identifier", None)
-        vm_name = getattr(self, "_vm_name", None)
-
-        for vm in data.vms:
-            current_identifier = getattr(vm, "id", None) or getattr(vm, "name", None)
-            if vm_identifier is not None and current_identifier == vm_identifier:
-                return vm
-            if vm_name is not None and getattr(vm, "name", None) == vm_name:
-                return vm
-        return None
+        return find_vm(
+            self.coordinator,
+            getattr(self, "_vm_identifier", None),
+            getattr(self, "_vm_name", None),
+        )
 
     @property
     def _vm_id(self) -> str | None:
@@ -385,12 +378,11 @@ class UnraidVMSwitch(UnraidBaseEntity, SwitchEntity):
         # Format memory display
         memory_display = getattr(vm, "memory_display", None) or "Unknown"
 
-        # Format disk I/O
+        # Format disk I/O (cumulative since the VM started, not a rate;
+        # the per-VM sensors provide read/write rates)
         disk_read = getattr(vm, "disk_read_bytes", 0) or 0
         disk_write = getattr(vm, "disk_write_bytes", 0) or 0
-        disk_io_str = (
-            f"Rd: {format_bytes(disk_read)}/s Wr: {format_bytes(disk_write)}/s"
-        )
+        disk_io_str = f"Rd: {format_bytes(disk_read)} Wr: {format_bytes(disk_write)}"
 
         return {
             "status": "running" if state == "running" else "stopped",

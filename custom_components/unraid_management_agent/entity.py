@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.const import CONF_HOST
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -77,6 +78,52 @@ class UnraidBaseEntity(CoordinatorEntity["UnraidDataUpdateCoordinator"]):
         )
 
 
+def build_vm_device_info(
+    coordinator: UnraidDataUpdateCoordinator,
+    vm_identifier: str,
+    vm_name: str,
+) -> DeviceInfo:
+    """
+    Build device info for a virtual machine.
+
+    Each VM gets its own device, linked to the Unraid server device, so its
+    controls and metrics are grouped together. The libvirt UUID is used as the
+    identifier so renaming a VM keeps the same device.
+    """
+    entry_id = coordinator.config_entry.entry_id
+    device_info = DeviceInfo(
+        identifiers={(DOMAIN, f"{entry_id}_vm_{vm_identifier}")},
+        name=vm_name,
+        manufacturer="QEMU/KVM",
+        model="Virtual Machine",
+    )
+    # The server device is registered during setup, before the platforms load.
+    server = dr.async_get(coordinator.hass).async_get_device_by_identifier(
+        (DOMAIN, entry_id), entry_id
+    )
+    if server is not None:
+        device_info["via_device_id"] = server.id
+    return device_info
+
+
+def find_vm(
+    coordinator: UnraidDataUpdateCoordinator,
+    vm_identifier: str | None,
+    vm_name: str | None,
+) -> Any | None:
+    """Find a VM in coordinator data by stable identifier, falling back to name."""
+    data = coordinator.data
+    if not data or not data.vms:
+        return None
+    for vm in data.vms:
+        current_identifier = getattr(vm, "id", None) or getattr(vm, "name", None)
+        if vm_identifier is not None and current_identifier == vm_identifier:
+            return vm
+        if vm_name is not None and getattr(vm, "name", None) == vm_name:
+            return vm
+    return None
+
+
 class UnraidEntity(UnraidBaseEntity):
     """Entity with description support for Unraid Management Agent."""
 
@@ -104,4 +151,6 @@ __all__ = [
     "UnraidBaseEntity",
     "UnraidEntity",
     "UnraidEntityDescription",
+    "build_vm_device_info",
+    "find_vm",
 ]
