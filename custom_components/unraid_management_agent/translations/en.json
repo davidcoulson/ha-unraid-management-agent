@@ -229,6 +229,42 @@
       },
       "remote_share_usage": {
         "name": "Remote Share {share_name} Usage"
+      },
+      "vm_state": {
+        "name": "State"
+      },
+      "vm_cpu_usage": {
+        "name": "CPU usage"
+      },
+      "vm_vcpus": {
+        "name": "vCPUs"
+      },
+      "vm_memory_allocated": {
+        "name": "Memory allocated"
+      },
+      "vm_memory_used": {
+        "name": "Memory used"
+      },
+      "vm_network_rx_rate": {
+        "name": "Network receive rate"
+      },
+      "vm_network_tx_rate": {
+        "name": "Network send rate"
+      },
+      "vm_network_rx": {
+        "name": "Network received"
+      },
+      "vm_network_tx": {
+        "name": "Network sent"
+      },
+      "vm_disk_read_rate": {
+        "name": "Disk read rate"
+      },
+      "vm_disk_write_rate": {
+        "name": "Disk write rate"
+      },
+      "vm_disk_size": {
+        "name": "Disk size"
       }
     },
     "binary_sensor": {
@@ -282,8 +318,8 @@
       "container_autostart": {
         "name": "Container {name} Autostart"
       },
-      "vm": {
-        "name": "VM {name}"
+      "vm_power": {
+        "name": "Power"
       },
       "disk_spin": {
         "name": "Disk {disk_name} Spin"
@@ -340,19 +376,19 @@
         "name": "Restart {container_name}"
       },
       "vm_force_stop": {
-        "name": "Force Stop {vm_name}"
+        "name": "Force stop"
       },
       "vm_restart_button": {
-        "name": "Restart {vm_name}"
+        "name": "Restart"
       },
       "vm_pause": {
-        "name": "Pause {vm_name}"
+        "name": "Pause"
       },
       "vm_resume": {
-        "name": "Resume {vm_name}"
+        "name": "Resume"
       },
       "vm_reset_button": {
-        "name": "Reset {vm_name}"
+        "name": "Reset"
       },
       "user_script": {
         "name": "User Script {script_name}"

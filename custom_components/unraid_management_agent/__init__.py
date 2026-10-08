@@ -12,6 +12,7 @@ from homeassistant.const import CONF_HOST, CONF_PORT, Platform
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util import slugify
@@ -22,6 +23,7 @@ from .const import (
     CONF_ENABLE_WEBSOCKET,
     DEFAULT_ENABLE_WEBSOCKET,
     DOMAIN,
+    MANUFACTURER,
 )
 from .coordinator import (
     UnraidConfigEntry,
@@ -312,6 +314,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
 
     # Store runtime data using the new pattern
     entry.runtime_data = UnraidRuntimeData(coordinator=coordinator, client=client)
+
+    # Register the server device up front: per-VM devices link to it by
+    # registry id (via_device_id), so it must exist before any platform loads.
+    system = coordinator.data.system if coordinator.data else None
+    dr.async_get(hass).async_get_or_create(
+        config_entry_id=entry.entry_id,
+        identifiers={(DOMAIN, entry.entry_id)},
+        name=(system.hostname if system else None) or "Unraid",
+        manufacturer=MANUFACTURER,
+    )
 
     # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
