@@ -11,13 +11,14 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
 from .api import UnraidClient
 from .api.constants import EventType
 from .api.events import WebSocketEvent, parse_event
-from .api.exceptions import UnraidTimeoutError
+from .api.exceptions import UnraidAuthenticationError, UnraidTimeoutError
 from .api.models import (
     ArrayStatus,
     CollectorStatus,
@@ -356,6 +357,9 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
         """Fetch data from a single API endpoint, returning *None* on failure."""
         try:
             return await coro_fn()
+        except UnraidAuthenticationError:
+            # A rejected token fails the whole update so HA starts reauth
+            raise
         except UnraidTimeoutError as err:
             # Logged distinctly: a timeout while the server is otherwise
             # reachable usually means the agent plugin is stalled.
@@ -602,6 +606,13 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
             self._record_failed_update()
             raise
 
+        except UnraidAuthenticationError as err:
+            self._record_failed_update()
+            raise ConfigEntryAuthFailed(
+                translation_domain=DOMAIN,
+                translation_key="auth_failed",
+            ) from err
+
         except Exception as err:
             # Log unavailable only once
             if not self._unavailable_logged:
@@ -761,6 +772,7 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                 auto_reconnect=True,
                 reconnect_delays=[1, 2, 5, 10, 30],
                 max_retries=10,
+                api_token=self.client.api_token,
             )
 
             # Start the WebSocket client as a background task
