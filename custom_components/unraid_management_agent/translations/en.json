@@ -7,7 +7,11 @@
         "data": {
           "host": "Host",
           "port": "Port",
+          "api_token": "API token",
           "enable_websocket": "Enable WebSocket for real-time updates"
+        },
+        "data_description": {
+          "api_token": "Required if an API token is set in the agent's settings (Settings > Unraid Management Agent > Authentication). Leave empty if authentication is disabled."
         }
       },
       "reconfigure": {
@@ -16,7 +20,18 @@
         "data": {
           "host": "Host",
           "port": "Port",
+          "api_token": "API token",
           "enable_websocket": "Enable WebSocket for real-time updates"
+        },
+        "data_description": {
+          "api_token": "Required if an API token is set in the agent's settings (Settings > Unraid Management Agent > Authentication). Leave empty if authentication is disabled."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reauthenticate Unraid Management Agent",
+        "description": "The Unraid Management Agent at {host} rejected the API token. Enter the token shown in the agent's settings (Settings > Unraid Management Agent > Authentication).",
+        "data": {
+          "api_token": "API token"
         }
       }
     },
@@ -29,7 +44,8 @@
     },
     "abort": {
       "already_configured": "Device is already configured",
-      "unique_id_mismatch": "The server at this address has a different unique ID. Create a new entry instead."
+      "unique_id_mismatch": "The server at this address has a different unique ID. Create a new entry instead.",
+      "reauth_successful": "Re-authentication was successful"
     },
     "flow_title": "{host}"
   },
@@ -485,6 +501,9 @@
     },
     "fan_speed_set_failed": {
       "message": "Failed to set fan speed"
+    },
+    "auth_failed": {
+      "message": "The Unraid Management Agent rejected the API token. Re-authenticate the integration with the agent's current token."
     }
   },
   "services": {

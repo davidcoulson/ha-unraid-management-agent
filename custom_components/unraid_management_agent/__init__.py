@@ -8,7 +8,7 @@ from collections.abc import Callable, Coroutine
 from typing import Any, Final
 
 import voluptuous as vol
-from homeassistant.const import CONF_HOST, CONF_PORT, Platform
+from homeassistant.const import CONF_API_TOKEN, CONF_HOST, CONF_PORT, Platform
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import config_validation as cv
@@ -283,7 +283,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
 
     # Create UnraidClient using Home Assistant's shared client session (inject-websession)
     session = async_get_clientsession(hass)
-    client = UnraidClient(host=host, port=port, session=session)
+    client = UnraidClient(
+        host=host,
+        port=port,
+        session=session,
+        api_token=entry.data.get(CONF_API_TOKEN),
+    )
 
     # Test connection
     try:
