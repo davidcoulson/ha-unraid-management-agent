@@ -4174,7 +4174,6 @@ async def async_setup_entry(
 
     _add_remote_share_sensors()
 
-<<<<<<< HEAD
     # Per-VM sensors, each VM on its own device - created as VMs appear
     seen_vms: set[str] = set()
 
@@ -4200,7 +4199,7 @@ async def async_setup_entry(
     _add_vm_sensors()
 
     entry.async_on_unload(coordinator.async_add_listener(callback(_add_vm_sensors)))
-=======
+
     # hwmon temperature sensors - one per channel, created as channels appear.
     # Independent of fan control: these are plain lm-sensors readings.
     seen_temperatures: set[str] = set()
@@ -4232,7 +4231,6 @@ async def async_setup_entry(
 
     _add_hwmon_temperature_sensors()
 
->>>>>>> feat/hwmon-temperatures
     entry.async_on_unload(
         coordinator.async_add_listener(callback(_add_unassigned_device_sensors))
     )
