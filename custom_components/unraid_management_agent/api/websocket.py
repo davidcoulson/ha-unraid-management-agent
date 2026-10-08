@@ -242,7 +242,8 @@ class UnraidWebSocketClient:
 
             except Exception as e:
                 connection_error = e
-                disconnect_reason = str(e)
+                if disconnect_reason is None:
+                    disconnect_reason = str(e)
                 await self._call_callback(self.on_error, e)
 
             finally:
