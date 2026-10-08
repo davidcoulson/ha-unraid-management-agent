@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **PR governance workflow & HA standards enforcement** — added automated GitHub Actions workflow enforcing PR template completeness, Home Assistant Quality Scale compliance, static scanning for deprecated patterns (e.g., hass.data[DOMAIN], unit_of_measurement), mandatory CHANGELOG.md updates, issue linking checks, and bot/draft exemptions.
 - **Pull request template** — added `.github/PULL_REQUEST_TEMPLATE.md` with structured sections for description, changes made, Home Assistant Quality Scale verification, and quality checklist.
+- **Per-channel hwmon temperature sensors** ([#144](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/144), contributed by @davidcoulson):
+  One sensor per lm-sensors `temp*_input` channel in the agent's `temperatures`
+  list (for example a coolant probe on an Aquacomputer Octo, NVMe, NIC and CCD
+  temperatures), named from the `sensors.conf` label. Disabled by default, since
+  a typical server has dozens. Unique IDs use the full chip name and channel, so
+  they stay stable when other chips come and go. Channels that appear later are
+  added without a reload, removed channels are cleaned up like other dynamic
+  entities, and the sensors do not depend on the fan control option. Voltage,
+  current and power readings that older agents list as temperatures are skipped.
 
 ### Fixed
 
