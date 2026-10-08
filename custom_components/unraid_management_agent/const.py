@@ -59,4 +59,5 @@ ATTR_VM_MEMORY: Final = "vm_memory"
 # Error messages used in config_flow.py
 ERROR_CANNOT_CONNECT: Final = "cannot_connect"
 ERROR_UNKNOWN: Final = "unknown"
+ERROR_INVALID_AUTH: Final = "invalid_auth"
 ERROR_TIMEOUT: Final = "timeout"
