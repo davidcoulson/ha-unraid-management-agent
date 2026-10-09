@@ -103,11 +103,12 @@ def test_value_functions_keep_zero_from_old_agent() -> None:
     assert _get_ups_power(data) == 0
 
 
-def test_websocket_event_with_null_readings_is_a_ups_event() -> None:
-    """The null keys stay in the payload, so the UPS event is still recognised."""
-    assert identify_event_type(UPS_PAYLOAD_NULLS) == EventType.UPS_STATUS_UPDATE
+@pytest.mark.parametrize("payload", [UPS_PAYLOAD_NULLS, UPS_PAYLOAD_OMITTED])
+def test_websocket_event_with_missing_readings_is_a_ups_event(payload: dict) -> None:
+    """Null or omitted readings still give a UPS event with None values."""
+    assert identify_event_type(payload) == EventType.UPS_STATUS_UPDATE
 
-    event = parse_event(UPS_PAYLOAD_NULLS)
+    event = parse_event(payload)
 
     assert isinstance(event, UPSStatusUpdateEvent)
     assert event.data.load_percent is None
