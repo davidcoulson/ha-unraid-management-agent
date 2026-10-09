@@ -10,8 +10,8 @@ rules:
     status: done
     comment: DataUpdateCoordinator with fixed 30s interval (local network minimum)
   brands:
-    status: todo
-    comment: No brand assets in HA brands repository
+    status: done
+    comment: Integration ships local brand assets in brand/ directory (supported in HA 2026.3+)
   common-modules:
     status: done
     comment: Shared base classes, const.py, coordinator.py, entity.py
@@ -27,6 +27,9 @@ rules:
   docs-actions:
     status: done
     comment: README documents all integration services with grouped examples
+  docs-conditions:
+    status: exempt
+    comment: Integration does not implement automation conditions
   docs-high-level-description:
     status: done
     comment: README has project description
@@ -36,6 +39,9 @@ rules:
   docs-removal-instructions:
     status: done
     comment: README includes Home Assistant, HACS, manual, and backend plugin removal steps
+  docs-triggers:
+    status: exempt
+    comment: Integration does not implement automation triggers
   entity-event-setup:
     status: done
     comment: Uses CoordinatorEntity pattern correctly
@@ -140,8 +146,9 @@ rules:
     status: done
     comment: >
       Remote share and unassigned device binary/switch entities, hwmon
-      temperature sensors, and plugin and container update entities are added
-      dynamically via coordinator listener when data arrives after initial setup
+      temperature sensors, system service running binary sensors, and plugin
+      and container update entities are added dynamically via coordinator
+      listener when data arrives after initial setup
   entity-category:
     status: done
     comment: EntityCategory.DIAGNOSTIC used for appropriate sensors
@@ -150,7 +157,7 @@ rules:
     comment: Proper device classes (temperature, power, battery, duration, etc.)
   entity-disabled-by-default:
     status: done
-    comment: User scripts and per-channel hwmon temperature sensors disabled by default with _attr_entity_registry_enabled_default
+    comment: User scripts, per-channel hwmon temperature sensors and network/system service running binary sensors disabled by default with _attr_entity_registry_enabled_default
   entity-translations:
     status: done
     comment: Entity translations defined in strings.json entity section
@@ -172,12 +179,13 @@ rules:
       cleanup.py removes stale entity registry entries for all dynamic entity
       types (containers, VMs, disks, fans, GPUs, network interfaces, shares,
       ZFS pools, remote shares, unassigned devices, user scripts, hwmon
-      temperature channels, plugin and container update entities) on every
-      successful coordinator update via an async_add_listener callback
-      registered in async_setup_entry. Guards on last_update_success prevent
-      false removal during transient server outages. VM and container devices
-      left without entities are removed, and async_remove_config_entry_device
-      lets users delete a device whose VM or container is gone.
+      temperature channels, system services, plugin and container update
+      entities) on every successful coordinator update via an async_add_listener
+      callback registered in async_setup_entry. Guards on last_update_success
+      prevent false removal during transient server outages. VM and container
+      devices left without entities are removed, and
+      async_remove_config_entry_device lets users delete a device whose VM or
+      container is gone.
 
   # Platinum
   async-dependency:

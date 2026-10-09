@@ -181,7 +181,7 @@ data:
 The exact entity set depends on what the Unraid Management Agent exposes for your server.
 
 - Sensors for system, array, flash, plugins, mover, parity, notifications, registration, ZFS, UPS, GPU, containers, remote shares, and unassigned devices
-- Binary sensors for array state, parity state, update availability, mover state, UPS connectivity, network services, remote shares, and unassigned devices
+- Binary sensors for array state, parity state, update availability, mover state, UPS connectivity, network services, system services (Docker, libvirt and nginx running state), remote shares, and unassigned devices
 - Switches for containers, virtual machines, disk spin control, and remote shares
 - Buttons for array actions, parity actions, system power actions, VM controls, and user scripts
 - Number entities for supported fan speed control

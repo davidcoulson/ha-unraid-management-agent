@@ -91,6 +91,15 @@
       "gpu_energy": {
         "default": "mdi:expansion-card"
       },
+      "gpu_vram_used": {
+        "default": "mdi:memory"
+      },
+      "gpu_vram_total": {
+        "default": "mdi:memory"
+      },
+      "gpu_vram_usage": {
+        "default": "mdi:memory"
+      },
       "ups_battery": {
         "default": "mdi:battery",
         "state": {
@@ -278,6 +287,13 @@
         "state": {
           "on": "mdi:server-network",
           "off": "mdi:server-network-off"
+        }
+      },
+      "system_service": {
+        "default": "mdi:cog",
+        "state": {
+          "on": "mdi:cog",
+          "off": "mdi:cog-off"
         }
       },
       "zfs_available": {

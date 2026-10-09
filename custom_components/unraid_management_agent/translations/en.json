@@ -141,6 +141,15 @@
       "gpu_energy": {
         "name": "GPU {gpu_name} Energy"
       },
+      "gpu_vram_used": {
+        "name": "GPU {gpu_name} VRAM Used"
+      },
+      "gpu_vram_total": {
+        "name": "GPU {gpu_name} VRAM Total"
+      },
+      "gpu_vram_usage": {
+        "name": "GPU {gpu_name} VRAM Usage"
+      },
       "ups_battery": {
         "name": "UPS Battery"
       },
@@ -345,6 +354,9 @@
         "name": "Parity Check Scheduled"
       },
       "network_service": {
+        "name": "{service_name} Service"
+      },
+      "system_service": {
         "name": "{service_name} Service"
       },
       "unassigned_device_mounted": {

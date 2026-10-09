@@ -73,10 +73,8 @@ class UnraidBaseEntity(CoordinatorEntity["UnraidDataUpdateCoordinator"]):
             sw_version=version,
             configuration_url=f"http://{host}",
         )
-
         if agent_version:
             device_info["hw_version"] = agent_version
-
         return device_info
 
     @property
