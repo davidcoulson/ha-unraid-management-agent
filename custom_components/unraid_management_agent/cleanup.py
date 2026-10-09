@@ -300,6 +300,18 @@ def _build_valid_dynamic_entity_keys(
             keys.add(f"zfs_{name}_usage")  # sensor
             keys.add(f"zfs_{name}_health")  # sensor
             keys.add(f"zfs_{name}_corrupted_files")  # sensor
+            for suffix in (
+                "scrub_status",
+                "last_scrub",
+                "scrub_errors",
+                "scrub_repaired",
+                "read_errors",
+                "write_errors",
+                "checksum_errors",
+                "fragmentation",
+            ):
+                keys.add(f"zfs_{name}_{suffix}")  # sensor
+            keys.add(f"zfs_{name}_problem")  # binary sensor
 
     # ── Remote shares ─────────────────────────────────────────────────────────
     for share in data.remote_shares or []:
