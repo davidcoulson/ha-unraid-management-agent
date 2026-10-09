@@ -26,11 +26,12 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, Final
 
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 from homeassistant.util import slugify
 
-from .const import DOMAIN
+from .const import CONF_ENABLE_VM_DEVICES, DEFAULT_ENABLE_VM_DEVICES, DOMAIN
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -91,7 +92,9 @@ def _user_script_key(name: str) -> str:
     return f"user_script_{re.sub(r'[^a-z0-9_]', '_', name.lower())}"
 
 
-def _build_valid_dynamic_entity_keys(data: UnraidData) -> set[str]:
+def _build_valid_dynamic_entity_keys(
+    data: UnraidData, *, vm_devices: bool = False
+) -> set[str]:
     """
     Compute the complete set of valid dynamic entity key suffixes from coordinator data.
 
@@ -101,6 +104,8 @@ def _build_valid_dynamic_entity_keys(data: UnraidData) -> set[str]:
 
     Args:
         data: Current coordinator data snapshot.
+        vm_devices: Whether per-VM sensors exist (the "VMs as separate
+            devices" option); when off they are stale and get removed.
 
     Returns:
         Set of valid entity key suffixes.
@@ -127,6 +132,12 @@ def _build_valid_dynamic_entity_keys(data: UnraidData) -> set[str]:
         keys.add(f"container_{safe_sensor}_network_tx_rate")  # sensor
 
     # ── Virtual Machines ─────────────────────────────────────────────────────
+    vm_sensor_keys: tuple[str, ...] = ()
+    if vm_devices:
+        # Imported here: sensor.py imports this module
+        from .sensor import VM_SENSOR_DESCRIPTIONS
+
+        vm_sensor_keys = tuple(d.key for d in VM_SENSOR_DESCRIPTIONS)
     for vm in data.vms or []:
         vm_id = getattr(vm, "id", None) or getattr(vm, "name", None)
         vm_name = getattr(vm, "name", None)
@@ -149,6 +160,8 @@ def _build_valid_dynamic_entity_keys(data: UnraidData) -> set[str]:
         vm_slug = slugify(vm_name)
         for suffix in ("force_stop", "restart", "pause", "resume", "reset"):
             keys.add(f"vm_{vm_slug}_{short_hash}_{suffix}")  # button
+        for sensor_key in vm_sensor_keys:
+            keys.add(f"vm_{slugify(vm_id)}_{sensor_key}")  # sensor
 
     # ── Disks ────────────────────────────────────────────────────────────────
     for disk in data.disks or []:
@@ -388,7 +401,12 @@ def async_cleanup_stale_entities(
 
     registry = er.async_get(hass)
     entry_prefix = f"{entry.entry_id}_"
-    valid_keys = _build_valid_dynamic_entity_keys(coordinator.data)
+    vm_devices = bool(
+        entry.options.get(CONF_ENABLE_VM_DEVICES, DEFAULT_ENABLE_VM_DEVICES)
+    )
+    valid_keys = _build_valid_dynamic_entity_keys(
+        coordinator.data, vm_devices=vm_devices
+    )
     unavailable_prefixes = _unavailable_data_prefixes(coordinator.data)
     candidates = coordinator.stale_entity_candidates
     now = dt_util.utcnow()
@@ -438,3 +456,33 @@ def async_cleanup_stale_entities(
             removed,
             entry.title,
         )
+
+    _async_remove_empty_devices(hass, entry)
+
+
+@callback
+def _async_remove_empty_devices(hass: HomeAssistant, entry: UnraidConfigEntry) -> None:
+    """
+    Remove VM and container devices that no longer have any entities.
+
+    That happens when the VM or container is deleted from Unraid (its entities
+    are removed above) or when its "separate devices" option is turned off (its
+    entities move back to the server device). The server device is never
+    removed here.
+    """
+    device_registry = dr.async_get(hass)
+    entity_registry = er.async_get(hass)
+    server_identifier = (DOMAIN, entry.entry_id)
+    devices: list[dr.DeviceEntry | dr.ChildDeviceEntry] = [
+        *dr.async_child_entries_for_config_entry(device_registry, entry.entry_id),
+        *dr.async_entries_for_config_entry(device_registry, entry.entry_id),
+    ]
+    for device in devices:
+        if server_identifier in device.identifiers:
+            continue
+        if er.async_entries_for_device(
+            entity_registry, device.id, include_disabled_entities=True
+        ):
+            continue
+        _LOGGER.debug("Removing device %s, which has no entities", device.name)
+        device_registry.async_remove_device(device.id)

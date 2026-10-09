@@ -18,7 +18,13 @@ from homeassistant.util import slugify
 
 from . import UnraidConfigEntry, UnraidDataUpdateCoordinator
 from .const import DOMAIN
-from .entity import UnraidBaseEntity, UnraidEntityDescription
+from .entity import (
+    UnraidBaseEntity,
+    UnraidEntityDescription,
+    build_vm_device_info,
+    find_vm,
+    vm_devices_enabled,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -364,6 +370,16 @@ class UnraidContainerRestartButton(UnraidBaseEntity, ButtonEntity):
             ) from exc
 
 
+# key suffix -> (translation key on the server device, key on the VM's own device)
+_VM_BUTTON_TRANSLATION_KEYS: dict[str, tuple[str, str]] = {
+    "force_stop": ("vm_force_stop", "vm_device_force_stop"),
+    "restart": ("vm_restart_button", "vm_device_restart"),
+    "pause": ("vm_pause", "vm_device_pause"),
+    "resume": ("vm_resume", "vm_device_resume"),
+    "reset": ("vm_reset_button", "vm_device_reset"),
+}
+
+
 class _UnraidVMButtonBase(UnraidBaseEntity, ButtonEntity):
     """Base class for VM control buttons."""
 
@@ -385,18 +401,22 @@ class _UnraidVMButtonBase(UnraidBaseEntity, ButtonEntity):
         ).hexdigest()[:8]
         safe_name = slugify(vm_name)
         super().__init__(coordinator, f"vm_{safe_name}_{short_hash}_{key_suffix}")
+        translation_key, device_translation_key = _VM_BUTTON_TRANSLATION_KEYS[
+            key_suffix
+        ]
+        if vm_devices_enabled(coordinator):
+            # On the VM's own device, which already carries the VM name
+            self._attr_translation_key = device_translation_key
+            self._attr_device_info = build_vm_device_info(
+                coordinator, vm_identifier, vm_name
+            )
+        else:
+            self._attr_translation_key = translation_key
+            self._attr_translation_placeholders = {"vm_name": vm_name}
 
     def _find_vm(self) -> Any | None:
-        """Find the VM by id or name."""
-        data = self.coordinator.data
-        if not data or not data.vms:
-            return None
-        for vm in data.vms:
-            if getattr(vm, "id", None) == self._vm_identifier:
-                return vm
-            if getattr(vm, "name", None) == self._vm_identifier:
-                return vm
-        return None
+        """Find the VM by stable identifier."""
+        return find_vm(self.coordinator, self._vm_identifier, None)
 
     @property
     def available(self) -> bool:
@@ -417,8 +437,6 @@ class UnraidVMForceStopButton(_UnraidVMButtonBase):
     ) -> None:
         """Initialize the VM force stop button."""
         super().__init__(coordinator, vm_identifier, vm_name, "force_stop")
-        self._attr_translation_key = "vm_force_stop"
-        self._attr_translation_placeholders = {"vm_name": vm_name}
 
     async def async_press(self) -> None:
         """Force stop the VM."""
@@ -445,8 +463,6 @@ class UnraidVMRestartButton(_UnraidVMButtonBase):
     ) -> None:
         """Initialize the VM restart button."""
         super().__init__(coordinator, vm_identifier, vm_name, "restart")
-        self._attr_translation_key = "vm_restart_button"
-        self._attr_translation_placeholders = {"vm_name": vm_name}
 
     async def async_press(self) -> None:
         """Restart the VM."""
@@ -473,8 +489,6 @@ class UnraidVMPauseButton(_UnraidVMButtonBase):
     ) -> None:
         """Initialize the VM pause button."""
         super().__init__(coordinator, vm_identifier, vm_name, "pause")
-        self._attr_translation_key = "vm_pause"
-        self._attr_translation_placeholders = {"vm_name": vm_name}
 
     async def async_press(self) -> None:
         """Pause the VM."""
@@ -501,8 +515,6 @@ class UnraidVMResumeButton(_UnraidVMButtonBase):
     ) -> None:
         """Initialize the VM resume button."""
         super().__init__(coordinator, vm_identifier, vm_name, "resume")
-        self._attr_translation_key = "vm_resume"
-        self._attr_translation_placeholders = {"vm_name": vm_name}
 
     async def async_press(self) -> None:
         """Resume the VM."""
@@ -529,8 +541,6 @@ class UnraidVMResetButton(_UnraidVMButtonBase):
     ) -> None:
         """Initialize the VM reset button."""
         super().__init__(coordinator, vm_identifier, vm_name, "reset")
-        self._attr_translation_key = "vm_reset_button"
-        self._attr_translation_placeholders = {"vm_name": vm_name}
 
     async def async_press(self) -> None:
         """Reset the VM."""
