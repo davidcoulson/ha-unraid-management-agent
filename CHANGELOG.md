@@ -38,6 +38,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   integration only read `used_bytes`, so every "ZFS Pool … Usage" sensor was
   Unknown. The ZFS pool model now accepts both.
 - **WebSocket events overwrote UPS, system and collector data** ([#152](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/152)): `nut_status_update` (NUTInfo) and `hardware_update` (HardwareFullInfo) events were stored in `data.ups` and `data.system`, and a `collector_state_change` (one collector) replaced the full collector status, until the next poll. The NUT and hardware events are now ignored (no entity uses them), and collector events update just that collector.
+- **Syslog network service sensor never created** ([#167](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/167)):
+  The agent reports the syslog service as `syslog_server`, but the integration
+  only read `syslog`, so there was no "Syslog Service" binary sensor next to
+  the other network services. Both keys are now accepted.
 
 ### Changed
 
