@@ -373,13 +373,37 @@ def _is_envelope(data: Any) -> bool:
     )
 
 
+def _identify_agent_shape(payload: Any) -> EventType | None:
+    """
+    Identify agent payloads that identify_event_type's shape rules miss.
+
+    The agent's ArrayStatus has num_disks (not total_disks), ZFS snapshots
+    have creation_time (not creation), and ZFS datasets have neither
+    mountpoint nor pool. Only reached when identify_event_type found nothing.
+    """
+    if isinstance(payload, dict):
+        if "state" in payload and "num_disks" in payload:
+            return EventType.ARRAY_STATUS_UPDATE
+        return None
+    if not isinstance(payload, list) or not payload:
+        return None
+    first = payload[0]
+    if not isinstance(first, dict):
+        return None
+    if "dataset" in first and "creation_time" in first:
+        return EventType.ZFS_SNAPSHOT_UPDATE
+    if "compress_ratio" in first and "referenced_bytes" in first:
+        return EventType.ZFS_DATASET_UPDATE
+    return None
+
+
 def _identify_payload(payload: Any) -> EventType | None:
     """Identify a payload by its own "event" field, else by its shape."""
     if isinstance(payload, dict):
         named = _EVENT_NAMES.get(str(payload.get("event")))
         if named is not None:
             return named
-    return identify_event_type(payload)
+    return identify_event_type(payload) or _identify_agent_shape(payload)
 
 
 def resolve_event(data: Any) -> tuple[EventType | None, Any]:

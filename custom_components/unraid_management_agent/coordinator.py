@@ -171,7 +171,16 @@ def _merge_collector_state(
             collectors.append(collector)
     if not found:
         collectors.append(details)
-    return status.model_copy(update={"collectors": collectors})
+    # Recount like the agent's /collectors/status (enabled or still running)
+    enabled = sum(1 for c in collectors if c.enabled or c.status == "running")
+    return status.model_copy(
+        update={
+            "collectors": collectors,
+            "total": len(collectors),
+            "enabled_count": enabled,
+            "disabled_count": len(collectors) - enabled,
+        }
+    )
 
 
 class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):

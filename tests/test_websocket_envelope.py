@@ -165,6 +165,32 @@ def test_older_agent_generic_update_envelope() -> None:
     assert isinstance(unknown, UnknownEvent)
 
 
+@pytest.mark.parametrize(
+    ("topic", "expected"),
+    [
+        ("array_status_update", ArrayStatusUpdateEvent),
+        ("zfs_datasets_update", ZFSDatasetUpdateEvent),
+        ("zfs_snapshots_update", ZFSSnapshotUpdateEvent),
+    ],
+)
+def test_generic_update_with_agent_payload_shapes(
+    topic: str, expected: type[WebSocketEvent]
+) -> None:
+    """Recorded payloads that the older shape rules miss are still identified."""
+    frame = {**_frame(topic), "event": "update"}
+    assert type(parse_event(frame)) is expected
+
+
+@pytest.mark.parametrize(
+    "payload",
+    ["text", [], ["text"], [{"something": "else"}]],
+    ids=["string", "empty-list", "list-of-strings", "unknown-list"],
+)
+def test_generic_update_unidentifiable_payloads(payload: Any) -> None:
+    """Payloads with no recognisable shape stay unknown."""
+    assert isinstance(parse_event({"event": "update", "data": payload}), UnknownEvent)
+
+
 def test_unenveloped_payloads_still_parse() -> None:
     """Bare payloads (no envelope) are still identified from their shape."""
     event = parse_event({"hostname": "tower", "cpu_usage_percent": 3.0})
@@ -266,6 +292,8 @@ async def test_recorded_frames_update_coordinator(
     assert docker.required is False
     assert docker.error_count == 0
     assert data.collectors.total == 2
+    assert data.collectors.enabled_count == 1
+    assert data.collectors.disabled_count == 1
 
     # source_status_changed schedules a full refresh
     request_refresh.assert_called_once()
@@ -299,4 +327,7 @@ def test_collector_event_for_unlisted_collector(
     )
     names = [c.name for c in coordinator.data.collectors.collectors]
     assert names == ["docker", "vm", "zfs"]
+    assert coordinator.data.collectors.total == 3
+    assert coordinator.data.collectors.enabled_count == 2
+    assert coordinator.data.collectors.disabled_count == 1
     assert not coordinator.is_collector_enabled("zfs")
