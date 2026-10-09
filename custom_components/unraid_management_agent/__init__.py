@@ -315,8 +315,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
     # Store runtime data using the new pattern
     entry.runtime_data = UnraidRuntimeData(coordinator=coordinator, client=client)
 
-    # Register the server device up front: per-VM devices link to it by
-    # registry id (via_device_id), so it must exist before any platform loads.
+    # Register the server device up front: VM and container child devices
+    # reference it by registry id, so it must exist before any platform loads.
     system = coordinator.data.system if coordinator.data else None
     dr.async_get(hass).async_get_or_create(
         config_entry_id=entry.entry_id,
@@ -349,19 +349,29 @@ async def async_remove_config_entry_device(
     device_entry: dr.DeviceEntry,
 ) -> bool:
     """
-    Allow removing a VM device whose VM no longer exists on the server.
+    Allow removing a VM or container device once it no longer exists on Unraid.
 
-    The server device itself, and VMs that still exist, cannot be removed.
+    The server device itself, and VMs or containers that still exist, cannot be
+    removed.
     """
-    vm_prefix = f"{entry.entry_id}_vm_"
     data = entry.runtime_data.coordinator.data
-    current_vms = {
-        getattr(vm, "id", None) or getattr(vm, "name", None)
-        for vm in (data.vms if data and data.vms else [])
-    }
+    vm_prefix = f"{entry.entry_id}_vm_"
+    container_prefix = f"{entry.entry_id}_container_"
     for domain, identifier in device_entry.identifiers:
-        if domain == DOMAIN and identifier.startswith(vm_prefix):
+        if domain != DOMAIN:
+            continue
+        if identifier.startswith(vm_prefix):
+            current_vms = {
+                getattr(vm, "id", None) or getattr(vm, "name", None)
+                for vm in ((data.vms if data else None) or [])
+            }
             return identifier[len(vm_prefix) :] not in current_vms
+        if identifier.startswith(container_prefix):
+            current_containers = {
+                getattr(container, "name", None)
+                for container in ((data.containers if data else None) or [])
+            }
+            return identifier[len(container_prefix) :] not in current_containers
     return False
 
 

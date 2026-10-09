@@ -17,7 +17,7 @@ from custom_components.unraid_management_agent import (
 )
 from custom_components.unraid_management_agent.api.models import VMInfo
 from custom_components.unraid_management_agent.cleanup import (
-    _async_remove_empty_vm_devices,
+    _async_remove_empty_devices,
     _build_valid_dynamic_entity_keys,
 )
 from custom_components.unraid_management_agent.const import (
@@ -181,7 +181,7 @@ async def test_vm_device_without_entities_is_removed(
     ):
         entities.async_remove(entity.entity_id)
 
-    _async_remove_empty_vm_devices(hass, mock_config_entry)
+    _async_remove_empty_devices(hass, mock_config_entry)
 
     assert (
         devices.async_get_child_device_by_identifier(

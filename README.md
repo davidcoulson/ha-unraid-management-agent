@@ -38,7 +38,7 @@ You must have the Unraid Management Agent plugin installed and running on your U
 
 ### Home Assistant Requirements
 
-- Home Assistant 2026.9 or newer (VMs as separate devices use child devices, added in 2026.9)
+- Home Assistant 2026.9 or newer
 
 ### Verify The Agent
 

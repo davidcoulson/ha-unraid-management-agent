@@ -457,37 +457,32 @@ def async_cleanup_stale_entities(
             entry.title,
         )
 
-    _async_remove_empty_vm_devices(hass, entry)
+    _async_remove_empty_devices(hass, entry)
 
 
 @callback
-def _async_remove_empty_vm_devices(
-    hass: HomeAssistant, entry: UnraidConfigEntry
-) -> None:
+def _async_remove_empty_devices(hass: HomeAssistant, entry: UnraidConfigEntry) -> None:
     """
-    Remove per-VM devices that no longer have any entities.
+    Remove VM and container devices that no longer have any entities.
 
-    That happens when a VM is deleted from Unraid (its entities are removed
-    above) or when the "VMs as separate devices" option is turned off (the
-    switch and buttons move back to the server device).
+    That happens when the VM or container is deleted from Unraid (its entities
+    are removed above) or when its "separate devices" option is turned off (its
+    entities move back to the server device). The server device is never
+    removed here.
     """
     device_registry = dr.async_get(hass)
     entity_registry = er.async_get(hass)
-    vm_prefix = f"{entry.entry_id}_vm_"
-    # VM devices are child devices; earlier builds made them main devices.
+    server_identifier = (DOMAIN, entry.entry_id)
     devices: list[dr.DeviceEntry | dr.ChildDeviceEntry] = [
         *dr.async_child_entries_for_config_entry(device_registry, entry.entry_id),
         *dr.async_entries_for_config_entry(device_registry, entry.entry_id),
     ]
     for device in devices:
-        if not any(
-            domain == DOMAIN and identifier.startswith(vm_prefix)
-            for domain, identifier in device.identifiers
-        ):
+        if server_identifier in device.identifiers:
             continue
         if er.async_entries_for_device(
             entity_registry, device.id, include_disabled_entities=True
         ):
             continue
-        _LOGGER.debug("Removing VM device %s with no entities", device.name)
+        _LOGGER.debug("Removing device %s, which has no entities", device.name)
         device_registry.async_remove_device(device.id)
