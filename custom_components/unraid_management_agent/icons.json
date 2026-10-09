@@ -178,6 +178,42 @@
       },
       "registration_state": {
         "default": "mdi:shield-key"
+      },
+      "vm_state": {
+        "default": "mdi:desktop-tower"
+      },
+      "vm_cpu_usage": {
+        "default": "mdi:cpu-64-bit"
+      },
+      "vm_vcpus": {
+        "default": "mdi:chip"
+      },
+      "vm_memory_allocated": {
+        "default": "mdi:memory"
+      },
+      "vm_memory_used": {
+        "default": "mdi:memory"
+      },
+      "vm_network_rx_rate": {
+        "default": "mdi:download-network"
+      },
+      "vm_network_tx_rate": {
+        "default": "mdi:upload-network"
+      },
+      "vm_network_rx": {
+        "default": "mdi:download-network"
+      },
+      "vm_network_tx": {
+        "default": "mdi:upload-network"
+      },
+      "vm_disk_read_rate": {
+        "default": "mdi:harddisk"
+      },
+      "vm_disk_write_rate": {
+        "default": "mdi:harddisk"
+      },
+      "vm_disk_size": {
+        "default": "mdi:harddisk"
       }
     },
     "binary_sensor": {
@@ -271,6 +307,13 @@
           "on": "mdi:harddisk",
           "off": "mdi:harddisk-remove"
         }
+      },
+      "vm_power": {
+        "default": "mdi:desktop-tower",
+        "state": {
+          "on": "mdi:desktop-tower",
+          "off": "mdi:desktop-tower"
+        }
       }
     },
     "button": {
@@ -323,6 +366,21 @@
         "default": "mdi:play"
       },
       "vm_reset_button": {
+        "default": "mdi:backup-restore"
+      },
+      "vm_device_force_stop": {
+        "default": "mdi:stop"
+      },
+      "vm_device_restart": {
+        "default": "mdi:restart"
+      },
+      "vm_device_pause": {
+        "default": "mdi:pause"
+      },
+      "vm_device_resume": {
+        "default": "mdi:play"
+      },
+      "vm_device_reset": {
         "default": "mdi:backup-restore"
       }
     }

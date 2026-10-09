@@ -4,14 +4,20 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.const import CONF_HOST
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.device_registry import ChildDeviceInfo, DeviceInfo
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, MANUFACTURER
+from .const import (
+    CONF_ENABLE_VM_DEVICES,
+    DEFAULT_ENABLE_VM_DEVICES,
+    DOMAIN,
+    MANUFACTURER,
+)
 
 if TYPE_CHECKING:
     from .coordinator import UnraidDataUpdateCoordinator
@@ -77,6 +83,68 @@ class UnraidBaseEntity(CoordinatorEntity["UnraidDataUpdateCoordinator"]):
         )
 
 
+def vm_devices_enabled(coordinator: UnraidDataUpdateCoordinator) -> bool:
+    """Return True when VMs are shown as separate devices (an option, off by default)."""
+    return bool(
+        coordinator.config_entry.options.get(
+            CONF_ENABLE_VM_DEVICES, DEFAULT_ENABLE_VM_DEVICES
+        )
+    )
+
+
+def build_vm_device_info(
+    coordinator: UnraidDataUpdateCoordinator,
+    vm_identifier: str,
+    vm_name: str,
+) -> DeviceInfo | ChildDeviceInfo:
+    """
+    Build device info for a virtual machine.
+
+    VMs are child devices of the Unraid server: they run on it, so they are
+    grouped under the server rather than listed as separate devices. The
+    libvirt UUID is used as the identifier so renaming a VM keeps the device.
+    """
+    entry_id = coordinator.config_entry.entry_id
+    # The server device is registered during setup, before the platforms load.
+    server = dr.async_get(coordinator.hass).async_get_device_by_identifier(
+        (DOMAIN, entry_id), entry_id
+    )
+    if server is None:
+        # Keep the entity on the server device if it is somehow missing.
+        return DeviceInfo(identifiers={(DOMAIN, entry_id)})
+    return ChildDeviceInfo(
+        identifiers={(DOMAIN, f"{entry_id}_vm_{vm_identifier}")},
+        name=vm_name,
+        parent_device_id=server.id,
+    )
+
+
+def find_vm(
+    coordinator: UnraidDataUpdateCoordinator,
+    vm_identifier: str | None,
+    vm_name: str | None,
+) -> Any | None:
+    """
+    Find a VM in coordinator data by stable identifier, falling back to name.
+
+    The identifier is matched across all VMs first, so a VM that was renamed
+    is not confused with another VM that has since taken its old name.
+    """
+    data = coordinator.data
+    if not data or not data.vms:
+        return None
+    if vm_identifier is not None:
+        for vm in data.vms:
+            current = getattr(vm, "id", None) or getattr(vm, "name", None)
+            if current == vm_identifier:
+                return vm
+    if vm_name is not None:
+        for vm in data.vms:
+            if getattr(vm, "name", None) == vm_name:
+                return vm
+    return None
+
+
 class UnraidEntity(UnraidBaseEntity):
     """Entity with description support for Unraid Management Agent."""
 
@@ -104,4 +172,7 @@ __all__ = [
     "UnraidBaseEntity",
     "UnraidEntity",
     "UnraidEntityDescription",
+    "build_vm_device_info",
+    "find_vm",
+    "vm_devices_enabled",
 ]
