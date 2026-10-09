@@ -17,6 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   earlier, and makes integration actions targeting a read-only entry refuse
   with a `read_only_mode` validation error. Off by default.
 - **VMs as separate devices (optional)** ([#140](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/140), closes [#145](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/145)): A new **Show virtual machines as separate devices** option (off by default) gives each VM a child device of the Unraid server, keyed by its libvirt UUID. The device holds the VM's power switch and control buttons plus numeric sensors: state, CPU usage, vCPUs, memory allocated and network receive/send rates. Memory used, network totals, disk read/write rates and disk size are disabled by default. Rates are computed from the agent's cumulative counters, and new VMs get their device without a reload. When off, VM entities stay on the server device exactly as before. VM devices left without entities (VM deleted or option turned off) are removed, and a device whose VM is gone can be deleted from the UI. Requires Home Assistant 2026.9 or newer.
+- **Per-channel hwmon temperature sensors** ([#144](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/144), contributed by @davidcoulson):
+  One sensor per lm-sensors `temp*_input` channel in the agent's `temperatures`
+  list (for example a coolant probe on an Aquacomputer Octo, NVMe, NIC and CCD
+  temperatures), named from the `sensors.conf` label. Disabled by default, since
+  a typical server has dozens. Unique IDs use the full chip name and channel, so
+  they stay stable when other chips come and go. Channels that appear later are
+  added without a reload, removed channels are cleaned up like other dynamic
+  entities, and the sensors do not depend on the fan control option. Voltage,
+  current and power readings that older agents list as temperatures are skipped.
 
 ### Fixed
 
