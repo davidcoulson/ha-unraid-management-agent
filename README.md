@@ -107,13 +107,14 @@ If your Unraid Management Agent version advertises `_unraid-mgmt-agent._tcp.loca
 1. Open Settings > Devices & Services in Home Assistant.
 2. Select Add Integration.
 3. Search for Unraid Management Agent.
-4. Enter the host and port for your Unraid server.
+4. Enter the host and port for your Unraid server, and the API token if one is set in the agent plugin settings.
 5. Leave WebSocket enabled unless you have a specific reason to disable it.
 
 ### Configuration Fields
 
 - Host: IP address or DNS name of the Unraid server
 - Port: API port exposed by the Unraid Management Agent, `8043` by default
+- API token (optional): required when **API_TOKEN** is set in the agent plugin settings (agent v2026.08.02 or newer). It is sent as a bearer token. If the token is changed or authentication is turned on later, Home Assistant shows a **Re-authenticate** prompt asking for the current token.
 - Enable WebSocket: enables near real-time updates with REST fallback if the socket disconnects
 
 The REST polling interval is fixed at 30 seconds when polling is required.

@@ -12,15 +12,17 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
 from .api import UnraidClient
 from .api.constants import EventType
 from .api.events import WebSocketEvent, parse_event
-from .api.exceptions import UnraidTimeoutError
+from .api.exceptions import UnraidAuthenticationError, UnraidTimeoutError
 from .api.models import (
     ArrayStatus,
+    CollectorDetails,
     CollectorStatus,
     ContainerInfo,
     ContainerUpdatesResult,
@@ -125,6 +127,23 @@ class UnraidRuntimeData:
 
 
 type UnraidConfigEntry = ConfigEntry[UnraidRuntimeData]
+
+
+def _merge_collector_state(
+    status: CollectorStatus | None, details: CollectorDetails
+) -> CollectorStatus | None:
+    """
+    Return the collectors status with one collector's details replaced.
+
+    A collector_state_change event carries a single CollectorDetails, not the
+    full CollectorStatus. Without a full status yet (no successful poll),
+    keep None so collector checks fall back to their defaults.
+    """
+    if status is None or not isinstance(details, CollectorDetails):
+        return status
+    collectors = [c for c in status.collectors or [] if c.name != details.name]
+    collectors.append(details)
+    return status.model_copy(update={"collectors": collectors})
 
 
 class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
@@ -360,6 +379,9 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
         """Fetch data from a single API endpoint, returning *None* on failure."""
         try:
             return await coro_fn()
+        except UnraidAuthenticationError:
+            # A rejected token fails the whole update so HA starts reauth
+            raise
         except UnraidTimeoutError as err:
             # Logged distinctly: a timeout while the server is otherwise
             # reachable usually means the agent plugin is stalled.
@@ -606,6 +628,13 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
             self._record_failed_update()
             raise
 
+        except UnraidAuthenticationError as err:
+            self._record_failed_update()
+            raise ConfigEntryAuthFailed(
+                translation_domain=DOMAIN,
+                translation_key="auth_failed",
+            ) from err
+
         except Exception as err:
             # Log unavailable only once
             if not self._unavailable_logged:
@@ -692,15 +721,20 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
             )
         elif event.event_type == EventType.ZFS_ARC_UPDATE:
             self.data.zfs_arc = event.data
-        elif event.event_type == EventType.NUT_STATUS_UPDATE:
-            # NUT (Network UPS Tools) status is stored as UPS data
-            self.data.ups = event.data
-        elif event.event_type == EventType.HARDWARE_UPDATE:
-            # Hardware updates contain system info (fans, temps, power)
-            self.data.system = event.data
+        elif event.event_type in (
+            EventType.NUT_STATUS_UPDATE,
+            EventType.HARDWARE_UPDATE,
+        ):
+            # These carry NUTInfo and HardwareFullInfo, which are different
+            # models from data.ups (UPSInfo) and data.system (SystemInfo) and
+            # are not used by any entity. Storing them there replaced UPS and
+            # system data until the next poll, so ignore them.
+            return
         elif event.event_type == EventType.COLLECTOR_STATE_CHANGE:
-            # Collector state changes update the collectors status
-            self.data.collectors = event.data
+            # One collector changed: update it within the full status
+            self.data.collectors = _merge_collector_state(
+                self.data.collectors, event.data
+            )
         elif event.event_type == EventType.FAN_CONTROL_UPDATE:
             self.data.fan_control = event.data
         elif event.event_type == EventType.SOURCE_STATUS_CHANGED:
@@ -793,6 +827,7 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                 auto_reconnect=True,
                 reconnect_delays=[1, 2, 5, 10, 30],
                 max_retries=10,
+                api_token=self.client.api_token,
             )
 
             # Start the WebSocket client as a background task

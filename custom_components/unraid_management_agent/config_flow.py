@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 from typing import Any
 
 import voluptuous as vol
@@ -12,13 +13,18 @@ from homeassistant.config_entries import (
     ConfigFlowResult,
     OptionsFlowWithReload,
 )
-from homeassistant.const import CONF_HOST, CONF_PORT
+from homeassistant.const import CONF_API_TOKEN, CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.selector import (
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
 from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 
-from .api import UnraidClient, UnraidConnectionError
+from .api import UnraidAuthenticationError, UnraidClient, UnraidConnectionError
 from .const import (
     CONF_ENABLE_CONTAINER_DEVICES,
     CONF_ENABLE_CONTAINER_UPDATES,
@@ -35,11 +41,20 @@ from .const import (
     DEFAULT_READ_ONLY,
     DOMAIN,
     ERROR_CANNOT_CONNECT,
+    ERROR_INVALID_AUTH,
     ERROR_TIMEOUT,
     ERROR_UNKNOWN,
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+# The agent's API token (Settings > Unraid Management Agent > Authentication)
+TOKEN_SELECTOR = TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD))
+
+
+class InvalidAuthError(Exception):
+    """The agent rejected the API token."""
+
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
@@ -47,6 +62,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_PORT, default=DEFAULT_PORT): vol.All(
             vol.Coerce(int), vol.Range(min=1, max=65535)
         ),
+        vol.Optional(CONF_API_TOKEN): TOKEN_SELECTOR,
         vol.Optional(
             CONF_ENABLE_WEBSOCKET, default=DEFAULT_ENABLE_WEBSOCKET
         ): cv.boolean,
@@ -66,6 +82,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         host=data[CONF_HOST],
         port=data[CONF_PORT],
         session=session,
+        api_token=data.get(CONF_API_TOKEN),
     ) as client:
         try:
             # Test connection by getting system info - returns typed Pydantic model
@@ -76,6 +93,9 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
                 "title": f"Unraid ({hostname})",
                 "hostname": hostname,
             }
+        except UnraidAuthenticationError as err:
+            _LOGGER.warning("Unraid Management Agent rejected the API token")
+            raise InvalidAuthError from err
         except TimeoutError as err:
             _LOGGER.error("Timeout connecting to Unraid server: %s", err)
             raise TimeoutError(ERROR_TIMEOUT) from err
@@ -107,6 +127,8 @@ class UnraidConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             try:
                 info = await validate_input(self.hass, user_input)
+            except InvalidAuthError:
+                errors["base"] = ERROR_INVALID_AUTH
             except TimeoutError:
                 errors["base"] = ERROR_TIMEOUT
             except ConnectionError:
@@ -137,6 +159,7 @@ class UnraidConfigFlow(ConfigFlow, domain=DOMAIN):
                     if self._discovered_host
                     else DEFAULT_PORT,
                 ): vol.All(vol.Coerce(int), vol.Range(min=1, max=65535)),
+                vol.Optional(CONF_API_TOKEN): TOKEN_SELECTOR,
                 vol.Optional(
                     CONF_ENABLE_WEBSOCKET, default=DEFAULT_ENABLE_WEBSOCKET
                 ): cv.boolean,
@@ -173,6 +196,8 @@ class UnraidConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             try:
                 info = await validate_input(self.hass, user_input)
+            except InvalidAuthError:
+                errors["base"] = ERROR_INVALID_AUTH
             except TimeoutError:
                 errors["base"] = ERROR_TIMEOUT
             except ConnectionError:
@@ -206,6 +231,14 @@ class UnraidConfigFlow(ConfigFlow, domain=DOMAIN):
                         default=reconfigure_entry.data.get(CONF_PORT, DEFAULT_PORT),
                     ): vol.All(vol.Coerce(int), vol.Range(min=1, max=65535)),
                     vol.Optional(
+                        CONF_API_TOKEN,
+                        description={
+                            "suggested_value": reconfigure_entry.data.get(
+                                CONF_API_TOKEN
+                            )
+                        },
+                    ): TOKEN_SELECTOR,
+                    vol.Optional(
                         CONF_ENABLE_WEBSOCKET,
                         default=reconfigure_entry.data.get(
                             CONF_ENABLE_WEBSOCKET, DEFAULT_ENABLE_WEBSOCKET
@@ -213,6 +246,46 @@ class UnraidConfigFlow(ConfigFlow, domain=DOMAIN):
                     ): cv.boolean,
                 }
             ),
+            errors=errors,
+        )
+
+    async def async_step_reauth(
+        self,
+        entry_data: Mapping[str, Any],
+    ) -> ConfigFlowResult:
+        """Start reauthentication after the agent rejected the API token."""
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask for the agent's current API token."""
+        reauth_entry = self._get_reauth_entry()
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            data = {**reauth_entry.data, CONF_API_TOKEN: user_input[CONF_API_TOKEN]}
+            try:
+                await validate_input(self.hass, data)
+            except InvalidAuthError:
+                errors["base"] = ERROR_INVALID_AUTH
+            except TimeoutError:
+                errors["base"] = ERROR_TIMEOUT
+            except ConnectionError:
+                errors["base"] = ERROR_CANNOT_CONNECT
+            except Exception:
+                _LOGGER.exception("Unexpected exception during reauth")
+                errors["base"] = ERROR_UNKNOWN
+            else:
+                return self.async_update_reload_and_abort(
+                    reauth_entry,
+                    data_updates={CONF_API_TOKEN: user_input[CONF_API_TOKEN]},
+                )
+
+        return self.async_show_form(
+            step_id="reauth_confirm",
+            data_schema=vol.Schema({vol.Required(CONF_API_TOKEN): TOKEN_SELECTOR}),
+            description_placeholders={"host": reauth_entry.data[CONF_HOST]},
             errors=errors,
         )
 

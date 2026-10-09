@@ -9,9 +9,10 @@ from typing import Any, Final
 
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import CONF_HOST, CONF_PORT, Platform
+from homeassistant.const import CONF_API_TOKEN, CONF_HOST, CONF_PORT, Platform
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import (
+    ConfigEntryAuthFailed,
     ConfigEntryNotReady,
     HomeAssistantError,
     ServiceValidationError,
@@ -22,7 +23,12 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util import slugify
 
-from .api import UnraidClient, UnraidConnectionError, UnraidWebSocketClient
+from .api import (
+    UnraidAuthenticationError,
+    UnraidClient,
+    UnraidConnectionError,
+    UnraidWebSocketClient,
+)
 from .cleanup import async_cleanup_stale_entities
 from .const import (
     CONF_ENABLE_WEBSOCKET,
@@ -322,13 +328,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
 
     # Create UnraidClient using Home Assistant's shared client session (inject-websession)
     session = async_get_clientsession(hass)
-    client = UnraidClient(host=host, port=port, session=session)
+    client = UnraidClient(
+        host=host,
+        port=port,
+        session=session,
+        api_token=entry.data.get(CONF_API_TOKEN),
+    )
 
     # Test connection
     try:
         await client.health_check()
     except UnraidConnectionError as err:
         raise ConfigEntryNotReady(f"Failed to connect to Unraid server: {err}") from err
+    except UnraidAuthenticationError as err:
+        # Start reauth instead of retrying setup forever with a rejected token
+        raise ConfigEntryAuthFailed(
+            translation_domain=DOMAIN,
+            translation_key="auth_failed",
+        ) from err
     except Exception as err:
         raise ConfigEntryNotReady(
             f"Unexpected error connecting to Unraid server: {err}"
