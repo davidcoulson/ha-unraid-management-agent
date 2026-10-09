@@ -1831,7 +1831,12 @@ class ZFSPool(BaseModel):
     name: str | None = Field(None, description="Pool name")
     state: str | None = Field(None, description="Pool state")
     size_bytes: CoercedInt = Field(None, description="Pool size in bytes")
-    used_bytes: CoercedInt = Field(None, description="Used space in bytes")
+    # The agent reports pool usage as allocated_bytes (zpool ALLOC)
+    used_bytes: CoercedInt = Field(
+        None,
+        description="Used space in bytes",
+        validation_alias=AliasChoices("used_bytes", "allocated_bytes"),
+    )
     free_bytes: CoercedInt = Field(None, description="Free space in bytes")
     health: str | None = Field(None, description="Pool health")
     corrupted_files: CoercedInt = Field(
