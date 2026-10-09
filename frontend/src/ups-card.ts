@@ -65,6 +65,7 @@ export class UnraidUpsCard extends BaseUnraidCard {
     const powerState = this.getEntity("ups_power");
     const voltageOut = this.getEntity("ups_output_voltage");
     const healthState = this.getEntity("ups_battery_health");
+    const energyState = this.getEntity("ups_energy");
 
     const isConnected = connectedState?.state === "on";
     const hasStatus = Boolean(
@@ -95,8 +96,18 @@ export class UnraidUpsCard extends BaseUnraidCard {
     const hasVoltage = Boolean(voltageOut && voltageOut.state !== "unavailable" && voltageOut.state !== "unknown");
     const voltageV = hasVoltage && voltageOut ? `${voltageOut.state} V` : null;
 
+    const hasEnergy = Boolean(energyState && energyState.state !== "unavailable" && energyState.state !== "unknown");
+    const energyFormatted =
+      hasEnergy && energyState
+        ? `${energyState.state} ${energyState.attributes?.unit_of_measurement || "kWh"}`
+        : null;
+
     const hasHealth = Boolean(healthState && healthState.state !== "unavailable" && healthState.state !== "unknown");
-    const health = hasHealth && healthState ? healthState.state : null;
+    const fallbackHealth =
+      (batteryState?.attributes?.ups_status as string) ||
+      (statusState?.attributes?.ups_status as string) ||
+      (isOnline ? "Normal" : isConnected ? "Online" : null);
+    const health = hasHealth && healthState ? healthState.state : fallbackHealth;
 
     const badge = html`
       <span class="badge ${isUnavailable ? "badge-standby" : isOnline ? "badge-online" : isBattery ? "badge-warning" : "badge-error"}">
@@ -180,27 +191,45 @@ export class UnraidUpsCard extends BaseUnraidCard {
           </div>
           <div
             class="detail-item"
-            role="${voltageOut ? "button" : "none"}"
-            tabindex="${voltageOut ? "0" : "-1"}"
-            style="${voltageOut ? "cursor: pointer;" : ""}"
-            @click=${() => voltageOut && this.openMoreInfo(voltageOut.entity_id)}
-            @keydown=${(e: KeyboardEvent) => (e.key === "Enter" || e.key === " ") && voltageOut && (e.preventDefault(), this.openMoreInfo(voltageOut.entity_id))}
-            title="Click to view Voltage details"
+            role="${voltageOut || energyState ? "button" : "none"}"
+            tabindex="${voltageOut || energyState ? "0" : "-1"}"
+            style="${voltageOut || energyState ? "cursor: pointer;" : ""}"
+            @click=${() => {
+              const target = voltageOut || energyState;
+              if (target) this.openMoreInfo(target.entity_id);
+            }}
+            @keydown=${(e: KeyboardEvent) => {
+              const target = voltageOut || energyState;
+              if ((e.key === "Enter" || e.key === " ") && target) {
+                e.preventDefault();
+                this.openMoreInfo(target.entity_id);
+              }
+            }}
+            title="${voltageOut ? "Click to view Voltage details" : "Click to view Energy details"}"
           >
-            <span class="detail-label">Output Voltage</span>
-            <span class="detail-val">${voltageV || "—"}</span>
+            <span class="detail-label">${hasVoltage ? "Output Voltage" : hasEnergy ? "Energy Consumed" : "Output Voltage"}</span>
+            <span class="detail-val">${voltageV || energyFormatted || "—"}</span>
           </div>
           <div
             class="detail-item"
-            role="${healthState ? "button" : "none"}"
-            tabindex="${healthState ? "0" : "-1"}"
-            style="${healthState ? "cursor: pointer;" : ""}"
-            @click=${() => healthState && this.openMoreInfo(healthState.entity_id)}
-            @keydown=${(e: KeyboardEvent) => (e.key === "Enter" || e.key === " ") && healthState && (e.preventDefault(), this.openMoreInfo(healthState.entity_id))}
+            role="${healthState || batteryState ? "button" : "none"}"
+            tabindex="${healthState || batteryState ? "0" : "-1"}"
+            style="${healthState || batteryState ? "cursor: pointer;" : ""}"
+            @click=${() => {
+              const target = healthState || batteryState;
+              if (target) this.openMoreInfo(target.entity_id);
+            }}
+            @keydown=${(e: KeyboardEvent) => {
+              const target = healthState || batteryState;
+              if ((e.key === "Enter" || e.key === " ") && target) {
+                e.preventDefault();
+                this.openMoreInfo(target.entity_id);
+              }
+            }}
             title="Click to view Battery Health details"
           >
             <span class="detail-label">Battery Health</span>
-            <span class="detail-val" style="${health ? "color: var(--unraid-online);" : ""}">${health || "—"}</span>
+            <span class="detail-val" style="${health && !health.toLowerCase().includes("fail") ? "color: var(--unraid-online);" : ""}">${health || "—"}</span>
           </div>
         </div>
       </ha-card>

@@ -28,7 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `custom:unraid-remote-shares-card`: Remote SMB/NFS share mount states and capacity.
     - `custom:unraid-unassigned-devices-card`: External unassigned drives and mount toggles.
     - `custom:unraid-dashboard-card`: Unified tabbed dashboard containing all modules with intuitive sub-navigation.
-  - Added support for named GPU slugs in `unraid-gpu-card` (supporting Intel iGPUs and custom-named accelerators) with driver version display, UMA entity naming fallback across container/VM/disk/fan entities, full test coverage for frontend resource registration (`tests/test_frontend.py` at 100%), 45 Vitest unit and live server verification tests, and Playwright headless browser regression tests in CI (`.github/workflows/test.yml`).
+  - Added user-friendly Parity Check date formatting, duration, and sync error status badges across `unraid-maintenance-card` and `unraid-storage-card`.
+  - Added telemetry fallbacks to `unraid-ups-card` for energy consumption and operational status when output voltage or battery health sensors are not yet provided by the daemon.
+  - Added support for named GPU slugs in `unraid-gpu-card` (supporting Intel iGPUs and custom-named accelerators) with driver version display, UMA entity naming fallback across container/VM/disk/fan entities, full test coverage for frontend resource registration (`tests/test_frontend.py` at 100%), 48 Vitest unit and live server verification tests, and Playwright headless browser regression tests in CI (`.github/workflows/test.yml`).
 - **Home Assistant 2026.10 & Quality Scale Uplift** — modernized integration patterns for HA 2026.10+:
   - Added local brand assets (`brand/icon.png` and `brand/logo.png`) adhering to HA 2026.3+ local brands feature and updated `quality_scale.yaml` (`brands: done`).
   - Updated `DeviceInfo` construction to conditionally set `hw_version` only when available to preserve stored hardware versions across entity registrations.

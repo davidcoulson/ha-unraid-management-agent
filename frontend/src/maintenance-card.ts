@@ -3,7 +3,7 @@ import {
   MAINTENANCE_CARD_TAG,
   MAINTENANCE_EDITOR_TAG,
 } from "./config";
-import { BaseUnraidCard } from "./dashboard-cards-base";
+import { BaseUnraidCard, formatFriendlyDateTime } from "./dashboard-cards-base";
 import { UnraidMaintenanceCardEditor } from "./dashboard-cards-editor";
 import {
   iconTemplate,
@@ -95,19 +95,20 @@ export class UnraidMaintenanceCard extends BaseUnraidCard {
         <div class="disk-list">
           <div class="disk-row" @click=${() => lastParity && this.openMoreInfo(lastParity.entity_id)} style="cursor: pointer;">
             <div class="disk-main">
-              <span class="disk-icon disk-online">
+              <span class="disk-icon ${lastErrors ? "disk-warning" : "disk-online"}">
                 ${iconTemplate(mdiShieldCheck, 18)}
               </span>
               <div class="disk-info">
                 <span class="disk-name">Last Parity Check</span>
                 <span class="disk-subtext">
-                  ${lastResult || "Completed"}
+                  ${lastResult && lastResult !== lastParity?.state ? lastResult : "Completed"}
                   ${lastDuration ? ` • Duration: ${lastDuration}` : ""}
+                  ${lastErrors !== undefined ? (lastErrors === 0 ? " • 0 sync errors" : ` • ${lastErrors} errors`) : ""}
                 </span>
               </div>
             </div>
             <div class="disk-meta">
-              <span class="disk-temp">${lastParity?.state || "--"}</span>
+              <span class="disk-temp">${formatFriendlyDateTime(lastParity?.state)}</span>
             </div>
           </div>
 
@@ -120,11 +121,13 @@ export class UnraidMaintenanceCard extends BaseUnraidCard {
                     </span>
                     <div class="disk-info">
                       <span class="disk-name">Next Scheduled Parity</span>
-                      <span class="disk-subtext">Automated Parity Verification</span>
+                      <span class="disk-subtext">
+                        Automated Parity Verification${nextParity.attributes?.mode ? ` (${typeof nextParity.attributes.mode === "string" ? nextParity.attributes.mode.charAt(0).toUpperCase() + nextParity.attributes.mode.slice(1) : nextParity.attributes.mode})` : ""}
+                      </span>
                     </div>
                   </div>
                   <div class="disk-meta">
-                    <span class="disk-temp">${nextParity.state}</span>
+                    <span class="disk-temp">${formatFriendlyDateTime(nextParity.state)}</span>
                   </div>
                 </div>
               `

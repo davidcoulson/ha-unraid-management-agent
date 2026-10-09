@@ -3,7 +3,7 @@ import {
   STORAGE_CARD_TAG,
   STORAGE_EDITOR_TAG,
 } from "./config";
-import { BaseUnraidCard } from "./dashboard-cards-base";
+import { BaseUnraidCard, formatFriendlyDateTime } from "./dashboard-cards-base";
 import { UnraidStorageCardEditor } from "./dashboard-cards-editor";
 import {
   iconTemplate,
@@ -297,7 +297,7 @@ export class UnraidStorageCard extends BaseUnraidCard {
   protected override render(): TemplateResult {
     const arrayUsage = this.getEntity("array_usage");
     const paritySwitch = this.getEntity("parity_check", "switch");
-    const lastCheckDate = this.getEntity("last_parity_check_date");
+    const lastCheckDate = this.getEntity("last_parity_check_date") || this.getEntity("last_parity_check");
     const lastCheckErrors = this.getEntity("last_parity_check_errors");
 
     const arrayPct = Math.round(Number(arrayUsage?.state) || 0);
@@ -354,7 +354,11 @@ export class UnraidStorageCard extends BaseUnraidCard {
 
     let historyText = "";
     if (hasLastCheckDate) {
-      historyText = `Last check: ${lastCheckDate!.state}`;
+      const resultSuffix =
+        lastCheckDate!.attributes?.result && lastCheckDate!.attributes.result !== "Completed"
+          ? ` (${lastCheckDate!.attributes.result})`
+          : "";
+      historyText = `Last check: ${formatFriendlyDateTime(lastCheckDate!.state)}${resultSuffix}`;
     } else if (validity === "valid") {
       historyText = "Parity healthy";
     }

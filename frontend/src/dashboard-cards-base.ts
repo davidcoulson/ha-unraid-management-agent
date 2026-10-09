@@ -9,6 +9,36 @@ import {
 } from "./ha-types";
 import { iconTemplate } from "./icons";
 
+/**
+ * Format timestamp into human-friendly date string (e.g. "Jan 13, 2026, 15:16").
+ */
+export function formatFriendlyDateTime(value: string | undefined): string {
+  if (!value || value === "unavailable" || value === "unknown") return "--";
+  if (value.includes("T") || /^\d{4}-\d{2}-\d{2}/.test(value)) {
+    try {
+      const d = new Date(value);
+      if (!isNaN(d.getTime())) {
+        return (
+          d.toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          }) +
+          ", " +
+          d.toLocaleTimeString(undefined, {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          })
+        );
+      }
+    } catch {
+      // Fallback
+    }
+  }
+  return value;
+}
+
 export abstract class BaseUnraidCard extends LitElement {
   static override styles = dashboardCardStyles;
   static editorTag = "";
