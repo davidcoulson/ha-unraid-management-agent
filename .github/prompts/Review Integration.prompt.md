@@ -99,7 +99,7 @@ Report any errors found. Fix critical issues before proceeding.
 
 ### 5. Security Review
 
-- [ ] No credentials stored (local API, no auth)
+- [ ] Only the optional API token is stored, and it is redacted in diagnostics
 - [ ] Sensitive data excluded from diagnostics
 - [ ] No sensitive data in logs (lazy logging with `%s`)
 - [ ] Uses HA's shared aiohttp session
