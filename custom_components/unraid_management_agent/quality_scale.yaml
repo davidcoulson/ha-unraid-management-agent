@@ -135,7 +135,7 @@ rules:
     comment: README includes concrete monitoring, automation, orchestration, and energy dashboard use cases
   dynamic-devices:
     status: done
-    comment: Remote share and unassigned device binary/switch entities added dynamically via coordinator listener when data arrives after initial setup
+    comment: Remote share and unassigned device binary/switch entities and hwmon temperature sensors added dynamically via coordinator listener when data arrives after initial setup
   entity-category:
     status: done
     comment: EntityCategory.DIAGNOSTIC used for appropriate sensors
@@ -144,7 +144,7 @@ rules:
     comment: Proper device classes (temperature, power, battery, duration, etc.)
   entity-disabled-by-default:
     status: done
-    comment: User scripts disabled by default with _attr_entity_registry_enabled_default
+    comment: User scripts and per-channel hwmon temperature sensors disabled by default with _attr_entity_registry_enabled_default
   entity-translations:
     status: done
     comment: Entity translations defined in strings.json entity section
@@ -165,10 +165,10 @@ rules:
     comment: >
       cleanup.py removes stale entity registry entries for all dynamic entity
       types (containers, VMs, disks, fans, GPUs, network interfaces, shares,
-      ZFS pools, remote shares, unassigned devices, user scripts) on every
-      successful coordinator update via an async_add_listener callback registered
-      in async_setup_entry. Guards on last_update_success prevent false removal
-      during transient server outages.
+      ZFS pools, remote shares, unassigned devices, user scripts, hwmon
+      temperature channels) on every successful coordinator update via an
+      async_add_listener callback registered in async_setup_entry. Guards on
+      last_update_success prevent false removal during transient server outages.
 
   # Platinum
   async-dependency:
