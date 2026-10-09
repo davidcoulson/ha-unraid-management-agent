@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **PR governance workflow & HA standards enforcement** — added automated GitHub Actions workflow enforcing PR template completeness, Home Assistant Quality Scale compliance, static scanning for deprecated patterns (e.g., hass.data[DOMAIN], unit_of_measurement), mandatory CHANGELOG.md updates, issue linking checks, and bot/draft exemptions.
 - **Pull request template** — added `.github/PULL_REQUEST_TEMPLATE.md` with structured sections for description, changes made, Home Assistant Quality Scale verification, and quality checklist.
+- **Read-only option** ([#141](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/141), contributed by @davidcoulson):
+  A new **Read-only (sensors only)** option loads only the sensor, binary sensor
+  and event platforms, removes switch, button and number entities created
+  earlier, and makes integration actions targeting a read-only entry refuse
+  with a `read_only_mode` validation error. Off by default.
 
 ### Fixed
 

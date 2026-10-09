@@ -41,12 +41,14 @@
         "data": {
           "enable_websocket": "Enable WebSocket for real-time updates",
           "enable_fan_control": "Enable fan control entities",
-          "enable_container_updates": "Enable container update checks"
+          "enable_container_updates": "Enable container update checks",
+          "read_only": "Read-only (sensors only)"
         },
         "data_description": {
           "enable_websocket": "WebSocket provides instant updates instead of polling. When disabled, data is polled every 30 seconds.",
           "enable_fan_control": "Create fan speed sensor and control entities. Disable if your system does not have controllable fans.",
-          "enable_container_updates": "Periodically check Docker containers for available image updates. This may slow down polling and uses additional network requests."
+          "enable_container_updates": "Periodically check Docker containers for available image updates. This may slow down polling and uses additional network requests.",
+          "read_only": "Only create sensors. Switches, buttons and number controls are not created (existing ones are removed), and the integration's actions refuse to run, so Home Assistant cannot start, stop or reboot anything on the server."
         }
       }
     }
@@ -485,6 +487,12 @@
     },
     "fan_speed_set_failed": {
       "message": "Failed to set fan speed"
+    },
+    "read_only_mode": {
+      "message": "{title} is in read-only mode. Turn off read-only in its integration options to control the server."
+    },
+    "entry_not_loaded": {
+      "message": "{title} is not loaded, so the action cannot run. Check that the integration is set up and the server is reachable."
     }
   },
   "services": {
