@@ -343,6 +343,28 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
     return True
 
 
+async def async_remove_config_entry_device(
+    hass: HomeAssistant,
+    entry: UnraidConfigEntry,
+    device_entry: dr.DeviceEntry,
+) -> bool:
+    """
+    Allow removing a VM device whose VM no longer exists on the server.
+
+    The server device itself, and VMs that still exist, cannot be removed.
+    """
+    vm_prefix = f"{entry.entry_id}_vm_"
+    data = entry.runtime_data.coordinator.data
+    current_vms = {
+        getattr(vm, "id", None) or getattr(vm, "name", None)
+        for vm in (data.vms if data and data.vms else [])
+    }
+    for domain, identifier in device_entry.identifiers:
+        if domain == DOMAIN and identifier.startswith(vm_prefix):
+            return identifier[len(vm_prefix) :] not in current_vms
+    return False
+
+
 async def async_unload_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bool:
     """Unload a config entry."""
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):

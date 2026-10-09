@@ -22,7 +22,12 @@ from .const import (
     ATTR_VM_VCPUS,
     DOMAIN,
 )
-from .entity import UnraidBaseEntity, build_vm_device_info, find_vm
+from .entity import (
+    UnraidBaseEntity,
+    build_vm_device_info,
+    find_vm,
+    vm_devices_enabled,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -309,10 +314,15 @@ class UnraidVMSwitch(UnraidBaseEntity, SwitchEntity):
         self._vm_name = vm_name
         safe_name = _make_vm_unique_key(vm_identifier, vm_name)
         super().__init__(coordinator, f"vm_{safe_name}")
-        self._attr_translation_key = "vm_power"
-        self._attr_device_info = build_vm_device_info(
-            coordinator, vm_identifier, vm_name
-        )
+        if vm_devices_enabled(coordinator):
+            # On the VM's own device, which already carries the VM name
+            self._attr_translation_key = "vm_power"
+            self._attr_device_info = build_vm_device_info(
+                coordinator, vm_identifier, vm_name
+            )
+        else:
+            self._attr_translation_key = "vm"
+            self._attr_translation_placeholders = {"name": vm_name}
         self._optimistic_state: bool | None = None
 
     @callback

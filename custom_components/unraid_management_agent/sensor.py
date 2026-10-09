@@ -64,7 +64,12 @@ from .const import (
     DEFAULT_ENABLE_FAN_CONTROL,
 )
 from .coordinator import UnraidData
-from .entity import UnraidBaseEntity, build_vm_device_info, find_vm
+from .entity import (
+    UnraidBaseEntity,
+    build_vm_device_info,
+    find_vm,
+    vm_devices_enabled,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -3513,13 +3518,11 @@ VM_SENSOR_DESCRIPTIONS: tuple[UnraidVMSensorEntityDescription, ...] = (
     UnraidVMSensorEntityDescription(
         key="state",
         translation_key="vm_state",
-        icon="mdi:desktop-tower",
         value_fn=lambda vm: getattr(vm, "state", None),
     ),
     UnraidVMSensorEntityDescription(
         key="cpu_usage",
         translation_key="vm_cpu_usage",
-        icon="mdi:cpu-64-bit",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=1,
@@ -3528,14 +3531,12 @@ VM_SENSOR_DESCRIPTIONS: tuple[UnraidVMSensorEntityDescription, ...] = (
     UnraidVMSensorEntityDescription(
         key="vcpus",
         translation_key="vm_vcpus",
-        icon="mdi:chip",
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda vm: getattr(vm, "cpu_count", None),
     ),
     UnraidVMSensorEntityDescription(
         key="memory_allocated",
         translation_key="vm_memory_allocated",
-        icon="mdi:memory",
         device_class=SensorDeviceClass.DATA_SIZE,
         native_unit_of_measurement=UnitOfInformation.BYTES,
         suggested_unit_of_measurement=UnitOfInformation.GIBIBYTES,
@@ -3548,7 +3549,6 @@ VM_SENSOR_DESCRIPTIONS: tuple[UnraidVMSensorEntityDescription, ...] = (
     UnraidVMSensorEntityDescription(
         key="memory_used",
         translation_key="vm_memory_used",
-        icon="mdi:memory",
         device_class=SensorDeviceClass.DATA_SIZE,
         native_unit_of_measurement=UnitOfInformation.BYTES,
         suggested_unit_of_measurement=UnitOfInformation.GIBIBYTES,
@@ -3560,7 +3560,6 @@ VM_SENSOR_DESCRIPTIONS: tuple[UnraidVMSensorEntityDescription, ...] = (
     UnraidVMSensorEntityDescription(
         key="network_rx_rate",
         translation_key="vm_network_rx_rate",
-        icon="mdi:download-network",
         device_class=SensorDeviceClass.DATA_RATE,
         native_unit_of_measurement=UnitOfDataRate.KILOBITS_PER_SECOND,
         suggested_unit_of_measurement=UnitOfDataRate.MEGABITS_PER_SECOND,
@@ -3571,7 +3570,6 @@ VM_SENSOR_DESCRIPTIONS: tuple[UnraidVMSensorEntityDescription, ...] = (
     UnraidVMSensorEntityDescription(
         key="network_tx_rate",
         translation_key="vm_network_tx_rate",
-        icon="mdi:upload-network",
         device_class=SensorDeviceClass.DATA_RATE,
         native_unit_of_measurement=UnitOfDataRate.KILOBITS_PER_SECOND,
         suggested_unit_of_measurement=UnitOfDataRate.MEGABITS_PER_SECOND,
@@ -3582,7 +3580,6 @@ VM_SENSOR_DESCRIPTIONS: tuple[UnraidVMSensorEntityDescription, ...] = (
     UnraidVMSensorEntityDescription(
         key="network_rx",
         translation_key="vm_network_rx",
-        icon="mdi:download-network",
         device_class=SensorDeviceClass.DATA_SIZE,
         native_unit_of_measurement=UnitOfInformation.BYTES,
         suggested_unit_of_measurement=UnitOfInformation.GIBIBYTES,
@@ -3594,7 +3591,6 @@ VM_SENSOR_DESCRIPTIONS: tuple[UnraidVMSensorEntityDescription, ...] = (
     UnraidVMSensorEntityDescription(
         key="network_tx",
         translation_key="vm_network_tx",
-        icon="mdi:upload-network",
         device_class=SensorDeviceClass.DATA_SIZE,
         native_unit_of_measurement=UnitOfInformation.BYTES,
         suggested_unit_of_measurement=UnitOfInformation.GIBIBYTES,
@@ -3608,7 +3604,6 @@ VM_SENSOR_DESCRIPTIONS: tuple[UnraidVMSensorEntityDescription, ...] = (
     UnraidVMSensorEntityDescription(
         key="disk_read_rate",
         translation_key="vm_disk_read_rate",
-        icon="mdi:harddisk",
         device_class=SensorDeviceClass.DATA_RATE,
         native_unit_of_measurement=UnitOfDataRate.KILOBITS_PER_SECOND,
         suggested_unit_of_measurement=UnitOfDataRate.MEGABYTES_PER_SECOND,
@@ -3620,7 +3615,6 @@ VM_SENSOR_DESCRIPTIONS: tuple[UnraidVMSensorEntityDescription, ...] = (
     UnraidVMSensorEntityDescription(
         key="disk_write_rate",
         translation_key="vm_disk_write_rate",
-        icon="mdi:harddisk",
         device_class=SensorDeviceClass.DATA_RATE,
         native_unit_of_measurement=UnitOfDataRate.KILOBITS_PER_SECOND,
         suggested_unit_of_measurement=UnitOfDataRate.MEGABYTES_PER_SECOND,
@@ -3632,7 +3626,6 @@ VM_SENSOR_DESCRIPTIONS: tuple[UnraidVMSensorEntityDescription, ...] = (
     UnraidVMSensorEntityDescription(
         key="disk_size",
         translation_key="vm_disk_size",
-        icon="mdi:harddisk",
         device_class=SensorDeviceClass.DATA_SIZE,
         native_unit_of_measurement=UnitOfInformation.BYTES,
         suggested_unit_of_measurement=UnitOfInformation.GIBIBYTES,
@@ -4092,15 +4085,29 @@ async def async_setup_entry(
 
     _add_remote_share_sensors()
 
-    # Per-VM sensors, each VM on its own device - created as VMs appear
+    # Per-VM sensors, each VM on its own device - created as VMs appear.
+    # Only when the "VMs as separate devices" option is on.
     seen_vms: set[str] = set()
 
     def _add_vm_sensors() -> None:
-        if not (coordinator.is_collector_enabled("vm") and coordinator.is_vm_enabled()):
+        if not (
+            vm_devices_enabled(coordinator)
+            and coordinator.is_collector_enabled("vm")
+            and coordinator.is_vm_enabled()
+        ):
             return
         current_data = coordinator.data
         if not current_data or not current_data.vms:
             return
+        # Allow re-creation of entities removed from the registry (see #83);
+        # every VM gets the same set of sensors, so the first key stands for all.
+        first_key = VM_SENSOR_DESCRIPTIONS[0].key
+        async_prune_seen_names(
+            hass,
+            "sensor",
+            seen_vms,
+            lambda vm_id: f"{entry.entry_id}_vm_{ha_slugify(vm_id)}_{first_key}",
+        )
         new_entities: list[SensorEntity] = []
         for vm in current_data.vms:
             vm_identifier, vm_name = _vm_identity(vm)

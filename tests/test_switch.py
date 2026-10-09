@@ -68,12 +68,12 @@ async def test_vm_switch(
     await hass.async_block_till_done()
 
     # Check Windows 10 VM switch (running)
-    state = hass.states.get("switch.windows_10_power")
+    state = hass.states.get("switch.unraid_test_vm_windows_10")
     if state:
         assert state.state == STATE_ON
 
     # Check Ubuntu Server VM switch (stopped)
-    state = hass.states.get("switch.ubuntu_server_power")
+    state = hass.states.get("switch.unraid_test_vm_ubuntu_server")
     if state:
         assert state.state == STATE_OFF
 
@@ -144,7 +144,7 @@ async def test_vm_switch_turn_on_calls_api(
     await hass.services.async_call(
         "switch",
         "turn_on",
-        {"entity_id": "switch.ubuntu_server_power"},
+        {"entity_id": "switch.unraid_test_vm_ubuntu_server"},
         blocking=True,
     )
 
@@ -170,7 +170,7 @@ async def test_vm_switch_turn_off_calls_api(
     await hass.services.async_call(
         "switch",
         "turn_off",
-        {"entity_id": "switch.windows_10_power"},
+        {"entity_id": "switch.unraid_test_vm_windows_10"},
         blocking=True,
     )
 
@@ -197,7 +197,7 @@ async def test_switch_attributes(
         assert "image" in attrs or "container_id" in attrs or "friendly_name" in attrs
 
     # Check VM switch has extra attributes
-    state = hass.states.get("switch.windows_10_power")
+    state = hass.states.get("switch.unraid_test_vm_windows_10")
     if state:
         attrs = state.attributes
         assert "friendly_name" in attrs
@@ -280,7 +280,7 @@ async def test_vm_switch_turn_on_error(
         await hass.services.async_call(
             "switch",
             "turn_on",
-            {"entity_id": "switch.ubuntu_server_power"},
+            {"entity_id": "switch.unraid_test_vm_ubuntu_server"},
             blocking=True,
         )
 
@@ -306,7 +306,7 @@ async def test_vm_switch_turn_off_error(
         await hass.services.async_call(
             "switch",
             "turn_off",
-            {"entity_id": "switch.windows_10_power"},
+            {"entity_id": "switch.unraid_test_vm_windows_10"},
             blocking=True,
         )
 
@@ -391,7 +391,7 @@ async def test_vm_switch_turn_on_api_call_only(
     await hass.services.async_call(
         "switch",
         "turn_on",
-        {"entity_id": "switch.ubuntu_server_power"},
+        {"entity_id": "switch.unraid_test_vm_ubuntu_server"},
         blocking=True,
     )
 
@@ -417,7 +417,7 @@ async def test_vm_switch_turn_off_api_call_only(
     await hass.services.async_call(
         "switch",
         "turn_off",
-        {"entity_id": "switch.windows_10_power"},
+        {"entity_id": "switch.unraid_test_vm_windows_10"},
         blocking=True,
     )
 

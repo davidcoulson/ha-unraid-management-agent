@@ -22,9 +22,11 @@ from .api import UnraidClient, UnraidConnectionError
 from .const import (
     CONF_ENABLE_CONTAINER_UPDATES,
     CONF_ENABLE_FAN_CONTROL,
+    CONF_ENABLE_VM_DEVICES,
     CONF_ENABLE_WEBSOCKET,
     DEFAULT_ENABLE_CONTAINER_UPDATES,
     DEFAULT_ENABLE_FAN_CONTROL,
+    DEFAULT_ENABLE_VM_DEVICES,
     DEFAULT_ENABLE_WEBSOCKET,
     DEFAULT_PORT,
     DOMAIN,
@@ -250,6 +252,12 @@ class UnraidOptionsFlowHandler(OptionsFlowWithReload):
                         default=self.config_entry.options.get(
                             CONF_ENABLE_CONTAINER_UPDATES,
                             DEFAULT_ENABLE_CONTAINER_UPDATES,
+                        ),
+                    ): cv.boolean,
+                    vol.Optional(
+                        CONF_ENABLE_VM_DEVICES,
+                        default=self.config_entry.options.get(
+                            CONF_ENABLE_VM_DEVICES, DEFAULT_ENABLE_VM_DEVICES
                         ),
                     ): cv.boolean,
                 }

@@ -8,11 +8,16 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.const import CONF_HOST
 from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.device_registry import ChildDeviceInfo, DeviceInfo
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, MANUFACTURER
+from .const import (
+    CONF_ENABLE_VM_DEVICES,
+    DEFAULT_ENABLE_VM_DEVICES,
+    DOMAIN,
+    MANUFACTURER,
+)
 
 if TYPE_CHECKING:
     from .coordinator import UnraidDataUpdateCoordinator
@@ -78,32 +83,40 @@ class UnraidBaseEntity(CoordinatorEntity["UnraidDataUpdateCoordinator"]):
         )
 
 
+def vm_devices_enabled(coordinator: UnraidDataUpdateCoordinator) -> bool:
+    """Return True when VMs are shown as separate devices (an option, off by default)."""
+    return bool(
+        coordinator.config_entry.options.get(
+            CONF_ENABLE_VM_DEVICES, DEFAULT_ENABLE_VM_DEVICES
+        )
+    )
+
+
 def build_vm_device_info(
     coordinator: UnraidDataUpdateCoordinator,
     vm_identifier: str,
     vm_name: str,
-) -> DeviceInfo:
+) -> DeviceInfo | ChildDeviceInfo:
     """
     Build device info for a virtual machine.
 
-    Each VM gets its own device, linked to the Unraid server device, so its
-    controls and metrics are grouped together. The libvirt UUID is used as the
-    identifier so renaming a VM keeps the same device.
+    VMs are child devices of the Unraid server: they run on it, so they are
+    grouped under the server rather than listed as separate devices. The
+    libvirt UUID is used as the identifier so renaming a VM keeps the device.
     """
     entry_id = coordinator.config_entry.entry_id
-    device_info = DeviceInfo(
-        identifiers={(DOMAIN, f"{entry_id}_vm_{vm_identifier}")},
-        name=vm_name,
-        manufacturer="QEMU/KVM",
-        model="Virtual Machine",
-    )
     # The server device is registered during setup, before the platforms load.
     server = dr.async_get(coordinator.hass).async_get_device_by_identifier(
         (DOMAIN, entry_id), entry_id
     )
-    if server is not None:
-        device_info["via_device_id"] = server.id
-    return device_info
+    if server is None:
+        # Keep the entity on the server device if it is somehow missing.
+        return DeviceInfo(identifiers={(DOMAIN, entry_id)})
+    return ChildDeviceInfo(
+        identifiers={(DOMAIN, f"{entry_id}_vm_{vm_identifier}")},
+        name=vm_name,
+        parent_device_id=server.id,
+    )
 
 
 def find_vm(
@@ -161,4 +174,5 @@ __all__ = [
     "UnraidEntityDescription",
     "build_vm_device_info",
     "find_vm",
+    "vm_devices_enabled",
 ]
