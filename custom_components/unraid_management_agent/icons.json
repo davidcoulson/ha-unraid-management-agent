@@ -418,6 +418,20 @@
       "container_device_restart": {
         "default": "mdi:restart"
       }
+    },
+    "update": {
+      "unraid_os": {
+        "default": "mdi:server"
+      },
+      "plugin": {
+        "default": "mdi:puzzle"
+      },
+      "container_image": {
+        "default": "mdi:docker"
+      },
+      "container_device_image": {
+        "default": "mdi:docker"
+      }
     }
   },
   "services": {

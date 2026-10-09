@@ -2343,6 +2343,9 @@ class PluginInfo(BaseModel):
     update_available: bool | None = Field(
         None, description="Update available for this plugin"
     )
+    latest_version: str | None = Field(
+        None, description="Latest available version (set when an update exists)"
+    )
 
     model_config = {"frozen": True, "extra": "allow"}
 

@@ -49,8 +49,8 @@
         "data_description": {
           "enable_websocket": "WebSocket provides instant updates instead of polling. When disabled, data is polled every 30 seconds.",
           "enable_fan_control": "Create fan speed sensor and control entities. Disable if your system does not have controllable fans.",
-          "enable_container_updates": "Periodically check Docker containers for available image updates. This may slow down polling and uses additional network requests.",
-          "read_only": "Only create sensors. Switches, buttons and number controls are not created (existing ones are removed), and the integration's actions refuse to run, so Home Assistant cannot start, stop or reboot anything on the server.",
+          "enable_container_updates": "Periodically check Docker containers for available image updates. This may slow down polling and uses additional network requests. Also creates an update entity for each container, from which its image update can be installed.",
+          "read_only": "Only create sensors. Switches, buttons and number controls are not created (existing ones are removed), and the integration's actions refuse to run, so Home Assistant cannot start, stop or reboot anything on the server. Update entities still show available updates but do not offer to install them.",
           "enable_vm_devices": "Give each VM its own device under the server, holding its power switch, control buttons and metric sensors (CPU, memory, network and disk rates). When off, VM switches and buttons stay on the server device and no VM sensors are created.",
           "enable_container_devices": "Give each container its own device under the server, holding its switches, restart button and metric sensors with short names (Running, CPU, Memory). When off, container entities stay on the server device, named after the container."
         }
@@ -450,6 +450,20 @@
       "container_device_restart": {
         "name": "Restart"
       }
+    },
+    "update": {
+      "unraid_os": {
+        "name": "Unraid OS"
+      },
+      "plugin": {
+        "name": "Plugin {name}"
+      },
+      "container_image": {
+        "name": "Container {name} Image"
+      },
+      "container_device_image": {
+        "name": "Image"
+      }
     }
   },
   "exceptions": {
@@ -578,6 +592,12 @@
     },
     "entry_not_loaded": {
       "message": "{title} is not loaded, so the action cannot run. Check that the integration is set up and the server is reachable."
+    },
+    "plugin_update_failed": {
+      "message": "Failed to update plugin {name}"
+    },
+    "container_update_failed": {
+      "message": "Failed to update container {name}"
     }
   },
   "services": {

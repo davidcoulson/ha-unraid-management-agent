@@ -203,6 +203,7 @@ custom_components/unraid_management_agent/
 ├── binary_sensor.py      # Binary sensor platform
 ├── switch.py             # Switch platform (Docker containers, VMs)
 ├── button.py             # Button platform (array start/stop, parity check)
+├── update.py             # Update platform (Unraid OS, plugins, containers)
 ├── diagnostics.py        # Diagnostic data collection
 ├── repairs.py            # Repair issue flows
 ├── services.yaml         # Service action definitions

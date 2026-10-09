@@ -135,7 +135,10 @@ rules:
     comment: README includes concrete monitoring, automation, orchestration, and energy dashboard use cases
   dynamic-devices:
     status: done
-    comment: Remote share and unassigned device binary/switch entities added dynamically via coordinator listener when data arrives after initial setup
+    comment: >
+      Remote share and unassigned device binary/switch entities, and plugin and
+      container update entities, are added dynamically via coordinator listener
+      when data arrives after initial setup
   entity-category:
     status: done
     comment: EntityCategory.DIAGNOSTIC used for appropriate sensors
@@ -165,7 +168,8 @@ rules:
     comment: >
       cleanup.py removes stale entity registry entries for all dynamic entity
       types (containers, VMs, disks, fans, GPUs, network interfaces, shares,
-      ZFS pools, remote shares, unassigned devices, user scripts) on every
+      ZFS pools, remote shares, unassigned devices, user scripts, plugin and
+      container update entities) on every
       successful coordinator update via an async_add_listener callback registered
       in async_setup_entry. Guards on last_update_success prevent false removal
       during transient server outages. VM and container devices left without

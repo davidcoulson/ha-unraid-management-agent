@@ -123,7 +123,7 @@ The REST polling interval is fixed at 30 seconds when polling is required.
 The Configure dialog includes optional behavior toggles:
 
 - Enable fan control entities
-- Enable container update checks
+- Enable container update checks (also adds an update entity per container)
 
 ## Home Assistant Services
 
@@ -185,6 +185,7 @@ The exact entity set depends on what the Unraid Management Agent exposes for you
 - Buttons for array actions, parity actions, system power actions, VM controls, and user scripts
 - Number entities for supported fan speed control
 - Event entities for notifications
+- Update entities for Unraid OS (display only), each plugin, and, with container update checks enabled, each container's image; plugin and container updates can be installed from Home Assistant except in read-only mode
 
 Dynamic entities are cleaned up automatically when the corresponding resource is removed from Unraid.
 

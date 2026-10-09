@@ -31,7 +31,13 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 from homeassistant.util import slugify
 
-from .const import CONF_ENABLE_VM_DEVICES, DEFAULT_ENABLE_VM_DEVICES, DOMAIN
+from .const import (
+    CONF_ENABLE_CONTAINER_UPDATES,
+    CONF_ENABLE_VM_DEVICES,
+    DEFAULT_ENABLE_CONTAINER_UPDATES,
+    DEFAULT_ENABLE_VM_DEVICES,
+    DOMAIN,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -62,6 +68,7 @@ _DYNAMIC_KEY_PREFIXES: tuple[str, ...] = (
     "remote_share_",
     "unassigned_device_",
     "user_script_",
+    "plugin_",  # plugin update entities
 )
 
 # Static entity keys that start with a dynamic prefix and must never be removed.
@@ -93,7 +100,7 @@ def _user_script_key(name: str) -> str:
 
 
 def _build_valid_dynamic_entity_keys(
-    data: UnraidData, *, vm_devices: bool = False
+    data: UnraidData, *, vm_devices: bool = False, container_updates: bool = False
 ) -> set[str]:
     """
     Compute the complete set of valid dynamic entity key suffixes from coordinator data.
@@ -106,11 +113,17 @@ def _build_valid_dynamic_entity_keys(
         data: Current coordinator data snapshot.
         vm_devices: Whether per-VM sensors exist (the "VMs as separate
             devices" option); when off they are stale and get removed.
+        container_updates: Whether per-container update entities exist (the
+            "container update checks" option); when off they are stale and
+            get removed.
 
     Returns:
         Set of valid entity key suffixes.
 
     """
+    # Imported here: update.py imports this module
+    from .update import container_update_key, is_updatable_plugin, plugin_update_key
+
     keys: set[str] = set(_ALWAYS_VALID_KEYS)
 
     # ── Containers ──────────────────────────────────────────────────────────
@@ -130,6 +143,8 @@ def _build_valid_dynamic_entity_keys(
         keys.add(f"container_{safe_sensor}_restart_count")  # sensor
         keys.add(f"container_{safe_sensor}_network_rx_rate")  # sensor
         keys.add(f"container_{safe_sensor}_network_tx_rate")  # sensor
+        if container_updates:
+            keys.add(container_update_key(name))  # update
 
     # ── Virtual Machines ─────────────────────────────────────────────────────
     vm_sensor_keys: tuple[str, ...] = ()
@@ -284,6 +299,11 @@ def _build_valid_dynamic_entity_keys(
         if name:
             keys.add(_user_script_key(name))  # button
 
+    # ── Plugins ───────────────────────────────────────────────────────────────
+    for plugin in (data.plugins.plugins if data.plugins else None) or []:
+        if is_updatable_plugin(plugin):
+            keys.add(plugin_update_key(plugin.name))  # update
+
     return keys
 
 
@@ -360,6 +380,8 @@ def _unavailable_data_prefixes(data: UnraidData) -> set[str]:
         prefixes.add("unassigned_device_")
     if data.user_scripts is None:
         prefixes.add("user_script_")
+    if data.plugins is None or data.plugins.plugins is None:
+        prefixes.add("plugin_")
     return prefixes
 
 
@@ -404,8 +426,13 @@ def async_cleanup_stale_entities(
     vm_devices = bool(
         entry.options.get(CONF_ENABLE_VM_DEVICES, DEFAULT_ENABLE_VM_DEVICES)
     )
+    container_updates = bool(
+        entry.options.get(
+            CONF_ENABLE_CONTAINER_UPDATES, DEFAULT_ENABLE_CONTAINER_UPDATES
+        )
+    )
     valid_keys = _build_valid_dynamic_entity_keys(
-        coordinator.data, vm_devices=vm_devices
+        coordinator.data, vm_devices=vm_devices, container_updates=container_updates
     )
     unavailable_prefixes = _unavailable_data_prefixes(coordinator.data)
     candidates = coordinator.stale_entity_candidates
