@@ -65,7 +65,13 @@ export class UnraidNotificationsCard extends BaseUnraidCard {
         <div class="rings-grid">
           <div
             class="ring-card"
+            role="${alertsState ? "button" : "none"}"
+            tabindex="${alertsState ? "0" : "-1"}"
             @click=${() => alertsState && this.openMoreInfo(alertsState.entity_id)}
+            @keydown=${(e: KeyboardEvent) =>
+              (e.key === "Enter" || e.key === " ") &&
+              alertsState &&
+              (e.preventDefault(), this.openMoreInfo(alertsState.entity_id))}
             style="${alertsState ? "cursor: pointer;" : ""}"
             title="Click for Alerts"
           >
@@ -81,7 +87,13 @@ export class UnraidNotificationsCard extends BaseUnraidCard {
 
           <div
             class="ring-card"
+            role="${warningsState ? "button" : "none"}"
+            tabindex="${warningsState ? "0" : "-1"}"
             @click=${() => warningsState && this.openMoreInfo(warningsState.entity_id)}
+            @keydown=${(e: KeyboardEvent) =>
+              (e.key === "Enter" || e.key === " ") &&
+              warningsState &&
+              (e.preventDefault(), this.openMoreInfo(warningsState.entity_id))}
             style="${warningsState ? "cursor: pointer;" : ""}"
             title="Click for Warnings"
           >
@@ -97,7 +109,13 @@ export class UnraidNotificationsCard extends BaseUnraidCard {
 
           <div
             class="ring-card"
+            role="${infoState ? "button" : "none"}"
+            tabindex="${infoState ? "0" : "-1"}"
             @click=${() => infoState && this.openMoreInfo(infoState.entity_id)}
+            @keydown=${(e: KeyboardEvent) =>
+              (e.key === "Enter" || e.key === " ") &&
+              infoState &&
+              (e.preventDefault(), this.openMoreInfo(infoState.entity_id))}
             style="${infoState ? "cursor: pointer;" : ""}"
             title="Click for Informational"
           >

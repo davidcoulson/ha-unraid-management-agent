@@ -59,7 +59,13 @@ export class UnraidMaintenanceCard extends BaseUnraidCard {
         <div class="rings-grid">
           <div
             class="ring-card"
+            role="${flashUsage ? "button" : "none"}"
+            tabindex="${flashUsage ? "0" : "-1"}"
             @click=${() => flashUsage && this.openMoreInfo(flashUsage.entity_id)}
+            @keydown=${(e: KeyboardEvent) =>
+              (e.key === "Enter" || e.key === " ") &&
+              flashUsage &&
+              (e.preventDefault(), this.openMoreInfo(flashUsage.entity_id))}
             style="${flashUsage ? "cursor: pointer;" : ""}"
             title="Click for Flash USB details"
           >
@@ -75,7 +81,13 @@ export class UnraidMaintenanceCard extends BaseUnraidCard {
 
           <div
             class="ring-card"
+            role="${lastParity ? "button" : "none"}"
+            tabindex="${lastParity ? "0" : "-1"}"
             @click=${() => lastParity && this.openMoreInfo(lastParity.entity_id)}
+            @keydown=${(e: KeyboardEvent) =>
+              (e.key === "Enter" || e.key === " ") &&
+              lastParity &&
+              (e.preventDefault(), this.openMoreInfo(lastParity.entity_id))}
             style="${lastParity ? "cursor: pointer;" : ""}"
             title="Click for Parity status"
           >
@@ -93,7 +105,17 @@ export class UnraidMaintenanceCard extends BaseUnraidCard {
         <div class="divider"></div>
 
         <div class="disk-list">
-          <div class="disk-row" @click=${() => lastParity && this.openMoreInfo(lastParity.entity_id)} style="cursor: pointer;">
+          <div
+            class="disk-row"
+            role="${lastParity ? "button" : "none"}"
+            tabindex="${lastParity ? "0" : "-1"}"
+            @click=${() => lastParity && this.openMoreInfo(lastParity.entity_id)}
+            @keydown=${(e: KeyboardEvent) =>
+              (e.key === "Enter" || e.key === " ") &&
+              lastParity &&
+              (e.preventDefault(), this.openMoreInfo(lastParity.entity_id))}
+            style="${lastParity ? "cursor: pointer;" : ""}"
+          >
             <div class="disk-main">
               <span class="disk-icon ${lastErrors ? "disk-warning" : "disk-online"}">
                 ${iconTemplate(mdiShieldCheck, 18)}
@@ -114,7 +136,16 @@ export class UnraidMaintenanceCard extends BaseUnraidCard {
 
           ${nextParity?.state && nextParity.state !== "unavailable" && nextParity.state !== "unknown"
             ? html`
-                <div class="disk-row" @click=${() => this.openMoreInfo(nextParity.entity_id)} style="cursor: pointer;">
+                <div
+                  class="disk-row"
+                  role="button"
+                  tabindex="0"
+                  @click=${() => this.openMoreInfo(nextParity.entity_id)}
+                  @keydown=${(e: KeyboardEvent) =>
+                    (e.key === "Enter" || e.key === " ") &&
+                    (e.preventDefault(), this.openMoreInfo(nextParity.entity_id))}
+                  style="cursor: pointer;"
+                >
                   <div class="disk-main">
                     <span class="disk-icon disk-online">
                       ${iconTemplate(mdiClockOutline, 18)}
@@ -135,7 +166,16 @@ export class UnraidMaintenanceCard extends BaseUnraidCard {
 
           ${pluginUpdates
             ? html`
-                <div class="disk-row" @click=${() => this.openMoreInfo(pluginUpdates.entity_id)} style="cursor: pointer;">
+                <div
+                  class="disk-row"
+                  role="button"
+                  tabindex="0"
+                  @click=${() => this.openMoreInfo(pluginUpdates.entity_id)}
+                  @keydown=${(e: KeyboardEvent) =>
+                    (e.key === "Enter" || e.key === " ") &&
+                    (e.preventDefault(), this.openMoreInfo(pluginUpdates.entity_id))}
+                  style="cursor: pointer;"
+                >
                   <div class="disk-main">
                     <span class="disk-icon ${numPluginUpdates > 0 ? "disk-warning" : "disk-online"}">
                       ${iconTemplate(mdiDownload, 18)}
@@ -156,7 +196,16 @@ export class UnraidMaintenanceCard extends BaseUnraidCard {
 
           ${containerUpdates
             ? html`
-                <div class="disk-row" @click=${() => this.openMoreInfo(containerUpdates.entity_id)} style="cursor: pointer;">
+                <div
+                  class="disk-row"
+                  role="button"
+                  tabindex="0"
+                  @click=${() => this.openMoreInfo(containerUpdates.entity_id)}
+                  @keydown=${(e: KeyboardEvent) =>
+                    (e.key === "Enter" || e.key === " ") &&
+                    (e.preventDefault(), this.openMoreInfo(containerUpdates.entity_id))}
+                  style="cursor: pointer;"
+                >
                   <div class="disk-main">
                     <span class="disk-icon ${numContainerUpdates > 0 ? "disk-warning" : "disk-online"}">
                       ${iconTemplate(mdiDownload, 18)}

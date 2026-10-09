@@ -174,8 +174,14 @@ export class UnraidGpuCard extends BaseUnraidCard {
                           ? html`
                               <div
                                 class="ring-card"
+                                role="${gpu.utilizationEntityId ? "button" : "none"}"
+                                tabindex="${gpu.utilizationEntityId ? "0" : "-1"}"
                                 @click=${() => gpu.utilizationEntityId && this.openMoreInfo(gpu.utilizationEntityId)}
-                                style="cursor: pointer;"
+                                @keydown=${(e: KeyboardEvent) =>
+                                  (e.key === "Enter" || e.key === " ") &&
+                                  gpu.utilizationEntityId &&
+                                  (e.preventDefault(), this.openMoreInfo(gpu.utilizationEntityId))}
+                                style="${gpu.utilizationEntityId ? "cursor: pointer;" : ""}"
                                 title="Click for GPU load details"
                               >
                                 <div
@@ -193,8 +199,14 @@ export class UnraidGpuCard extends BaseUnraidCard {
                           ? html`
                               <div
                                 class="ring-card"
+                                role="${gpu.tempEntityId ? "button" : "none"}"
+                                tabindex="${gpu.tempEntityId ? "0" : "-1"}"
                                 @click=${() => gpu.tempEntityId && this.openMoreInfo(gpu.tempEntityId)}
-                                style="cursor: pointer;"
+                                @keydown=${(e: KeyboardEvent) =>
+                                  (e.key === "Enter" || e.key === " ") &&
+                                  gpu.tempEntityId &&
+                                  (e.preventDefault(), this.openMoreInfo(gpu.tempEntityId))}
+                                style="${gpu.tempEntityId ? "cursor: pointer;" : ""}"
                                 title="Click for Temperature details"
                               >
                                 <div
@@ -212,8 +224,14 @@ export class UnraidGpuCard extends BaseUnraidCard {
                           ? html`
                               <div
                                 class="ring-card"
+                                role="${gpu.powerEntityId ? "button" : "none"}"
+                                tabindex="${gpu.powerEntityId ? "0" : "-1"}"
                                 @click=${() => gpu.powerEntityId && this.openMoreInfo(gpu.powerEntityId)}
-                                style="cursor: pointer;"
+                                @keydown=${(e: KeyboardEvent) =>
+                                  (e.key === "Enter" || e.key === " ") &&
+                                  gpu.powerEntityId &&
+                                  (e.preventDefault(), this.openMoreInfo(gpu.powerEntityId))}
+                                style="${gpu.powerEntityId ? "cursor: pointer;" : ""}"
                                 title="Click for Power details"
                               >
                                 <div class="ring-gauge" style="--pct: 60; --ring-color: var(--unraid-accent)">
@@ -229,8 +247,14 @@ export class UnraidGpuCard extends BaseUnraidCard {
                           ? html`
                               <div
                                 class="ring-card"
+                                role="${gpu.memUtilEntityId ? "button" : "none"}"
+                                tabindex="${gpu.memUtilEntityId ? "0" : "-1"}"
                                 @click=${() => gpu.memUtilEntityId && this.openMoreInfo(gpu.memUtilEntityId)}
-                                style="cursor: pointer;"
+                                @keydown=${(e: KeyboardEvent) =>
+                                  (e.key === "Enter" || e.key === " ") &&
+                                  gpu.memUtilEntityId &&
+                                  (e.preventDefault(), this.openMoreInfo(gpu.memUtilEntityId))}
+                                style="${gpu.memUtilEntityId ? "cursor: pointer;" : ""}"
                                 title="Click for VRAM details"
                               >
                                 <div class="ring-gauge" style="--pct: ${gpu.memUtilPct}; --ring-color: var(--unraid-info)">

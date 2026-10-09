@@ -1583,8 +1583,11 @@ var e=globalThis,t=e.ShadowRoot&&(e.ShadyCSS===void 0||e.ShadyCSS.nativeShadow)&
                         ${e.utilizationPct===void 0?z:L`
                               <div
                                 class="ring-card"
+                                role="${e.utilizationEntityId?`button`:`none`}"
+                                tabindex="${e.utilizationEntityId?`0`:`-1`}"
                                 @click=${()=>e.utilizationEntityId&&this.openMoreInfo(e.utilizationEntityId)}
-                                style="cursor: pointer;"
+                                @keydown=${t=>(t.key===`Enter`||t.key===` `)&&e.utilizationEntityId&&(t.preventDefault(),this.openMoreInfo(e.utilizationEntityId))}
+                                style="${e.utilizationEntityId?`cursor: pointer;`:``}"
                                 title="Click for GPU load details"
                               >
                                 <div
@@ -1600,8 +1603,11 @@ var e=globalThis,t=e.ShadowRoot&&(e.ShadyCSS===void 0||e.ShadyCSS.nativeShadow)&
                         ${e.temp===void 0?z:L`
                               <div
                                 class="ring-card"
+                                role="${e.tempEntityId?`button`:`none`}"
+                                tabindex="${e.tempEntityId?`0`:`-1`}"
                                 @click=${()=>e.tempEntityId&&this.openMoreInfo(e.tempEntityId)}
-                                style="cursor: pointer;"
+                                @keydown=${t=>(t.key===`Enter`||t.key===` `)&&e.tempEntityId&&(t.preventDefault(),this.openMoreInfo(e.tempEntityId))}
+                                style="${e.tempEntityId?`cursor: pointer;`:``}"
                                 title="Click for Temperature details"
                               >
                                 <div
@@ -1617,8 +1623,11 @@ var e=globalThis,t=e.ShadowRoot&&(e.ShadyCSS===void 0||e.ShadyCSS.nativeShadow)&
                         ${e.power===void 0?z:L`
                               <div
                                 class="ring-card"
+                                role="${e.powerEntityId?`button`:`none`}"
+                                tabindex="${e.powerEntityId?`0`:`-1`}"
                                 @click=${()=>e.powerEntityId&&this.openMoreInfo(e.powerEntityId)}
-                                style="cursor: pointer;"
+                                @keydown=${t=>(t.key===`Enter`||t.key===` `)&&e.powerEntityId&&(t.preventDefault(),this.openMoreInfo(e.powerEntityId))}
+                                style="${e.powerEntityId?`cursor: pointer;`:``}"
                                 title="Click for Power details"
                               >
                                 <div class="ring-gauge" style="--pct: 60; --ring-color: var(--unraid-accent)">
@@ -1632,8 +1641,11 @@ var e=globalThis,t=e.ShadowRoot&&(e.ShadyCSS===void 0||e.ShadyCSS.nativeShadow)&
                         ${e.memUtilPct===void 0?z:L`
                               <div
                                 class="ring-card"
+                                role="${e.memUtilEntityId?`button`:`none`}"
+                                tabindex="${e.memUtilEntityId?`0`:`-1`}"
                                 @click=${()=>e.memUtilEntityId&&this.openMoreInfo(e.memUtilEntityId)}
-                                style="cursor: pointer;"
+                                @keydown=${t=>(t.key===`Enter`||t.key===` `)&&e.memUtilEntityId&&(t.preventDefault(),this.openMoreInfo(e.memUtilEntityId))}
+                                style="${e.memUtilEntityId?`cursor: pointer;`:``}"
                                 title="Click for VRAM details"
                               >
                                 <div class="ring-gauge" style="--pct: ${e.memUtilPct}; --ring-color: var(--unraid-info)">
@@ -1660,7 +1672,10 @@ var e=globalThis,t=e.ShadowRoot&&(e.ShadyCSS===void 0||e.ShadyCSS.nativeShadow)&
         <div class="rings-grid">
           <div
             class="ring-card"
+            role="${n?`button`:`none`}"
+            tabindex="${n?`0`:`-1`}"
             @click=${()=>n&&this.openMoreInfo(n.entity_id)}
+            @keydown=${e=>(e.key===`Enter`||e.key===` `)&&n&&(e.preventDefault(),this.openMoreInfo(n.entity_id))}
             style="${n?`cursor: pointer;`:``}"
             title="Click for Alerts"
           >
@@ -1676,7 +1691,10 @@ var e=globalThis,t=e.ShadowRoot&&(e.ShadyCSS===void 0||e.ShadyCSS.nativeShadow)&
 
           <div
             class="ring-card"
+            role="${r?`button`:`none`}"
+            tabindex="${r?`0`:`-1`}"
             @click=${()=>r&&this.openMoreInfo(r.entity_id)}
+            @keydown=${e=>(e.key===`Enter`||e.key===` `)&&r&&(e.preventDefault(),this.openMoreInfo(r.entity_id))}
             style="${r?`cursor: pointer;`:``}"
             title="Click for Warnings"
           >
@@ -1692,7 +1710,10 @@ var e=globalThis,t=e.ShadowRoot&&(e.ShadyCSS===void 0||e.ShadyCSS.nativeShadow)&
 
           <div
             class="ring-card"
+            role="${i?`button`:`none`}"
+            tabindex="${i?`0`:`-1`}"
             @click=${()=>i&&this.openMoreInfo(i.entity_id)}
+            @keydown=${e=>(e.key===`Enter`||e.key===` `)&&i&&(e.preventDefault(),this.openMoreInfo(i.entity_id))}
             style="${i?`cursor: pointer;`:``}"
             title="Click for Informational"
           >
@@ -1748,7 +1769,10 @@ var e=globalThis,t=e.ShadowRoot&&(e.ShadyCSS===void 0||e.ShadyCSS.nativeShadow)&
         <div class="rings-grid">
           <div
             class="ring-card"
+            role="${o?`button`:`none`}"
+            tabindex="${o?`0`:`-1`}"
             @click=${()=>o&&this.openMoreInfo(o.entity_id)}
+            @keydown=${e=>(e.key===`Enter`||e.key===` `)&&o&&(e.preventDefault(),this.openMoreInfo(o.entity_id))}
             style="${o?`cursor: pointer;`:``}"
             title="Click for Flash USB details"
           >
@@ -1764,7 +1788,10 @@ var e=globalThis,t=e.ShadowRoot&&(e.ShadyCSS===void 0||e.ShadyCSS.nativeShadow)&
 
           <div
             class="ring-card"
+            role="${n?`button`:`none`}"
+            tabindex="${n?`0`:`-1`}"
             @click=${()=>n&&this.openMoreInfo(n.entity_id)}
+            @keydown=${e=>(e.key===`Enter`||e.key===` `)&&n&&(e.preventDefault(),this.openMoreInfo(n.entity_id))}
             style="${n?`cursor: pointer;`:``}"
             title="Click for Parity status"
           >
@@ -1782,7 +1809,14 @@ var e=globalThis,t=e.ShadowRoot&&(e.ShadyCSS===void 0||e.ShadyCSS.nativeShadow)&
         <div class="divider"></div>
 
         <div class="disk-list">
-          <div class="disk-row" @click=${()=>n&&this.openMoreInfo(n.entity_id)} style="cursor: pointer;">
+          <div
+            class="disk-row"
+            role="${n?`button`:`none`}"
+            tabindex="${n?`0`:`-1`}"
+            @click=${()=>n&&this.openMoreInfo(n.entity_id)}
+            @keydown=${e=>(e.key===`Enter`||e.key===` `)&&n&&(e.preventDefault(),this.openMoreInfo(n.entity_id))}
+            style="${n?`cursor: pointer;`:``}"
+          >
             <div class="disk-main">
               <span class="disk-icon ${v?`disk-warning`:`disk-online`}">
                 ${J(yt,18)}
@@ -1802,7 +1836,14 @@ var e=globalThis,t=e.ShadowRoot&&(e.ShadyCSS===void 0||e.ShadyCSS.nativeShadow)&
           </div>
 
           ${r?.state&&r.state!==`unavailable`&&r.state!==`unknown`?L`
-                <div class="disk-row" @click=${()=>this.openMoreInfo(r.entity_id)} style="cursor: pointer;">
+                <div
+                  class="disk-row"
+                  role="button"
+                  tabindex="0"
+                  @click=${()=>this.openMoreInfo(r.entity_id)}
+                  @keydown=${e=>(e.key===`Enter`||e.key===` `)&&(e.preventDefault(),this.openMoreInfo(r.entity_id))}
+                  style="cursor: pointer;"
+                >
                   <div class="disk-main">
                     <span class="disk-icon disk-online">
                       ${J(nt,18)}
@@ -1821,7 +1862,14 @@ var e=globalThis,t=e.ShadowRoot&&(e.ShadyCSS===void 0||e.ShadyCSS.nativeShadow)&
               `:z}
 
           ${c?L`
-                <div class="disk-row" @click=${()=>this.openMoreInfo(c.entity_id)} style="cursor: pointer;">
+                <div
+                  class="disk-row"
+                  role="button"
+                  tabindex="0"
+                  @click=${()=>this.openMoreInfo(c.entity_id)}
+                  @keydown=${e=>(e.key===`Enter`||e.key===` `)&&(e.preventDefault(),this.openMoreInfo(c.entity_id))}
+                  style="cursor: pointer;"
+                >
                   <div class="disk-main">
                     <span class="disk-icon ${p>0?`disk-warning`:`disk-online`}">
                       ${J(at,18)}
@@ -1840,7 +1888,14 @@ var e=globalThis,t=e.ShadowRoot&&(e.ShadyCSS===void 0||e.ShadyCSS.nativeShadow)&
               `:z}
 
           ${l?L`
-                <div class="disk-row" @click=${()=>this.openMoreInfo(l.entity_id)} style="cursor: pointer;">
+                <div
+                  class="disk-row"
+                  role="button"
+                  tabindex="0"
+                  @click=${()=>this.openMoreInfo(l.entity_id)}
+                  @keydown=${e=>(e.key===`Enter`||e.key===` `)&&(e.preventDefault(),this.openMoreInfo(l.entity_id))}
+                  style="cursor: pointer;"
+                >
                   <div class="disk-main">
                     <span class="disk-icon ${m>0?`disk-warning`:`disk-online`}">
                       ${J(at,18)}
