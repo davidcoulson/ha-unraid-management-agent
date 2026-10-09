@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from collections.abc import Generator
-from typing import Any
 from datetime import UTC, datetime, timedelta
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
