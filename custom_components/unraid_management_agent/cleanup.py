@@ -72,6 +72,7 @@ _ALWAYS_VALID_KEYS: frozenset[str] = frozenset(
         "zfs_available",  # binary_sensor - static, key starts with "zfs_"
         "zfs_arc_hit_ratio",  # sensor - static, key starts with "zfs_"
         "zfs_arc_configured_max",  # sensor - static, key starts with "zfs_"
+        "container_updates_available",  # binary_sensor - static, starts with "container_"
     ]
 )
 
