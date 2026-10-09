@@ -18,6 +18,7 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import (
 )
 
 from custom_components.unraid_management_agent.api import (
+    UnraidAPIError,
     UnraidAuthenticationError,
     UnraidClient,
     UnraidWebSocketClient,
@@ -80,6 +81,22 @@ async def test_client_raises_auth_error_on_401(
     with pytest.raises(UnraidAuthenticationError) as err:
         await client.get_system_info()
     assert err.value.status_code == 401
+
+
+async def test_client_treats_403_as_api_error(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """The agent only uses 403 for origin (CSRF) checks, never for a bad token."""
+    aioclient_mock.get(
+        f"{BASE}/system", status=403, json={"error": "Forbidden: origin not allowed"}
+    )
+    client = UnraidClient(
+        "192.0.2.10", 8043, session=async_get_clientsession(hass), api_token="s3cret"
+    )
+    with pytest.raises(UnraidAPIError) as err:
+        await client.get_system_info()
+    assert not isinstance(err.value, UnraidAuthenticationError)
+    assert err.value.status_code == 403
 
 
 def test_websocket_client_sends_bearer_token() -> None:
@@ -161,6 +178,26 @@ async def test_rejected_token_at_startup_starts_reauth(
     entry = MockConfigEntry(
         domain=DOMAIN,
         data={**MOCK_CONFIG, CONF_API_TOKEN: "revoked"},
+        options=MOCK_OPTIONS,
+    )
+    entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.SETUP_ERROR
+    flows = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+    assert any(f["context"]["source"] == config_entries.SOURCE_REAUTH for f in flows)
+
+
+async def test_health_check_401_at_startup_starts_reauth(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """A 401 from the startup health check starts reauth instead of retrying."""
+    aioclient_mock.get(f"{BASE}/health", status=401, json={"error": "Unauthorized"})
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={**MOCK_CONFIG, CONF_HOST: "192.0.2.10", CONF_API_TOKEN: "revoked"},
         options=MOCK_OPTIONS,
     )
     entry.add_to_hass(hass)
