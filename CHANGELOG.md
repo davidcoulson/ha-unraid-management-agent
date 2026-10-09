@@ -49,6 +49,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   integration only read `used_bytes`, so every "ZFS Pool … Usage" sensor was
   Unknown. The ZFS pool model now accepts both.
 - **WebSocket events overwrote UPS, system and collector data** ([#152](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/152)): `nut_status_update` (NUTInfo) and `hardware_update` (HardwareFullInfo) events were stored in `data.ups` and `data.system`, and a `collector_state_change` (one collector) replaced the full collector status, until the next poll. The NUT and hardware events are now ignored (no entity uses them), and collector events update just that collector.
+- **ZFS pools unavailable once the agent reports corrupted files** ([#172](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/172), contributed by @davidcoulson):
+  The agent sends `corrupted_files` as the list of paths from `zpool status -v`,
+  but the integration typed it as a number. One pool with permanent errors
+  failed validation of the whole pool list, so every ZFS pool entity lost its
+  data. The model now accepts the list (or a bare count). The
+  "<pool> Corrupted Files" sensor shows the number of files, and its `files`
+  attribute lists the first 10 paths. The attribute is not recorded in history.
+  Agents up to 2026.09.01 never fill the list (ruaan-deysel/unraid-management-agent#190).
 
 ### Changed
 
