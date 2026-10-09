@@ -115,6 +115,7 @@ Service actions are integration-wide, not per config entry. This follows the exi
 ```python
 from homeassistant.exceptions import HomeAssistantError
 
+
 async def async_handle_action(call: ServiceCall) -> None:
     """Handle service action with error handling."""
     try:

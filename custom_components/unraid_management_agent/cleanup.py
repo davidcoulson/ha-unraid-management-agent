@@ -60,6 +60,7 @@ _DYNAMIC_KEY_PREFIXES: tuple[str, ...] = (
     "network_service_",
     "network_",  # per-interface binary sensors + rx/tx sensors
     "share_",
+    "system_service_",  # per-service running binary sensors from /services
     "zfs_",  # covers dynamic pool sensors; static zfs_available/zfs_arc_* added to valid set
     "remote_share_",
     "unassigned_device_",
@@ -74,6 +75,7 @@ _ALWAYS_VALID_KEYS: frozenset[str] = frozenset(
         "zfs_available",  # binary_sensor - static, key starts with "zfs_"
         "zfs_arc_hit_ratio",  # sensor - static, key starts with "zfs_"
         "zfs_arc_configured_max",  # sensor - static, key starts with "zfs_"
+        "container_updates_available",  # binary_sensor - static, starts with "container_"
     ]
 )
 
@@ -223,7 +225,17 @@ def _build_valid_dynamic_entity_keys(
         gpu_index = getattr(gpu, "index", None)
         if gpu_index is None:
             gpu_index = idx
-        for sensor_type in ("utilization", "temperature", "power", "energy"):
+        # VRAM keys stay valid for every present GPU, even ones not reporting
+        # VRAM right now, so a transient zero never deletes their history.
+        for sensor_type in (
+            "utilization",
+            "temperature",
+            "power",
+            "energy",
+            "vram_used",
+            "vram_total",
+            "vram_usage",
+        ):
             keys.add(f"gpu_{gpu_index}_{sensor_type}")  # sensor
 
     # ── Network interfaces ────────────────────────────────────────────────────
@@ -257,6 +269,11 @@ def _build_valid_dynamic_entity_keys(
             if getattr(data.network_services, service_key, None) is not None:
                 keys.add(f"network_service_{slugify(service_key)}")  # binary sensor
 
+    # ── System services (/services) ───────────────────────────────────────────
+    for service in data.system_services or []:
+        if service.name:
+            keys.add(f"system_service_{slugify(service.name)}")  # binary sensor
+
     # ── User shares ───────────────────────────────────────────────────────────
     for share in data.shares or []:
         name = getattr(share, "name", None)
@@ -270,6 +287,18 @@ def _build_valid_dynamic_entity_keys(
             keys.add(f"zfs_{name}_usage")  # sensor
             keys.add(f"zfs_{name}_health")  # sensor
             keys.add(f"zfs_{name}_corrupted_files")  # sensor
+            for suffix in (
+                "scrub_status",
+                "last_scrub",
+                "scrub_errors",
+                "scrub_repaired",
+                "read_errors",
+                "write_errors",
+                "checksum_errors",
+                "fragmentation",
+            ):
+                keys.add(f"zfs_{name}_{suffix}")  # sensor
+            keys.add(f"zfs_{name}_problem")  # binary sensor
 
     # ── Remote shares ─────────────────────────────────────────────────────────
     for share in data.remote_shares or []:
@@ -368,6 +397,8 @@ def _unavailable_data_prefixes(data: UnraidData) -> set[str]:
         prefixes.add("network_service_")
     if data.shares is None:
         prefixes.add("share_")
+    if data.system_services is None:
+        prefixes.add("system_service_")
     if data.zfs_pools is None:
         prefixes.add("zfs_")
     if data.remote_shares is None:

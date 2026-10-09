@@ -90,13 +90,15 @@ def test_serialize_data_dict() -> None:
 
 
 def test_serialize_data_pydantic_model() -> None:
-    """Test serialization of Pydantic-like models."""
-    mock_model = MagicMock()
-    mock_model.model_dump = MagicMock(return_value={"field": "value"})
+    """Test serialization of Pydantic models."""
+    from pydantic import BaseModel
 
-    result = _serialize_data(mock_model)
+    class SampleModel(BaseModel):
+        field: str
+
+    model = SampleModel(field="value")
+    result = _serialize_data(model)
     assert result == {"field": "value"}
-    mock_model.model_dump.assert_called_once()
 
 
 def test_serialize_data_dataclass() -> None:

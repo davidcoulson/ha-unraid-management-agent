@@ -23,7 +23,7 @@ This custom integration connects Home Assistant to the Unraid Management Agent r
 - Array and parity monitoring including array usage, parity progress, parity schedule, and parity history
 - Docker monitoring and control, including per-container CPU, memory, restart count, network throughput, update availability, and start or stop operations
 - VM monitoring and control, including state, restart and force-stop controls, and service actions
-- ZFS monitoring including pool health, corrupted files, ARC statistics, and configured ARC max
+- ZFS monitoring including pool health, a per-pool problem sensor, scrub status and last scrub time, scrub/read/write/checksum error counts, fragmentation, corrupted files, ARC statistics, and configured ARC max
 - UPS, GPU, mover, registration, notifications, network services, remote shares, and unassigned device data when available on the target server
 - Diagnostics-backed sensors such as degraded subsystem count and Docker port conflict count
 - The agent's alert rules (agent v2026.03.00+): a problem binary sensor per rule, an event when a rule starts firing or resolves, and a count of firing alerts
@@ -182,7 +182,7 @@ data:
 The exact entity set depends on what the Unraid Management Agent exposes for your server.
 
 - Sensors for system, array, flash, plugins, mover, parity, notifications, registration, ZFS, UPS, GPU, containers, remote shares, unassigned devices, and firing agent alerts
-- Binary sensors for array state, parity state, update availability, mover state, UPS connectivity, network services, remote shares, unassigned devices, and agent alert rules (on while the rule fires; unavailable while the rule is disabled)
+- Binary sensors for array state, parity state, update availability, mover state, UPS connectivity, network services, system services (Docker, libvirt and nginx running state), remote shares, unassigned devices, and agent alert rules (on while the rule fires; unavailable while the rule is disabled)
 - Switches for containers, virtual machines, disk spin control, and remote shares
 - Buttons for array actions, parity actions, system power actions, VM controls, and user scripts
 - Number entities for supported fan speed control

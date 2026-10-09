@@ -141,6 +141,15 @@
       "gpu_energy": {
         "name": "GPU {gpu_name} Energy"
       },
+      "gpu_vram_used": {
+        "name": "GPU {gpu_name} VRAM Used"
+      },
+      "gpu_vram_total": {
+        "name": "GPU {gpu_name} VRAM Total"
+      },
+      "gpu_vram_usage": {
+        "name": "GPU {gpu_name} VRAM Usage"
+      },
       "ups_battery": {
         "name": "UPS Battery"
       },
@@ -227,6 +236,40 @@
       },
       "zfs_pool_health": {
         "name": "ZFS Pool {pool_name} Health"
+      },
+      "zfs_pool_scrub_status": {
+        "name": "ZFS Pool {pool_name} Scrub Status",
+        "state": {
+          "none": "Never run",
+          "scrubbing": "Scrubbing",
+          "scrub_paused": "Scrub paused",
+          "scrub_finished": "Scrub finished",
+          "scrub_canceled": "Scrub canceled",
+          "resilvering": "Resilvering",
+          "resilver_finished": "Resilver finished",
+          "resilver_canceled": "Resilver canceled"
+        }
+      },
+      "zfs_pool_last_scrub": {
+        "name": "ZFS Pool {pool_name} Last Scrub"
+      },
+      "zfs_pool_scrub_errors": {
+        "name": "ZFS Pool {pool_name} Scrub Errors"
+      },
+      "zfs_pool_scrub_repaired": {
+        "name": "ZFS Pool {pool_name} Scrub Repaired"
+      },
+      "zfs_pool_read_errors": {
+        "name": "ZFS Pool {pool_name} Read Errors"
+      },
+      "zfs_pool_write_errors": {
+        "name": "ZFS Pool {pool_name} Write Errors"
+      },
+      "zfs_pool_checksum_errors": {
+        "name": "ZFS Pool {pool_name} Checksum Errors"
+      },
+      "zfs_pool_fragmentation": {
+        "name": "ZFS Pool {pool_name} Fragmentation"
       },
       "container_cpu": {
         "name": "{container_name} CPU"
@@ -332,6 +375,9 @@
       "zfs_available": {
         "name": "ZFS Available"
       },
+      "zfs_pool_problem": {
+        "name": "ZFS Pool {pool_name} Problem"
+      },
       "network_interface": {
         "name": "Network {interface}"
       },
@@ -348,6 +394,9 @@
         "name": "Parity Check Scheduled"
       },
       "network_service": {
+        "name": "{service_name} Service"
+      },
+      "system_service": {
         "name": "{service_name} Service"
       },
       "unassigned_device_mounted": {

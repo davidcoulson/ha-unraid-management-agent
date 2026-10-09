@@ -19,7 +19,7 @@ repos:
       - id: codespell
         args:
           - --ignore-words-list=hass,hacs,cruzer
-          - --skip="./.*,*.csv,*.json,*.ambr"
+          - --skip="./.*,*.csv,*.json,*.ambr,*.js,*.js.map"
           - --quiet-level=2
         exclude_types: [csv, json, html]
 
@@ -32,6 +32,7 @@ repos:
       - id: check-json
         exclude: (.vscode|.devcontainer)
       - id: check-toml
+        exclude: frontend/
       - id: check-yaml
       - id: check-added-large-files
         args: ["--maxkb=1000"]
@@ -40,9 +41,12 @@ repos:
       - id: check-merge-conflict
       - id: debug-statements
       - id: end-of-file-fixer
+        exclude: ^custom_components/unraid_management_agent/frontend/
       - id: mixed-line-ending
         args: ["--fix=lf"]
+        exclude: ^custom_components/unraid_management_agent/frontend/
       - id: trailing-whitespace
+        exclude: ^custom_components/unraid_management_agent/frontend/
 
   # YAML linting
   - repo: https://github.com/adrienverge/yamllint.git

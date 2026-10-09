@@ -91,6 +91,15 @@
       "gpu_energy": {
         "default": "mdi:expansion-card"
       },
+      "gpu_vram_used": {
+        "default": "mdi:memory"
+      },
+      "gpu_vram_total": {
+        "default": "mdi:memory"
+      },
+      "gpu_vram_usage": {
+        "default": "mdi:memory"
+      },
       "ups_battery": {
         "default": "mdi:battery",
         "state": {
@@ -130,6 +139,33 @@
       },
       "zfs_pool_health": {
         "default": "mdi:database-check"
+      },
+      "zfs_pool_scrub_status": {
+        "default": "mdi:database-search",
+        "state": {
+          "resilvering": "mdi:database-sync"
+        }
+      },
+      "zfs_pool_last_scrub": {
+        "default": "mdi:database-clock"
+      },
+      "zfs_pool_scrub_errors": {
+        "default": "mdi:database-alert"
+      },
+      "zfs_pool_scrub_repaired": {
+        "default": "mdi:database-refresh"
+      },
+      "zfs_pool_read_errors": {
+        "default": "mdi:alert-circle-outline"
+      },
+      "zfs_pool_write_errors": {
+        "default": "mdi:alert-circle-outline"
+      },
+      "zfs_pool_checksum_errors": {
+        "default": "mdi:alert-circle-outline"
+      },
+      "zfs_pool_fragmentation": {
+        "default": "mdi:chart-donut"
       },
       "zfs_arc_hit_ratio": {
         "default": "mdi:memory"
@@ -283,11 +319,25 @@
           "off": "mdi:server-network-off"
         }
       },
+      "system_service": {
+        "default": "mdi:cog",
+        "state": {
+          "on": "mdi:cog",
+          "off": "mdi:cog-off"
+        }
+      },
       "zfs_available": {
         "default": "mdi:database",
         "state": {
           "on": "mdi:database-check",
           "off": "mdi:database-off"
+        }
+      },
+      "zfs_pool_problem": {
+        "default": "mdi:database-check",
+        "state": {
+          "on": "mdi:database-alert",
+          "off": "mdi:database-check"
         }
       },
       "update_available": {
