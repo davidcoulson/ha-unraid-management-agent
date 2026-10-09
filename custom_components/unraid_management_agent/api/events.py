@@ -356,10 +356,10 @@ def parse_event(data: Any) -> WebSocketEvent:
     """
     event_type = identify_event_type(data)
 
-    if event_type is None:
-        return UnknownEvent(data=data)
-
     match event_type:
+        case None:
+            return UnknownEvent(data=data)
+
         case EventType.SYSTEM_UPDATE:
             return SystemUpdateEvent(data=SystemInfo.model_validate(data))
 
@@ -431,5 +431,3 @@ def parse_event(data: Any) -> WebSocketEvent:
 
         case EventType.SOURCE_STATUS_CHANGED:
             return SourceStatusChangedEvent(data=data)
-
-    return UnknownEvent(data=data)

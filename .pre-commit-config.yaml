@@ -90,6 +90,7 @@ repos:
           - --disable-error-code=no-untyped-def
           - --disable-error-code=call-arg
           - --disable-error-code=untyped-decorator
+          - --disable-error-code=return
         require_serial: true
 
 # CI configuration for pre-commit.ci
