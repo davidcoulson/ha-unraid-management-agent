@@ -55,19 +55,15 @@ class UnraidBaseEntity(CoordinatorEntity["UnraidDataUpdateCoordinator"]):
             version = system.version or "Unknown"
             agent_version = getattr(system, "agent_version", None)
 
-        device_info = DeviceInfo(
+        return DeviceInfo(
             identifiers={(DOMAIN, self.coordinator.config_entry.entry_id)},
             name=hostname,
             manufacturer=MANUFACTURER,
             model=f"Unraid {version}",
             sw_version=version,
+            hw_version=agent_version,
             configuration_url=f"http://{host}",
         )
-
-        if agent_version:
-            device_info["hw_version"] = agent_version
-
-        return device_info
 
     @property
     def available(self) -> bool:

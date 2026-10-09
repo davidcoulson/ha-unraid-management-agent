@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Home Assistant 2026.10 & Quality Scale Uplift** — modernized integration patterns for HA 2026.10+:
+  - Added local brand assets (`brand/icon.png` and `brand/logo.png`) adhering to HA 2026.3+ local brands feature and updated `quality_scale.yaml` (`brands: done`).
+  - Updated `DeviceInfo` construction with `hw_version` passed directly to the constructor.
+  - Aligned repairs flow return types with `RepairsFlowResult` for HA 2026.10 generic `FlowHandler` contracts.
+  - Typed `async_setup` with `ConfigType` and updated `BinarySensorDeviceClass` import location.
+  - Relaxed `websockets` dependency constraint in `manifest.json` (`<18.0.0`) for HA 2026.10 compatibility.
+- **Pydantic v2 ConfigDict Migration** — converted all 108+ API and event models in `custom_components/unraid_management_agent/api/` (`models.py`, `events.py`, `mcp.py`) from deprecated dict-style `model_config = {...}` to modern `ConfigDict(frozen=True, extra="allow")` with `populate_by_name=True`.
+- **Comprehensive Platform Test Suites** — expanded test coverage across the integration:
+  - Created test suite for `event` platform (`tests/test_event.py`) with 100% test coverage.
+  - Created test suite for `number` platform fan control (`tests/test_number.py`) with 100% test coverage.
+  - Added reconfigure flow error handling test reaching 100% coverage on `config_flow.py`.
+  - Added comprehensive tests for container and VM buttons, autostart switches, disk spin switches, and remote share switches, achieving 98% coverage on `button.py` and `switch.py`, and 95% on `binary_sensor.py`.
 - **PR governance workflow & HA standards enforcement** — added automated GitHub Actions workflow enforcing PR template completeness, Home Assistant Quality Scale compliance, static scanning for deprecated patterns (e.g., hass.data[DOMAIN], unit_of_measurement), mandatory CHANGELOG.md updates, issue linking checks, and bot/draft exemptions.
 - **Pull request template** — added `.github/PULL_REQUEST_TEMPLATE.md` with structured sections for description, changes made, Home Assistant Quality Scale verification, and quality checklist.
 
@@ -43,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reboot could wipe hundreds of entities (e.g., 449 → 55) that only came back after
   a manual integration reload.
   - Root cause 1: every per-endpoint fetch failure was silently converted to an empty
-    list, so while the server was down the coordinator reported a *successful* update
+    list, so while the server was down the coordinator reported a _successful_ update
     with empty data and stale entity cleanup removed every dynamic entity. The
     5-minute reboot grace period could not help because reboot detection (uptime
     decrease) only fires after the server is back.

@@ -26,7 +26,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 if TYPE_CHECKING:
     import aiohttp
@@ -65,7 +65,7 @@ class MCPContent(BaseModel):
     type: str = Field(..., description="Content type")
     text: str = Field(..., description="Content text")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class MCPTool(BaseModel):
@@ -85,7 +85,7 @@ class MCPTool(BaseModel):
         default_factory=dict, alias="inputSchema", description="JSON Schema for inputs"
     )
 
-    model_config = {"frozen": True, "extra": "allow", "populate_by_name": True}
+    model_config = ConfigDict(frozen=True, extra="allow", populate_by_name=True)
 
 
 class MCPResource(BaseModel):
@@ -107,7 +107,7 @@ class MCPResource(BaseModel):
         "application/json", alias="mimeType", description="MIME type"
     )
 
-    model_config = {"frozen": True, "extra": "allow", "populate_by_name": True}
+    model_config = ConfigDict(frozen=True, extra="allow", populate_by_name=True)
 
 
 class MCPResourceContent(BaseModel):
@@ -127,7 +127,7 @@ class MCPResourceContent(BaseModel):
     )
     text: str = Field(..., description="Resource content")
 
-    model_config = {"frozen": True, "extra": "allow", "populate_by_name": True}
+    model_config = ConfigDict(frozen=True, extra="allow", populate_by_name=True)
 
 
 class MCPPrompt(BaseModel):
@@ -143,7 +143,7 @@ class MCPPrompt(BaseModel):
     name: str = Field(..., description="Prompt name")
     description: str = Field("", description="Prompt description")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class MCPPromptMessage(BaseModel):
@@ -159,7 +159,7 @@ class MCPPromptMessage(BaseModel):
     role: str = Field(..., description="Message role")
     content: MCPContent = Field(..., description="Message content")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class MCPToolResult(BaseModel):
@@ -179,7 +179,7 @@ class MCPToolResult(BaseModel):
         False, alias="isError", description="Whether result is error"
     )
 
-    model_config = {"frozen": True, "extra": "allow", "populate_by_name": True}
+    model_config = ConfigDict(frozen=True, extra="allow", populate_by_name=True)
 
 
 class UnraidMCPClient:

@@ -24,7 +24,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from .constants import EventType
 from .models import (
@@ -62,7 +62,7 @@ class WebSocketEvent(BaseModel):
     event_type: EventType | None = None
     data: Any = None
 
-    model_config = {"frozen": True}
+    model_config = ConfigDict(frozen=True)
 
 
 class SystemUpdateEvent(WebSocketEvent):
@@ -433,4 +433,4 @@ def parse_event(data: Any) -> WebSocketEvent:
             return SourceStatusChangedEvent(data=data)
 
         case _:
-            return UnknownEvent(data=data)  # type: ignore[unreachable]
+            return UnknownEvent(data=data)

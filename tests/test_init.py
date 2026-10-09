@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 
 from custom_components.unraid_management_agent import (
     _async_migrate_legacy_entity_unique_ids,
@@ -388,3 +390,139 @@ async def test_migrate_legacy_gpu_unique_ids_skips_when_target_exists(
         )
 
     assert registry.async_update_entity.call_count == 0
+
+
+async def test_async_reload_entry(
+    hass: HomeAssistant,
+    mock_config_entry,
+) -> None:
+    """Test reloading entry."""
+    with patch.object(
+        hass.config_entries, "async_reload", new_callable=AsyncMock
+    ) as mock_reload:
+        from custom_components.unraid_management_agent import async_reload_entry
+
+        await async_reload_entry(hass, mock_config_entry)
+        mock_reload.assert_called_once_with(mock_config_entry.entry_id)
+
+
+async def test_duplicate_services_setup(hass: HomeAssistant) -> None:
+    """Test async_setup_services exits early when services already registered."""
+    from custom_components.unraid_management_agent import async_setup_services
+
+    with patch("homeassistant.core.ServiceRegistry.has_service", return_value=True):
+        with patch(
+            "homeassistant.core.ServiceRegistry.async_register"
+        ) as mock_register:
+            await async_setup_services(hass)
+            mock_register.assert_not_called()
+
+
+async def test_services_calls_and_actions(
+    hass: HomeAssistant,
+    mock_config_entry,
+    mock_async_unraid_client,
+    mock_websocket_client,
+) -> None:
+    """Test container and system services execution."""
+    with (
+        patch(
+            "custom_components.unraid_management_agent.UnraidClient",
+            return_value=mock_async_unraid_client,
+        ),
+        patch(
+            "custom_components.unraid_management_agent.UnraidWebSocketClient",
+            return_value=mock_websocket_client,
+        ),
+    ):
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    # container_start
+    await hass.services.async_call(
+        DOMAIN,
+        "container_start",
+        {"container_id": "test_container"},
+        blocking=True,
+    )
+    mock_async_unraid_client.start_container.assert_called_once_with("test_container")
+
+    # container_remove
+    await hass.services.async_call(
+        DOMAIN,
+        "container_remove",
+        {"container_id": "test_container", "remove_image": True},
+        blocking=True,
+    )
+    mock_async_unraid_client.remove_container.assert_called_once_with(
+        "test_container", remove_image=True
+    )
+
+    # container_set_autostart
+    await hass.services.async_call(
+        DOMAIN,
+        "container_set_autostart",
+        {"container_id": "test_container", "enabled": True},
+        blocking=True,
+    )
+    mock_async_unraid_client.set_container_autostart.assert_called_once_with(
+        "test_container", enabled=True
+    )
+
+    # vm_start
+    await hass.services.async_call(
+        DOMAIN,
+        "vm_start",
+        {"vm_id": "test_vm"},
+        blocking=True,
+    )
+    mock_async_unraid_client.start_vm.assert_called_once_with("test_vm")
+
+    # array_start
+    await hass.services.async_call(
+        DOMAIN,
+        "array_start",
+        {},
+        blocking=True,
+    )
+    mock_async_unraid_client.start_array.assert_called_once()
+
+
+async def test_services_error_handling(
+    hass: HomeAssistant,
+    mock_config_entry,
+    mock_async_unraid_client,
+    mock_websocket_client,
+) -> None:
+    """Test services handle exceptions by raising HomeAssistantError."""
+    with (
+        patch(
+            "custom_components.unraid_management_agent.UnraidClient",
+            return_value=mock_async_unraid_client,
+        ),
+        patch(
+            "custom_components.unraid_management_agent.UnraidWebSocketClient",
+            return_value=mock_websocket_client,
+        ),
+    ):
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    mock_async_unraid_client.start_container.side_effect = Exception("API error")
+    with pytest.raises(HomeAssistantError):
+        await hass.services.async_call(
+            DOMAIN,
+            "container_start",
+            {"container_id": "test_container"},
+            blocking=True,
+        )
+
+    # Test service call when no config entries exist
+    with patch.object(hass.config_entries, "async_entries", return_value=[]):
+        with pytest.raises(HomeAssistantError):
+            await hass.services.async_call(
+                DOMAIN,
+                "container_stop",
+                {"container_id": "test_container"},
+                blocking=True,
+            )
