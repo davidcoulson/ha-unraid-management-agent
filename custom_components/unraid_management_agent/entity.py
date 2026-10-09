@@ -7,11 +7,17 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from homeassistant.const import CONF_HOST
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.device_registry import ChildDeviceInfo, DeviceInfo
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, MANUFACTURER
+from .const import (
+    CONF_ENABLE_CONTAINER_DEVICES,
+    DEFAULT_ENABLE_CONTAINER_DEVICES,
+    DOMAIN,
+    MANUFACTURER,
+)
 
 if TYPE_CHECKING:
     from .coordinator import UnraidDataUpdateCoordinator
@@ -77,6 +83,42 @@ class UnraidBaseEntity(CoordinatorEntity["UnraidDataUpdateCoordinator"]):
         )
 
 
+def container_devices_enabled(coordinator: UnraidDataUpdateCoordinator) -> bool:
+    """Return True when containers are shown as separate devices (off by default)."""
+    return bool(
+        coordinator.config_entry.options.get(
+            CONF_ENABLE_CONTAINER_DEVICES, DEFAULT_ENABLE_CONTAINER_DEVICES
+        )
+    )
+
+
+def build_container_device_info(
+    coordinator: UnraidDataUpdateCoordinator,
+    container_name: str,
+) -> DeviceInfo | ChildDeviceInfo:
+    """
+    Build device info for a Docker container.
+
+    Containers are child devices of the Unraid server: they run on it and
+    there can be dozens, so they are grouped under the server instead of
+    being listed as separate devices. Keyed by name because container IDs
+    change whenever a container is recreated.
+    """
+    entry_id = coordinator.config_entry.entry_id
+    # The server device is registered during setup, before the platforms load.
+    server = dr.async_get(coordinator.hass).async_get_device_by_identifier(
+        (DOMAIN, entry_id), entry_id
+    )
+    if server is None:
+        # Keep the entity on the server device if it is somehow missing.
+        return DeviceInfo(identifiers={(DOMAIN, entry_id)})
+    return ChildDeviceInfo(
+        identifiers={(DOMAIN, f"{entry_id}_container_{container_name}")},
+        name=container_name,
+        parent_device_id=server.id,
+    )
+
+
 class UnraidEntity(UnraidBaseEntity):
     """Entity with description support for Unraid Management Agent."""
 
@@ -104,4 +146,6 @@ __all__ = [
     "UnraidBaseEntity",
     "UnraidEntity",
     "UnraidEntityDescription",
+    "build_container_device_info",
+    "container_devices_enabled",
 ]

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **PR governance workflow & HA standards enforcement** — added automated GitHub Actions workflow enforcing PR template completeness, Home Assistant Quality Scale compliance, static scanning for deprecated patterns (e.g., hass.data[DOMAIN], unit_of_measurement), mandatory CHANGELOG.md updates, issue linking checks, and bot/draft exemptions.
 - **Pull request template** — added `.github/PULL_REQUEST_TEMPLATE.md` with structured sections for description, changes made, Home Assistant Quality Scale verification, and quality checklist.
+- **Docker containers as separate devices (optional)** ([#142](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/142), closes [#147](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/147)): A new **Show Docker containers as separate devices** option (off by default) groups each container's run and autostart switches, restart button and metric sensors on a child device of the Unraid server, with short names (Running, Autostart, Restart, CPU, Memory, Memory usage, Restart count, Network RX/TX). Unique IDs are unchanged, so history is kept. When off, container entities stay on the server device exactly as before. Container devices left without entities are removed, and a device whose container is gone can be deleted from the UI. Requires Home Assistant 2026.9 or newer.
 
 ### Fixed
 

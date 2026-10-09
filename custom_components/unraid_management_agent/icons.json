@@ -178,6 +178,24 @@
       },
       "registration_state": {
         "default": "mdi:shield-key"
+      },
+      "container_device_cpu": {
+        "default": "mdi:chip"
+      },
+      "container_device_memory": {
+        "default": "mdi:memory"
+      },
+      "container_device_memory_percent": {
+        "default": "mdi:memory"
+      },
+      "container_device_restart_count": {
+        "default": "mdi:restart"
+      },
+      "container_device_network_rx_rate": {
+        "default": "mdi:download-network"
+      },
+      "container_device_network_tx_rate": {
+        "default": "mdi:upload-network"
       }
     },
     "binary_sensor": {
@@ -271,6 +289,20 @@
           "on": "mdi:harddisk",
           "off": "mdi:harddisk-remove"
         }
+      },
+      "container_device_running": {
+        "default": "mdi:docker",
+        "state": {
+          "on": "mdi:docker",
+          "off": "mdi:docker"
+        }
+      },
+      "container_device_autostart": {
+        "default": "mdi:rocket-launch",
+        "state": {
+          "on": "mdi:rocket-launch",
+          "off": "mdi:rocket-outline"
+        }
       }
     },
     "button": {
@@ -324,6 +356,9 @@
       },
       "vm_reset_button": {
         "default": "mdi:backup-restore"
+      },
+      "container_device_restart": {
+        "default": "mdi:restart"
       }
     }
   },

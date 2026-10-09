@@ -20,9 +20,11 @@ from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 
 from .api import UnraidClient, UnraidConnectionError
 from .const import (
+    CONF_ENABLE_CONTAINER_DEVICES,
     CONF_ENABLE_CONTAINER_UPDATES,
     CONF_ENABLE_FAN_CONTROL,
     CONF_ENABLE_WEBSOCKET,
+    DEFAULT_ENABLE_CONTAINER_DEVICES,
     DEFAULT_ENABLE_CONTAINER_UPDATES,
     DEFAULT_ENABLE_FAN_CONTROL,
     DEFAULT_ENABLE_WEBSOCKET,
@@ -243,6 +245,13 @@ class UnraidOptionsFlowHandler(OptionsFlowWithReload):
                         CONF_ENABLE_FAN_CONTROL,
                         default=self.config_entry.options.get(
                             CONF_ENABLE_FAN_CONTROL, DEFAULT_ENABLE_FAN_CONTROL
+                        ),
+                    ): cv.boolean,
+                    vol.Optional(
+                        CONF_ENABLE_CONTAINER_DEVICES,
+                        default=self.config_entry.options.get(
+                            CONF_ENABLE_CONTAINER_DEVICES,
+                            DEFAULT_ENABLE_CONTAINER_DEVICES,
                         ),
                     ): cv.boolean,
                     vol.Optional(

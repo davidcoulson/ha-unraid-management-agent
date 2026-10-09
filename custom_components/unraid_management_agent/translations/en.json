@@ -41,12 +41,14 @@
         "data": {
           "enable_websocket": "Enable WebSocket for real-time updates",
           "enable_fan_control": "Enable fan control entities",
-          "enable_container_updates": "Enable container update checks"
+          "enable_container_updates": "Enable container update checks",
+          "enable_container_devices": "Show Docker containers as separate devices"
         },
         "data_description": {
           "enable_websocket": "WebSocket provides instant updates instead of polling. When disabled, data is polled every 30 seconds.",
           "enable_fan_control": "Create fan speed sensor and control entities. Disable if your system does not have controllable fans.",
-          "enable_container_updates": "Periodically check Docker containers for available image updates. This may slow down polling and uses additional network requests."
+          "enable_container_updates": "Periodically check Docker containers for available image updates. This may slow down polling and uses additional network requests.",
+          "enable_container_devices": "Give each container its own device under the server, holding its switches, restart button and metric sensors with short names (Running, CPU, Memory). When off, container entities stay on the server device, named after the container."
         }
       }
     }
@@ -229,6 +231,24 @@
       },
       "remote_share_usage": {
         "name": "Remote Share {share_name} Usage"
+      },
+      "container_device_cpu": {
+        "name": "CPU"
+      },
+      "container_device_memory": {
+        "name": "Memory"
+      },
+      "container_device_memory_percent": {
+        "name": "Memory usage"
+      },
+      "container_device_restart_count": {
+        "name": "Restart count"
+      },
+      "container_device_network_rx_rate": {
+        "name": "Network RX"
+      },
+      "container_device_network_tx_rate": {
+        "name": "Network TX"
       }
     },
     "binary_sensor": {
@@ -290,6 +310,12 @@
       },
       "remote_share": {
         "name": "Remote Share {share_name}"
+      },
+      "container_device_running": {
+        "name": "Running"
+      },
+      "container_device_autostart": {
+        "name": "Autostart"
       }
     },
     "number": {
@@ -362,6 +388,9 @@
       },
       "system_reboot": {
         "name": "Reboot System"
+      },
+      "container_device_restart": {
+        "name": "Restart"
       }
     }
   },

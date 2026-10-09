@@ -22,7 +22,11 @@ from .const import (
     ATTR_VM_VCPUS,
     DOMAIN,
 )
-from .entity import UnraidBaseEntity
+from .entity import (
+    UnraidBaseEntity,
+    build_container_device_info,
+    container_devices_enabled,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -153,8 +157,14 @@ class UnraidContainerSwitch(UnraidBaseEntity, SwitchEntity):
         # Use unique key from container name for stable unique_id
         safe_name = _make_unique_key(container_name)
         super().__init__(coordinator, f"container_{safe_name}")
-        self._attr_translation_key = "container"
-        self._attr_translation_placeholders = {"name": container_name}
+        if container_devices_enabled(coordinator):
+            self._attr_translation_key = "container_device_running"
+            self._attr_device_info = build_container_device_info(
+                coordinator, container_name
+            )
+        else:
+            self._attr_translation_key = "container"
+            self._attr_translation_placeholders = {"name": container_name}
         self._optimistic_state: bool | None = None
 
     @callback
@@ -472,8 +482,14 @@ class UnraidContainerAutostartSwitch(UnraidBaseEntity, SwitchEntity):
         self._container_name = container_name
         safe_name = _make_unique_key(container_name)
         super().__init__(coordinator, f"container_{safe_name}_autostart")
-        self._attr_translation_key = "container_autostart"
-        self._attr_translation_placeholders = {"name": container_name}
+        if container_devices_enabled(coordinator):
+            self._attr_translation_key = "container_device_autostart"
+            self._attr_device_info = build_container_device_info(
+                coordinator, container_name
+            )
+        else:
+            self._attr_translation_key = "container_autostart"
+            self._attr_translation_placeholders = {"name": container_name}
         self._optimistic_state: bool | None = None
 
     @callback
