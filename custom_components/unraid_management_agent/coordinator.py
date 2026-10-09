@@ -201,6 +201,8 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
         self._pending_system_action_disconnected = False
         self._previous_uptime_seconds: int | None = None
         self._last_reboot_detected_at: datetime | None = None
+        # Last successfully fetched parity history and when it was fetched
+        self._parity_history: ParityHistory | None = None
         self._parity_history_fetched_at: datetime | None = None
 
         super().__init__(
@@ -417,21 +419,22 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
         """
         Return parity history, fetching it at most once per interval.
 
-        Between fetches the previous value is reused. A failed fetch also
-        keeps the previous value and is retried on the next poll.
+        Between fetches the last fetched value is reused, even if the poll
+        that fetched it failed. A failed fetch keeps the last value and is
+        retried on the next poll.
         """
-        previous = self.data.parity_history if self.data else None
         now = dt_util.utcnow()
         if (
-            self._parity_history_fetched_at is not None
-            and now - self._parity_history_fetched_at < _PARITY_HISTORY_INTERVAL
+            self._parity_history_fetched_at is None
+            or now - self._parity_history_fetched_at >= _PARITY_HISTORY_INTERVAL
         ):
-            return previous
-        history = await self._fetch("parity history", self.client.get_parity_history)
-        if history is None:
-            return previous
-        self._parity_history_fetched_at = now
-        return history
+            history = await self._fetch(
+                "parity history", self.client.get_parity_history
+            )
+            if history is not None:
+                self._parity_history = history
+                self._parity_history_fetched_at = now
+        return self._parity_history
 
     async def _async_update_data(self) -> UnraidData:
         """

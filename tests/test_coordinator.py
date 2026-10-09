@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterator
 from datetime import timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from freezegun.api import FrozenDateTimeFactory
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.update_coordinator import UpdateFailed
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.unraid_management_agent import (
@@ -3336,7 +3339,7 @@ class TestCoordinatorPollCadence:
         )
 
     @pytest.fixture(autouse=True)
-    def mock_repairs(self):
+    def mock_repairs(self) -> Iterator[None]:
         """Skip repair checks during updates."""
         with patch(
             "custom_components.unraid_management_agent.repairs.async_check_and_create_issues",
@@ -3351,7 +3354,7 @@ class TestCoordinatorPollCadence:
 
     @pytest.mark.asyncio
     async def test_parity_history_fetched_on_slow_cadence(
-        self, coordinator: UnraidDataUpdateCoordinator, freezer
+        self, coordinator: UnraidDataUpdateCoordinator, freezer: FrozenDateTimeFactory
     ) -> None:
         """Parity history is fetched on the first poll, then every interval."""
         get_history = coordinator.client.get_parity_history
@@ -3376,7 +3379,7 @@ class TestCoordinatorPollCadence:
 
     @pytest.mark.asyncio
     async def test_parity_history_failure_keeps_value_and_retries(
-        self, coordinator: UnraidDataUpdateCoordinator, freezer
+        self, coordinator: UnraidDataUpdateCoordinator, freezer: FrozenDateTimeFactory
     ) -> None:
         """A failed fetch keeps the last value and is retried on the next poll."""
         get_history = coordinator.client.get_parity_history
@@ -3394,6 +3397,26 @@ class TestCoordinatorPollCadence:
         data = await self._poll(coordinator)
         assert data.parity_history == _PARITY_HISTORY
         assert get_history.await_count == 3
+
+    @pytest.mark.asyncio
+    async def test_parity_history_kept_when_poll_fails(
+        self, coordinator: UnraidDataUpdateCoordinator, freezer: FrozenDateTimeFactory
+    ) -> None:
+        """History fetched by a poll that then fails is used by the next poll."""
+        get_history = coordinator.client.get_parity_history
+        coordinator.client.get_system_info.side_effect = Exception("down")
+        coordinator.client.get_array_status.side_effect = Exception("down")
+        with pytest.raises(UpdateFailed):
+            await self._poll(coordinator)
+        assert get_history.await_count == 1
+
+        # The server recovers within the interval: no refetch, history present
+        coordinator.client.get_system_info.side_effect = None
+        coordinator.client.get_array_status.side_effect = None
+        freezer.tick(timedelta(seconds=30))
+        data = await self._poll(coordinator)
+        assert data.parity_history == _PARITY_HISTORY
+        assert get_history.await_count == 1
 
     @pytest.mark.asyncio
     async def test_zfs_datasets_and_snapshots_keep_websocket_values(
