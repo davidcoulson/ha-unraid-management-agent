@@ -20,6 +20,10 @@ class UnraidConnectionError(UnraidAPIError):
     """Exception raised when unable to connect to the Unraid API."""
 
 
+class UnraidAuthenticationError(UnraidAPIError):
+    """Exception raised when the agent rejects the API token (HTTP 401)."""
+
+
 class UnraidTimeoutError(UnraidConnectionError):
     """
     Exception raised when a request to the Unraid API times out.

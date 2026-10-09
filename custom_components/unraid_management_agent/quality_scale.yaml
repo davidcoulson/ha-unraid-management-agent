@@ -90,8 +90,11 @@ rules:
     status: done
     comment: PARALLEL_UPDATES = 0 in all platform files
   reauthentication-flow:
-    status: exempt
-    comment: No authentication required (local API without credentials)
+    status: done
+    comment: >
+      Optional agent API token (bearer auth). A rejected token (HTTP 401) raises
+      ConfigEntryAuthFailed from setup and the coordinator, which starts the
+      reauth flow (async_step_reauth / reauth_confirm) to enter the current token.
   test-coverage:
     status: done
     comment: >
@@ -141,7 +144,7 @@ rules:
     comment: README includes concrete monitoring, automation, orchestration, and energy dashboard use cases
   dynamic-devices:
     status: done
-    comment: Remote share and unassigned device binary/switch entities added dynamically via coordinator listener when data arrives after initial setup
+    comment: Remote share and unassigned device binary/switch entities and hwmon temperature sensors added dynamically via coordinator listener when data arrives after initial setup
   entity-category:
     status: done
     comment: EntityCategory.DIAGNOSTIC used for appropriate sensors
@@ -150,7 +153,7 @@ rules:
     comment: Proper device classes (temperature, power, battery, duration, etc.)
   entity-disabled-by-default:
     status: done
-    comment: User scripts disabled by default with _attr_entity_registry_enabled_default
+    comment: User scripts and per-channel hwmon temperature sensors disabled by default with _attr_entity_registry_enabled_default
   entity-translations:
     status: done
     comment: Entity translations defined in strings.json entity section
@@ -171,12 +174,13 @@ rules:
     comment: >
       cleanup.py removes stale entity registry entries for all dynamic entity
       types (containers, VMs, disks, fans, GPUs, network interfaces, shares,
-      ZFS pools, remote shares, unassigned devices, user scripts) on every
-      successful coordinator update via an async_add_listener callback registered
-      in async_setup_entry. Guards on last_update_success prevent false removal
-      during transient server outages. VM and container devices left without
-      entities are removed, and async_remove_config_entry_device lets users
-      delete a device whose VM or container is gone.
+      ZFS pools, remote shares, unassigned devices, user scripts, hwmon
+      temperature channels) on every successful coordinator update via an
+      async_add_listener callback registered in async_setup_entry. Guards on
+      last_update_success prevent false removal during transient server outages.
+      VM and container devices left without entities are removed, and
+      async_remove_config_entry_device lets users delete a device whose VM or
+      container is gone.
 
   # Platinum
   async-dependency:
