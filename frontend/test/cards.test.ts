@@ -916,11 +916,18 @@ describe("Unraid Custom Cards", () => {
     expect(card.shadowRoot?.innerHTML).not.toContain("unavailable");
 
     // When throughput reports 'unknown' or 'unavailable', placeholder '--' is shown
-    if (hass.states["sensor.cube_network_eth1_rx_throughput"]) {
-      hass.states["sensor.cube_network_eth1_rx_throughput"].state = "unavailable";
-    }
-    card.requestUpdate();
+    card.hass = {
+      ...hass,
+      states: {
+        ...hass.states,
+        "sensor.cube_network_eth1_rx_throughput": {
+          ...hass.states["sensor.cube_network_eth1_rx_throughput"]!,
+          state: "unavailable",
+        },
+      },
+    };
     await card.updateComplete;
+    expect(card.shadowRoot?.innerHTML).toContain("--");
     expect(card.shadowRoot?.innerHTML).not.toContain("unavailable");
     document.body.removeChild(card);
   });

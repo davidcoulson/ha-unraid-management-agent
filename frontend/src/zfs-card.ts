@@ -66,10 +66,17 @@ export class UnraidZfsCard extends BaseUnraidCard {
     const corruptedEntities = this.getEntities("corrupted_files");
 
     const poolMap = new Map<string, ZFSPoolItem>();
+    const device = this.getActiveDevice();
+    const deviceId = device?.id;
 
     // Also search all states for zfs pools if not registered with translation_key
     if (this.hass?.states) {
       for (const [entityId, stateObj] of Object.entries(this.hass.states)) {
+        if (deviceId && this.hass.entities) {
+          const ent = this.hass.entities[entityId];
+          if (ent && ent.device_id && ent.device_id !== deviceId) continue;
+        }
+
         const match = entityId.match(/_zfs_([a-zA-Z0-9_-]+)_usage$/i);
         if (match && match[1]) {
           const poolName = match[1];
