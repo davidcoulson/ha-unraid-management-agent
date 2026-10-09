@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Callable, Coroutine
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -121,7 +121,7 @@ class UnraidRuntimeData:
     coordinator: UnraidDataUpdateCoordinator
     client: UnraidClient
     # Platforms forwarded at setup (fewer in read-only mode); unload uses the same list
-    platforms: list[Platform] = field(default_factory=list)
+    platforms: list[Platform]
 
 
 type UnraidConfigEntry = ConfigEntry[UnraidRuntimeData]
