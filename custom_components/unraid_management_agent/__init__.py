@@ -44,6 +44,7 @@ from .coordinator import (
     UnraidDataUpdateCoordinator,
     UnraidRuntimeData,
 )
+from .frontend import async_register_frontend
 
 # Service field constants
 ATTR_CONTAINER_ID: Final = "container_id"
@@ -310,6 +311,8 @@ def _async_remove_control_entities(
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up Unraid Management Agent integration."""
+    # Register dashboard card frontend
+    await async_register_frontend(hass)
     # Register services once at integration level (not per entry)
     await async_setup_services(hass)
     return True

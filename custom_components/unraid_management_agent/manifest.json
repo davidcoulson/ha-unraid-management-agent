@@ -1,6 +1,7 @@
 {
   "domain": "unraid_management_agent",
   "name": "Unraid Management Agent",
+  "after_dependencies": ["http", "frontend", "lovelace"],
   "codeowners": ["@ruaan-deysel"],
   "config_flow": true,
   "dependencies": [],
