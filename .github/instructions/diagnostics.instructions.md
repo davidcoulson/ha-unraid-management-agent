@@ -20,7 +20,6 @@ TO_REDACT = {
     "token",
 }
 
-
 async def async_get_config_entry_diagnostics(
     hass: HomeAssistant,
     entry: UnraidConfigEntry,

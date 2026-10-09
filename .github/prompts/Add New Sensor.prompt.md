@@ -35,20 +35,16 @@ If not provided, ask for:
 **Entity Description Pattern:**
 
 ```python
-(
-    UnraidSensorEntityDescription(
-        key="new_sensor_key",
-        translation_key="new_sensor_key",
-        device_class=SensorDeviceClass.TEMPERATURE,  # if applicable
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,  # if applicable
-        entity_category=None,  # or EntityCategory.DIAGNOSTIC
-        value_fn=lambda data: data.system_info.some_value if data.system_info else None,
-        extra_state_attributes_fn=lambda data: (
-            {"detail": data.system_info.detail} if data.system_info else {}
-        ),
-    ),
-)
+UnraidSensorEntityDescription(
+    key="new_sensor_key",
+    translation_key="new_sensor_key",
+    device_class=SensorDeviceClass.TEMPERATURE,  # if applicable
+    state_class=SensorStateClass.MEASUREMENT,
+    native_unit_of_measurement=UnitOfTemperature.CELSIUS,  # if applicable
+    entity_category=None,  # or EntityCategory.DIAGNOSTIC
+    value_fn=lambda data: data.system_info.some_value if data.system_info else None,
+    extra_state_attributes_fn=lambda data: {"detail": data.system_info.detail} if data.system_info else {},
+),
 ```
 
 **State Class Guidance:**

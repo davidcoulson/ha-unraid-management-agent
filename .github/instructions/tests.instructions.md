@@ -51,9 +51,7 @@ tests/
 **Integration test:**
 
 ```python
-@pytest.mark.usefixtures(
-    "mock_unraid_client_class", "mock_unraid_websocket_client_class"
-)
+@pytest.mark.usefixtures("mock_unraid_client_class", "mock_unraid_websocket_client_class")
 async def test_switch_setup(hass: HomeAssistant, mock_config_entry) -> None:
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()

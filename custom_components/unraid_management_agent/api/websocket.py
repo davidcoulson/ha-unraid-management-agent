@@ -141,7 +141,9 @@ class UnraidWebSocketClient:
                     ]
                     if not has_var_args and len(pos_params) == 0:
                         call_args = ()
-                except ValueError, TypeError:
+                except ValueError:
+                    pass
+                except TypeError:
                     pass
 
             if inspect.iscoroutinefunction(callback):
