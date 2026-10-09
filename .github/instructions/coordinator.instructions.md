@@ -27,7 +27,7 @@ applyTo: "custom_components/unraid_management_agent/coordinator.py"
 
 - `UnraidConnectionError` -> `raise UpdateFailed("message") from err`
 - `TimeoutError` and `aiohttp.ClientError` -> handled by coordinator base class
-- No auth errors (local API without authentication)
+- `UnraidAuthenticationError` (HTTP 401, agent API token rejected) -> re-raised as `ConfigEntryAuthFailed` to start reauth
 
 ## Pull vs. Push Architecture
 

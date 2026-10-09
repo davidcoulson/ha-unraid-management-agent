@@ -84,8 +84,11 @@ rules:
     status: done
     comment: PARALLEL_UPDATES = 0 in all platform files
   reauthentication-flow:
-    status: exempt
-    comment: No authentication required (local API without credentials)
+    status: done
+    comment: >
+      Optional agent API token (bearer auth). A rejected token (HTTP 401) raises
+      ConfigEntryAuthFailed from setup and the coordinator, which starts the
+      reauth flow (async_step_reauth / reauth_confirm) to enter the current token.
   test-coverage:
     status: done
     comment: >

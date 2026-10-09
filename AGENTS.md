@@ -288,14 +288,14 @@ All entities provide consistent device info via the base entity class (manufactu
 - **iot_class:** `local_push` - Local communication with push updates
 - **requirements:** `[]` unless a true external runtime dependency is added
 - **config_flow:** `true`
-- **No authentication** - local API without auth (exempt from reauth flow)
+- **Optional API token** - bearer auth when the agent has `API_TOKEN` set; rejected token starts the reauth flow
 
 ## Home Assistant Patterns
 
 **Config flow:**
 
 - Implement in `config_flow.py`
-- Support user setup, reconfigure, options flow
+- Support user setup, reconfigure, reauth, options flow
 - Always set unique_id for discovered entries
 
 **Service actions:**
@@ -337,7 +337,7 @@ All entities provide consistent device info via the base entity class (manufactu
 **Setup failure handling:**
 
 - `ConfigEntryNotReady` - Device offline/timeout, auto-retry
-- No `ConfigEntryAuthFailed` (no auth required)
+- `ConfigEntryAuthFailed` - API token rejected (HTTP 401, `UnraidAuthenticationError`), starts reauth
 
 **Diagnostics:**
 
@@ -530,12 +530,12 @@ The integration vendors its API client in `custom_components/unraid_management_a
 - **`UnraidClient`** - Async HTTP client for Unraid Management Agent REST API
 - **`UnraidWebSocketClient`** - WebSocket client with auto-reconnect
 - **Pydantic models** - `SystemInfo`, `ArrayStatus`, `DiskInfo`, `ContainerInfo`, `VMInfo`, `UPSInfo`, `GPUInfo`, `NetworkInterface`, `ShareInfo`, `ZFSPool`, `ZFSDataset`, etc.
-- **Error types** - `UnraidConnectionError`
+- **Error types** - `UnraidConnectionError`, `UnraidAuthenticationError`
 - **Event types** - `EventType` enum, `WebSocketEvent`, `parse_event()`
 
 ## Security Considerations
 
-- No authentication credentials stored (local API without auth)
+- Optional API token (`CONF_API_TOKEN`) stored in entry data, sent as `Authorization: Bearer` on REST and WebSocket, and redacted in diagnostics
 - Diagnostics data is redacted via `async_redact_data`
 - Uses Home Assistant's shared `aiohttp` session (no custom session management)
 - No sensitive data in logs (lazy logging with `%s` format)
