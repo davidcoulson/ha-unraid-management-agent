@@ -102,3 +102,10 @@ FIXES_IMPLEMENTATION_SUMMARY.md
 SENSOR_AUDIT.md
 .venv
 .local/venv
+
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+frontend/test-results/
+frontend/.vitest/
+playwright-report/

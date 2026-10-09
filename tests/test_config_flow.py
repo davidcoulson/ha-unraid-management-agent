@@ -404,6 +404,52 @@ async def test_reconfigure_flow_connection_error(
     assert result2["errors"]["base"] == ERROR_CANNOT_CONNECT
 
 
+async def test_reconfigure_flow_unexpected_exception(
+    hass: HomeAssistant,
+    mock_config_entry,
+    mock_async_unraid_client,
+    mock_websocket_client,
+) -> None:
+    """Test reconfigure flow with unexpected exception."""
+    with (
+        patch(
+            "custom_components.unraid_management_agent.UnraidClient",
+            return_value=mock_async_unraid_client,
+        ),
+        patch(
+            "custom_components.unraid_management_agent.UnraidWebSocketClient",
+            return_value=mock_websocket_client,
+        ),
+    ):
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    result = await mock_config_entry.start_reconfigure_flow(hass)
+
+    mock_client = MagicMock()
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+    mock_client.get_system_info = AsyncMock(
+        side_effect=RuntimeError("Unexpected error")
+    )
+
+    with patch(
+        "custom_components.unraid_management_agent.config_flow.UnraidClient",
+        return_value=mock_client,
+    ):
+        result2 = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input={
+                CONF_HOST: "192.168.1.200",
+                CONF_PORT: 8043,
+                CONF_ENABLE_WEBSOCKET: True,
+            },
+        )
+
+    assert result2["type"] == FlowResultType.FORM
+    assert result2["errors"]["base"] == ERROR_UNKNOWN
+
+
 async def test_validate_input_missing_hostname(
     hass: HomeAssistant, mock_setup_entry: AsyncMock
 ) -> None:
