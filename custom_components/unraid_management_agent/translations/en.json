@@ -41,12 +41,14 @@
         "data": {
           "enable_websocket": "Enable WebSocket for real-time updates",
           "enable_fan_control": "Enable fan control entities",
-          "enable_container_updates": "Enable container update checks"
+          "enable_container_updates": "Enable container update checks",
+          "enable_vm_devices": "Show virtual machines as separate devices"
         },
         "data_description": {
           "enable_websocket": "WebSocket provides instant updates instead of polling. When disabled, data is polled every 30 seconds.",
           "enable_fan_control": "Create fan speed sensor and control entities. Disable if your system does not have controllable fans.",
-          "enable_container_updates": "Periodically check Docker containers for available image updates. This may slow down polling and uses additional network requests."
+          "enable_container_updates": "Periodically check Docker containers for available image updates. This may slow down polling and uses additional network requests.",
+          "enable_vm_devices": "Give each VM its own device, linked to the server, with its power switch, control buttons and metric sensors (CPU, memory, network and disk rates). When off, VM switches and buttons stay on the server device and no VM sensors are created."
         }
       }
     }
@@ -229,6 +231,42 @@
       },
       "remote_share_usage": {
         "name": "Remote Share {share_name} Usage"
+      },
+      "vm_state": {
+        "name": "State"
+      },
+      "vm_cpu_usage": {
+        "name": "CPU usage"
+      },
+      "vm_vcpus": {
+        "name": "vCPUs"
+      },
+      "vm_memory_allocated": {
+        "name": "Memory allocated"
+      },
+      "vm_memory_used": {
+        "name": "Memory used"
+      },
+      "vm_network_rx_rate": {
+        "name": "Network receive rate"
+      },
+      "vm_network_tx_rate": {
+        "name": "Network send rate"
+      },
+      "vm_network_rx": {
+        "name": "Network received"
+      },
+      "vm_network_tx": {
+        "name": "Network sent"
+      },
+      "vm_disk_read_rate": {
+        "name": "Disk read rate"
+      },
+      "vm_disk_write_rate": {
+        "name": "Disk write rate"
+      },
+      "vm_disk_size": {
+        "name": "Disk size"
       }
     },
     "binary_sensor": {
@@ -282,14 +320,17 @@
       "container_autostart": {
         "name": "Container {name} Autostart"
       },
-      "vm": {
-        "name": "VM {name}"
+      "vm_power": {
+        "name": "Power"
       },
       "disk_spin": {
         "name": "Disk {disk_name} Spin"
       },
       "remote_share": {
         "name": "Remote Share {share_name}"
+      },
+      "vm": {
+        "name": "VM {name}"
       }
     },
     "number": {
@@ -362,6 +403,21 @@
       },
       "system_reboot": {
         "name": "Reboot System"
+      },
+      "vm_device_force_stop": {
+        "name": "Force stop"
+      },
+      "vm_device_restart": {
+        "name": "Restart"
+      },
+      "vm_device_pause": {
+        "name": "Pause"
+      },
+      "vm_device_resume": {
+        "name": "Resume"
+      },
+      "vm_device_reset": {
+        "name": "Reset"
       }
     }
   },
