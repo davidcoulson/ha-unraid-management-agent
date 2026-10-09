@@ -157,6 +157,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CI test & Codecov workflow** — updated `.github/workflows/test.yml` to target `custom_components/unraid_management_agent`, provision dependencies via `uv pip install -e ".[dev,test]"`, upload coverage reports to Codecov via `codecov/codecov-action@v5`, and added concurrency cancellation.
 - **Codecov configuration** — updated `.codecov.yml` with `auto` coverage targets and clean comment formatting.
 - **WebSocket disconnect log rate limiting** ([#138](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/138), fixes [#135](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/135)): Rate-limited disconnect logs to warn once per session with close metadata, demoting repeated disconnects to `DEBUG` until successfully reconnected.
+- **Documentation refresh** — updated `README.md` with comprehensive guides for the bundled Lovelace custom dashboard cards suite, all newly merged entity platforms (update, SAS storage topology, alert rules, system services, ZFS scrub/errors), and configuration options.
 - **Brand assets refreshed from Home Assistant brands** — replaced local `brand/icon.png` and `brand/logo.png` with the official assets from `home-assistant/brands` and added high-resolution variants `brand/icon@2x.png` and `brand/logo@2x.png`.
 
 ## [2026.6.5] — 2026-06-17
