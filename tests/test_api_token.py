@@ -21,6 +21,7 @@ from custom_components.unraid_management_agent.api import (
     UnraidAPIError,
     UnraidAuthenticationError,
     UnraidClient,
+    UnraidConnectionError,
     UnraidWebSocketClient,
 )
 from custom_components.unraid_management_agent.const import DOMAIN
@@ -31,17 +32,28 @@ BASE = "http://192.0.2.10:8043/api/v1"
 FLOW_CLIENT = "custom_components.unraid_management_agent.config_flow.UnraidClient"
 
 
-def _flow_client(*, reject: bool = False) -> MagicMock:
+def _flow_client(*, reject: bool = False, error: Exception | None = None) -> MagicMock:
     client = MagicMock()
     client.__aenter__ = AsyncMock(return_value=client)
     client.__aexit__ = AsyncMock(return_value=None)
     if reject:
-        client.get_system_info = AsyncMock(
-            side_effect=UnraidAuthenticationError("Unauthorized", status_code=401)
-        )
+        error = UnraidAuthenticationError("Unauthorized", status_code=401)
+    if error is not None:
+        client.get_system_info = AsyncMock(side_effect=error)
     else:
         client.get_system_info = AsyncMock(return_value=mock_system_info())
     return client
+
+
+def _token_entry(hass: HomeAssistant) -> MockConfigEntry:
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={**MOCK_CONFIG, CONF_API_TOKEN: "old"},
+        options=MOCK_OPTIONS,
+        unique_id=f"{MOCK_CONFIG[CONF_HOST]}:{MOCK_CONFIG[CONF_PORT]}",
+    )
+    entry.add_to_hass(hass)
+    return entry
 
 
 async def test_client_sends_bearer_token(
@@ -138,13 +150,7 @@ async def test_user_flow_stores_token(
 
 async def test_reauth_flow(hass: HomeAssistant, mock_setup_entry: AsyncMock) -> None:
     """Reauth asks for the current token, rejects a wrong one, then stores it."""
-    entry = MockConfigEntry(
-        domain=DOMAIN,
-        data={**MOCK_CONFIG, CONF_API_TOKEN: "old"},
-        options=MOCK_OPTIONS,
-        unique_id=f"{MOCK_CONFIG[CONF_HOST]}:{MOCK_CONFIG[CONF_PORT]}",
-    )
-    entry.add_to_hass(hass)
+    entry = _token_entry(hass)
 
     result = await entry.start_reauth_flow(hass)
     assert result["type"] == FlowResultType.FORM
@@ -165,6 +171,46 @@ async def test_reauth_flow(hass: HomeAssistant, mock_setup_entry: AsyncMock) -> 
     assert result["reason"] == "reauth_successful"
     assert entry.data[CONF_API_TOKEN] == "new"
     assert entry.data[CONF_HOST] == MOCK_CONFIG[CONF_HOST]
+
+
+@pytest.mark.parametrize(
+    ("error", "expected"),
+    [
+        (TimeoutError("timed out"), "timeout"),
+        (UnraidConnectionError("refused"), "cannot_connect"),
+        (RuntimeError("boom"), "unknown"),
+    ],
+)
+async def test_reauth_flow_connection_errors(
+    hass: HomeAssistant, error: Exception, expected: str
+) -> None:
+    """Reauth reports agent connection problems and keeps the old token."""
+    entry = _token_entry(hass)
+    result = await entry.start_reauth_flow(hass)
+
+    with patch(FLOW_CLIENT, return_value=_flow_client(error=error)):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_API_TOKEN: "new"}
+        )
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "reauth_confirm"
+    assert result["errors"] == {"base": expected}
+    assert entry.data[CONF_API_TOKEN] == "old"
+
+
+async def test_reconfigure_flow_invalid_token(hass: HomeAssistant) -> None:
+    """Reconfigure reports a rejected token and keeps the old one."""
+    entry = _token_entry(hass)
+    result = await entry.start_reconfigure_flow(hass)
+
+    with patch(FLOW_CLIENT, return_value=_flow_client(reject=True)):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {**MOCK_CONFIG, CONF_API_TOKEN: "wrong"}
+        )
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "reconfigure"
+    assert result["errors"] == {"base": "invalid_auth"}
+    assert entry.data[CONF_API_TOKEN] == "old"
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
