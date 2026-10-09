@@ -45,8 +45,28 @@ def _coerce_int(v: Any) -> Any:
     return v
 
 
+def _coerce_corrupted_files(v: Any) -> list[str] | int | None:
+    """
+    Normalise a ZFS pool's ``corrupted_files`` value.
+
+    The agent sends the paths listed by ``zpool status -v`` under "Permanent
+    errors have been detected in the following files" (and omits the field when
+    there are none). A bare number is kept as a count. Anything else becomes
+    None so one unexpected value cannot fail validation of the whole pool list.
+    """
+    if isinstance(v, list | tuple):
+        return [str(path) for path in v if path is not None]
+    count = _coerce_int(v)
+    if isinstance(count, int) and not isinstance(count, bool):
+        return count
+    return None
+
+
 CoercedFloat = Annotated[float | None, BeforeValidator(_coerce_float)]
 CoercedInt = Annotated[int | None, BeforeValidator(_coerce_int)]
+CorruptedFiles = Annotated[
+    list[str] | int | None, BeforeValidator(_coerce_corrupted_files)
+]
 
 
 class FanInfo(BaseModel):
@@ -1839,8 +1859,12 @@ class ZFSPool(BaseModel):
     )
     free_bytes: CoercedInt = Field(None, description="Free space in bytes")
     health: str | None = Field(None, description="Pool health")
-    corrupted_files: CoercedInt = Field(
-        None, description="Number of corrupted files reported by zpool status"
+    corrupted_files: CorruptedFiles = Field(
+        None,
+        description=(
+            "Files with permanent errors listed by `zpool status -v` "
+            "(a bare count is also accepted)"
+        ),
     )
     is_boot_pool: bool | None = Field(
         None, description="Whether this pool is the Unraid boot pool"
@@ -1866,6 +1890,38 @@ class ZFSPool(BaseModel):
         if self.size_bytes and self.used_bytes is not None and self.size_bytes > 0:
             return round((self.used_bytes / self.size_bytes) * 100, 1)
         return None
+
+    @property
+    def corrupted_file_count(self) -> int | None:
+        """
+        Return the number of files with permanent errors.
+
+        Returns:
+            The length of the reported path list, a bare count as-is, or None
+            when the agent did not report the field.
+
+        Example:
+            >>> ZFSPool(corrupted_files=["<metadata>:<0x1a>"]).corrupted_file_count
+            1
+
+        """
+        if isinstance(self.corrupted_files, list):
+            return len(self.corrupted_files)
+        return self.corrupted_files
+
+    @property
+    def corrupted_file_paths(self) -> list[str]:
+        """
+        Return the reported paths of files with permanent errors.
+
+        Returns:
+            The path list, or an empty list when only a count (or nothing)
+            was reported.
+
+        """
+        if isinstance(self.corrupted_files, list):
+            return self.corrupted_files
+        return []
 
 
 class ZFSDataset(BaseModel):

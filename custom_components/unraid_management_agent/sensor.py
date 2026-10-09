@@ -2702,12 +2702,20 @@ class UnraidZFSPoolHealthSensor(UnraidZFSPoolSensorBase):
         return attrs
 
 
+# Paths exposed in the corrupted files sensor's "files" attribute. A damaged
+# pool can list thousands of objects, so only the first few are shown; the
+# state is the full count. The attribute is also left out of the recorder
+# (see _unrecorded_attributes), whose limit for a state's attributes is 16 KiB.
+ZFS_CORRUPTED_FILES_ATTR_LIMIT = 10
+
+
 class UnraidZFSPoolCorruptedFilesSensor(UnraidZFSPoolSensorBase):
     """ZFS pool corrupted files sensor."""
 
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_icon = "mdi:file-alert"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _unrecorded_attributes = frozenset({"files"})
 
     def __init__(
         self,
@@ -2725,7 +2733,16 @@ class UnraidZFSPoolCorruptedFilesSensor(UnraidZFSPoolSensorBase):
         pool = self._get_pool()
         if not pool:
             return None
-        return getattr(pool, "corrupted_files", None)
+        count: int | None = pool.corrupted_file_count
+        return count
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return the first reported corrupted file paths."""
+        pool = self._get_pool()
+        if not pool or not pool.corrupted_file_paths:
+            return {}
+        return {"files": pool.corrupted_file_paths[:ZFS_CORRUPTED_FILES_ATTR_LIMIT]}
 
 
 class UnraidZFSArcConfiguredMaxSensor(UnraidBaseEntity, SensorEntity):
