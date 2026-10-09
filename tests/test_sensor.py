@@ -129,8 +129,18 @@ async def test_multi_gpu_sensors_created(
         "sensor.unraid_test_gpu_nvidia_geforce_rtx_3080_temperature",
         "sensor.unraid_test_gpu_nvidia_geforce_rtx_3080_power",
         "sensor.unraid_test_gpu_nvidia_geforce_rtx_3080_energy",
+        "sensor.unraid_test_gpu_nvidia_geforce_rtx_3080_vram_used",
+        "sensor.unraid_test_gpu_nvidia_geforce_rtx_3080_vram_total",
+        "sensor.unraid_test_gpu_nvidia_geforce_rtx_3080_vram_usage",
     ):
         assert hass.states.get(entity_id) is not None
+
+    # The Intel iGPU reports no VRAM, so it gets no VRAM sensors
+    for suffix in ("vram_used", "vram_total", "vram_usage"):
+        assert (
+            hass.states.get(f"sensor.unraid_test_gpu_intel_uhd_graphics_630_{suffix}")
+            is None
+        )
 
 
 @pytest.mark.usefixtures(

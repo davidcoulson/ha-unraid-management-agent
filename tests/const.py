@@ -217,6 +217,9 @@ def mock_gpu_list() -> list[MagicMock]:
     intel_gpu.gpu_temperature = 50
     intel_gpu.cpu_temperature_celsius = 50
     intel_gpu.power_draw_watts = 21.2
+    # The agent reports 0 (not null) VRAM for iGPUs that share system RAM
+    intel_gpu.memory_total_bytes = 0
+    intel_gpu.memory_used_bytes = 0
 
     nvidia_gpu = MagicMock()
     nvidia_gpu.index = 1
@@ -228,6 +231,8 @@ def mock_gpu_list() -> list[MagicMock]:
     nvidia_gpu.gpu_temperature = 65
     nvidia_gpu.cpu_temperature_celsius = 50
     nvidia_gpu.power_draw_watts = 220.5
+    nvidia_gpu.memory_total_bytes = 10737418240  # 10 GiB
+    nvidia_gpu.memory_used_bytes = 2147483648  # 2 GiB
 
     return [intel_gpu, nvidia_gpu]
 
