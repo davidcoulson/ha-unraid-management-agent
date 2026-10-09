@@ -24,11 +24,13 @@ from .const import (
     CONF_ENABLE_FAN_CONTROL,
     CONF_ENABLE_VM_DEVICES,
     CONF_ENABLE_WEBSOCKET,
+    CONF_READ_ONLY,
     DEFAULT_ENABLE_CONTAINER_UPDATES,
     DEFAULT_ENABLE_FAN_CONTROL,
     DEFAULT_ENABLE_VM_DEVICES,
     DEFAULT_ENABLE_WEBSOCKET,
     DEFAULT_PORT,
+    DEFAULT_READ_ONLY,
     DOMAIN,
     ERROR_CANNOT_CONNECT,
     ERROR_TIMEOUT,
@@ -258,6 +260,12 @@ class UnraidOptionsFlowHandler(OptionsFlowWithReload):
                         CONF_ENABLE_VM_DEVICES,
                         default=self.config_entry.options.get(
                             CONF_ENABLE_VM_DEVICES, DEFAULT_ENABLE_VM_DEVICES
+                        ),
+                    ): cv.boolean,
+                    vol.Optional(
+                        CONF_READ_ONLY,
+                        default=self.config_entry.options.get(
+                            CONF_READ_ONLY, DEFAULT_READ_ONLY
                         ),
                     ): cv.boolean,
                 }
