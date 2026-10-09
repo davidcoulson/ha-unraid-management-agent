@@ -1,0 +1,2070 @@
+var e=globalThis,t=e.ShadowRoot&&(e.ShadyCSS===void 0||e.ShadyCSS.nativeShadow)&&`adoptedStyleSheets`in Document.prototype&&`replace`in CSSStyleSheet.prototype,n=Symbol(),r=new WeakMap,i=class{constructor(e,t,r){if(this._$cssResult$=!0,r!==n)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=e,this.t=t}get styleSheet(){let e=this.o,n=this.t;if(t&&e===void 0){let t=n!==void 0&&n.length===1;t&&(e=r.get(n)),e===void 0&&((this.o=e=new CSSStyleSheet).replaceSync(this.cssText),t&&r.set(n,e))}return e}toString(){return this.cssText}},a=e=>new i(typeof e==`string`?e:e+``,void 0,n),o=(e,...t)=>new i(e.length===1?e[0]:t.reduce((t,n,r)=>t+(e=>{if(!0===e._$cssResult$)return e.cssText;if(typeof e==`number`)return e;throw Error(`Value passed to 'css' function must be a 'css' function result: `+e+`. Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.`)})(n)+e[r+1],e[0]),e,n),s=(n,r)=>{if(t)n.adoptedStyleSheets=r.map(e=>e instanceof CSSStyleSheet?e:e.styleSheet);else for(let t of r){let r=document.createElement(`style`),i=e.litNonce;i!==void 0&&r.setAttribute(`nonce`,i),r.textContent=t.cssText,n.appendChild(r)}},c=t?e=>e:e=>e instanceof CSSStyleSheet?(e=>{let t=``;for(let n of e.cssRules)t+=n.cssText;return a(t)})(e):e,{is:l,defineProperty:u,getOwnPropertyDescriptor:d,getOwnPropertyNames:f,getOwnPropertySymbols:p,getPrototypeOf:m}=Object,h=globalThis,g=h.trustedTypes,_=g?g.emptyScript:``,v=h.reactiveElementPolyfillSupport,y=(e,t)=>e,b={toAttribute(e,t){switch(t){case Boolean:e=e?_:null;break;case Object:case Array:e=e==null?e:JSON.stringify(e)}return e},fromAttribute(e,t){let n=e;switch(t){case Boolean:n=e!==null;break;case Number:n=e===null?null:Number(e);break;case Object:case Array:try{n=JSON.parse(e)}catch{n=null}}return n}},x=(e,t)=>!l(e,t),S={attribute:!0,type:String,converter:b,reflect:!1,useDefault:!1,hasChanged:x};Symbol.metadata??=Symbol(`metadata`),h.litPropertyMetadata??=new WeakMap;var C=class extends HTMLElement{static addInitializer(e){this._$Ei(),(this.l??=[]).push(e)}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(e,t=S){if(t.state&&(t.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(e)&&((t=Object.create(t)).wrapped=!0),this.elementProperties.set(e,t),!t.noAccessor){let n=Symbol(),r=this.getPropertyDescriptor(e,n,t);r!==void 0&&u(this.prototype,e,r)}}static getPropertyDescriptor(e,t,n){let{get:r,set:i}=d(this.prototype,e)??{get(){return this[t]},set(e){this[t]=e}};return{get:r,set(t){let a=r?.call(this);i?.call(this,t),this.requestUpdate(e,a,n)},configurable:!0,enumerable:!0}}static getPropertyOptions(e){return this.elementProperties.get(e)??S}static _$Ei(){if(this.hasOwnProperty(y(`elementProperties`)))return;let e=m(this);e.finalize(),e.l!==void 0&&(this.l=[...e.l]),this.elementProperties=new Map(e.elementProperties)}static finalize(){if(this.hasOwnProperty(y(`finalized`)))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(y(`properties`))){let e=this.properties,t=[...f(e),...p(e)];for(let n of t)this.createProperty(n,e[n])}let e=this[Symbol.metadata];if(e!==null){let t=litPropertyMetadata.get(e);if(t!==void 0)for(let[e,n]of t)this.elementProperties.set(e,n)}this._$Eh=new Map;for(let[e,t]of this.elementProperties){let n=this._$Eu(e,t);n!==void 0&&this._$Eh.set(n,e)}this.elementStyles=this.finalizeStyles(this.styles)}static finalizeStyles(e){let t=[];if(Array.isArray(e)){let n=new Set(e.flat(1/0).reverse());for(let e of n)t.unshift(c(e))}else e!==void 0&&t.push(c(e));return t}static _$Eu(e,t){let n=t.attribute;return!1===n?void 0:typeof n==`string`?n:typeof e==`string`?e.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev()}_$Ev(){this._$ES=new Promise(e=>this.enableUpdating=e),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach(e=>e(this))}addController(e){(this._$EO??=new Set).add(e),this.renderRoot!==void 0&&this.isConnected&&e.hostConnected?.()}removeController(e){this._$EO?.delete(e)}_$E_(){let e=new Map,t=this.constructor.elementProperties;for(let n of t.keys())this.hasOwnProperty(n)&&(e.set(n,this[n]),delete this[n]);e.size>0&&(this._$Ep=e)}createRenderRoot(){let e=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return s(e,this.constructor.elementStyles),e}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach(e=>e.hostConnected?.())}enableUpdating(e){}disconnectedCallback(){this._$EO?.forEach(e=>e.hostDisconnected?.())}attributeChangedCallback(e,t,n){this._$AK(e,n)}_$ET(e,t){let n=this.constructor.elementProperties.get(e),r=this.constructor._$Eu(e,n);if(r!==void 0&&!0===n.reflect){let i=(n.converter?.toAttribute===void 0?b:n.converter).toAttribute(t,n.type);this._$Em=e,i==null?this.removeAttribute(r):this.setAttribute(r,i),this._$Em=null}}_$AK(e,t){let n=this.constructor,r=n._$Eh.get(e);if(r!==void 0&&this._$Em!==r){let e=n.getPropertyOptions(r),i=typeof e.converter==`function`?{fromAttribute:e.converter}:e.converter?.fromAttribute===void 0?b:e.converter;this._$Em=r;let a=i.fromAttribute(t,e.type);this[r]=a??this._$Ej?.get(r)??a,this._$Em=null}}requestUpdate(e,t,n,r=!1,i){if(e!==void 0){let a=this.constructor;if(!1===r&&(i=this[e]),n??=a.getPropertyOptions(e),!((n.hasChanged??x)(i,t)||n.useDefault&&n.reflect&&i===this._$Ej?.get(e)&&!this.hasAttribute(a._$Eu(e,n))))return;this.C(e,t,n)}!1===this.isUpdatePending&&(this._$ES=this._$EP())}C(e,t,{useDefault:n,reflect:r,wrapped:i},a){n&&!(this._$Ej??=new Map).has(e)&&(this._$Ej.set(e,a??t??this[e]),!0!==i||a!==void 0)||(this._$AL.has(e)||(this.hasUpdated||n||(t=void 0),this._$AL.set(e,t)),!0===r&&this._$Em!==e&&(this._$Eq??=new Set).add(e))}async _$EP(){this.isUpdatePending=!0;try{await this._$ES}catch(e){Promise.reject(e)}let e=this.scheduleUpdate();return e!=null&&await e,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(let[e,t]of this._$Ep)this[e]=t;this._$Ep=void 0}let e=this.constructor.elementProperties;if(e.size>0)for(let[t,n]of e){let{wrapped:e}=n,r=this[t];!0!==e||this._$AL.has(t)||r===void 0||this.C(t,void 0,n,r)}}let e=!1,t=this._$AL;try{e=this.shouldUpdate(t),e?(this.willUpdate(t),this._$EO?.forEach(e=>e.hostUpdate?.()),this.update(t)):this._$EM()}catch(t){throw e=!1,this._$EM(),t}e&&this._$AE(t)}willUpdate(e){}_$AE(e){this._$EO?.forEach(e=>e.hostUpdated?.()),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(e)),this.updated(e)}_$EM(){this._$AL=new Map,this.isUpdatePending=!1}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(e){return!0}update(e){this._$Eq&&=this._$Eq.forEach(e=>this._$ET(e,this[e])),this._$EM()}updated(e){}firstUpdated(e){}};C.elementStyles=[],C.shadowRootOptions={mode:`open`},C[y(`elementProperties`)]=new Map,C[y(`finalized`)]=new Map,v?.({ReactiveElement:C}),(h.reactiveElementVersions??=[]).push(`2.1.2`);var w=globalThis,T=e=>e,E=w.trustedTypes,D=E?E.createPolicy(`lit-html`,{createHTML:e=>e}):void 0,O=`$lit$`,k=`lit$${Math.random().toFixed(9).slice(2)}$`,ee=`?`+k,A=`<${ee}>`,j=document,M=()=>j.createComment(``),N=e=>e===null||typeof e!=`object`&&typeof e!=`function`,P=Array.isArray,te=e=>P(e)||typeof e?.[Symbol.iterator]==`function`,ne="[ \t\n\f\r]",F=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,re=/-->/g,ie=/>/g,I=RegExp(`>|${ne}(?:([^\\s"'>=/]+)(${ne}*=${ne}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,`g`),ae=/'/g,oe=/"/g,se=/^(?:script|style|textarea|title)$/i,L=(e=>(t,...n)=>({_$litType$:e,strings:t,values:n}))(1),R=Symbol.for(`lit-noChange`),z=Symbol.for(`lit-nothing`),ce=new WeakMap,B=j.createTreeWalker(j,129);function le(e,t){if(!P(e)||!e.hasOwnProperty(`raw`))throw Error(`invalid template strings array`);return D===void 0?t:D.createHTML(t)}var ue=(e,t)=>{let n=e.length-1,r=[],i,a=t===2?`<svg>`:t===3?`<math>`:``,o=F;for(let t=0;t<n;t++){let n=e[t],s,c,l=-1,u=0;for(;u<n.length&&(o.lastIndex=u,c=o.exec(n),c!==null);)u=o.lastIndex,o===F?c[1]===`!--`?o=re:c[1]===void 0?c[2]===void 0?c[3]!==void 0&&(o=I):(se.test(c[2])&&(i=RegExp(`</`+c[2],`g`)),o=I):o=ie:o===I?c[0]===`>`?(o=i??F,l=-1):c[1]===void 0?l=-2:(l=o.lastIndex-c[2].length,s=c[1],o=c[3]===void 0?I:c[3]===`"`?oe:ae):o===oe||o===ae?o=I:o===re||o===ie?o=F:(o=I,i=void 0);let d=o===I&&e[t+1].startsWith(`/>`)?` `:``;a+=o===F?n+A:l>=0?(r.push(s),n.slice(0,l)+O+n.slice(l)+k+d):n+k+(l===-2?t:d)}return[le(e,a+(e[n]||`<?>`)+(t===2?`</svg>`:t===3?`</math>`:``)),r]},de=class e{constructor({strings:t,_$litType$:n},r){let i;this.parts=[];let a=0,o=0,s=t.length-1,c=this.parts,[l,u]=ue(t,n);if(this.el=e.createElement(l,r),B.currentNode=this.el.content,n===2||n===3){let e=this.el.content.firstChild;e.replaceWith(...e.childNodes)}for(;(i=B.nextNode())!==null&&c.length<s;){if(i.nodeType===1){if(i.hasAttributes())for(let e of i.getAttributeNames())if(e.endsWith(O)){let t=u[o++],n=i.getAttribute(e).split(k),r=/([.?@])?(.*)/.exec(t);c.push({type:1,index:a,name:r[2],strings:n,ctor:r[1]===`.`?me:r[1]===`?`?he:r[1]===`@`?ge:H}),i.removeAttribute(e)}else e.startsWith(k)&&(c.push({type:6,index:a}),i.removeAttribute(e));if(se.test(i.tagName)){let e=i.textContent.split(k),t=e.length-1;if(t>0){i.textContent=E?E.emptyScript:``;for(let n=0;n<t;n++)i.append(e[n],M()),B.nextNode(),c.push({type:2,index:++a});i.append(e[t],M())}}}else if(i.nodeType===8){if(i.data===ee)c.push({type:2,index:a});else{let e=-1;for(;(e=i.data.indexOf(k,e+1))!==-1;)c.push({type:7,index:a}),e+=k.length-1}}a++}}static createElement(e,t){let n=j.createElement(`template`);return n.innerHTML=e,n}};function V(e,t,n=e,r){if(t===R)return t;let i=r===void 0?n._$Cl:n._$Co?.[r],a=N(t)?void 0:t._$litDirective$;return i?.constructor!==a&&(i?._$AO?.(!1),a===void 0?i=void 0:(i=new a(e),i._$AT(e,n,r)),r===void 0?n._$Cl=i:(n._$Co??=[])[r]=i),i!==void 0&&(t=V(e,i._$AS(e,t.values),i,r)),t}var fe=class{constructor(e,t){this._$AV=[],this._$AN=void 0,this._$AD=e,this._$AM=t}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(e){let{el:{content:t},parts:n}=this._$AD,r=(e?.creationScope??j).importNode(t,!0);B.currentNode=r;let i=B.nextNode(),a=0,o=0,s=n[0];for(;s!==void 0;){if(a===s.index){let t;s.type===2?t=new pe(i,i.nextSibling,this,e):s.type===1?t=new s.ctor(i,s.name,s.strings,this,e):s.type===6&&(t=new _e(i,this,e)),this._$AV.push(t),s=n[++o]}a!==s?.index&&(i=B.nextNode(),a++)}return B.currentNode=j,r}p(e){let t=0;for(let n of this._$AV)n!==void 0&&(n.strings===void 0?n._$AI(e[t]):(n._$AI(e,n,t),t+=n.strings.length-2)),t++}},pe=class e{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(e,t,n,r){this.type=2,this._$AH=z,this._$AN=void 0,this._$AA=e,this._$AB=t,this._$AM=n,this.options=r,this._$Cv=r?.isConnected??!0}get parentNode(){let e=this._$AA.parentNode,t=this._$AM;return t!==void 0&&e?.nodeType===11&&(e=t.parentNode),e}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(e,t=this){e=V(this,e,t),N(e)?e===z||e==null||e===``?(this._$AH!==z&&this._$AR(),this._$AH=z):e!==this._$AH&&e!==R&&this._(e):e._$litType$===void 0?e.nodeType===void 0?te(e)?this.k(e):this._(e):this.T(e):this.$(e)}O(e){return this._$AA.parentNode.insertBefore(e,this._$AB)}T(e){this._$AH!==e&&(this._$AR(),this._$AH=this.O(e))}_(e){this._$AH!==z&&N(this._$AH)?this._$AA.nextSibling.data=e:this.T(j.createTextNode(e)),this._$AH=e}$(e){let{values:t,_$litType$:n}=e,r=typeof n==`number`?this._$AC(e):(n.el===void 0&&(n.el=de.createElement(le(n.h,n.h[0]),this.options)),n);if(this._$AH?._$AD===r)this._$AH.p(t);else{let e=new fe(r,this),n=e.u(this.options);e.p(t),this.T(n),this._$AH=e}}_$AC(e){let t=ce.get(e.strings);return t===void 0&&ce.set(e.strings,t=new de(e)),t}k(t){P(this._$AH)||(this._$AH=[],this._$AR());let n=this._$AH,r,i=0;for(let a of t)i===n.length?n.push(r=new e(this.O(M()),this.O(M()),this,this.options)):r=n[i],r._$AI(a),i++;i<n.length&&(this._$AR(r&&r._$AB.nextSibling,i),n.length=i)}_$AR(e=this._$AA.nextSibling,t){for(this._$AP?.(!1,!0,t);e!==this._$AB;){let t=T(e).nextSibling;T(e).remove(),e=t}}setConnected(e){this._$AM===void 0&&(this._$Cv=e,this._$AP?.(e))}},H=class{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(e,t,n,r,i){this.type=1,this._$AH=z,this._$AN=void 0,this.element=e,this.name=t,this._$AM=r,this.options=i,n.length>2||n[0]!==``||n[1]!==``?(this._$AH=Array(n.length-1).fill(new String),this.strings=n):this._$AH=z}_$AI(e,t=this,n,r){let i=this.strings,a=!1;if(i===void 0)e=V(this,e,t,0),a=!N(e)||e!==this._$AH&&e!==R,a&&(this._$AH=e);else{let r=e,o,s;for(e=i[0],o=0;o<i.length-1;o++)s=V(this,r[n+o],t,o),s===R&&(s=this._$AH[o]),a||=!N(s)||s!==this._$AH[o],s===z?e=z:e!==z&&(e+=(s??``)+i[o+1]),this._$AH[o]=s}a&&!r&&this.j(e)}j(e){e===z?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,e??``)}},me=class extends H{constructor(){super(...arguments),this.type=3}j(e){this.element[this.name]=e===z?void 0:e}},he=class extends H{constructor(){super(...arguments),this.type=4}j(e){this.element.toggleAttribute(this.name,!!e&&e!==z)}},ge=class extends H{constructor(e,t,n,r,i){super(e,t,n,r,i),this.type=5}_$AI(e,t=this){if((e=V(this,e,t,0)??z)===R)return;let n=this._$AH,r=e===z&&n!==z||e.capture!==n.capture||e.once!==n.once||e.passive!==n.passive,i=e!==z&&(n===z||r);r&&this.element.removeEventListener(this.name,this,n),i&&this.element.addEventListener(this.name,this,e),this._$AH=e}handleEvent(e){typeof this._$AH==`function`?this._$AH.call(this.options?.host??this.element,e):this._$AH.handleEvent(e)}},_e=class{constructor(e,t,n){this.element=e,this.type=6,this._$AN=void 0,this._$AM=t,this.options=n}get _$AU(){return this._$AM._$AU}_$AI(e){V(this,e)}},ve=w.litHtmlPolyfillSupport;ve?.(de,pe),(w.litHtmlVersions??=[]).push(`3.3.3`);var ye=(e,t,n)=>{let r=n?.renderBefore??t,i=r._$litPart$;if(i===void 0){let e=n?.renderBefore??null;r._$litPart$=i=new pe(t.insertBefore(M(),e),e,void 0,n??{})}return i._$AI(e),i},be=globalThis,U=class extends C{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0}createRenderRoot(){let e=super.createRenderRoot();return this.renderOptions.renderBefore??=e.firstChild,e}update(e){let t=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(e),this._$Do=ye(t,this.renderRoot,this.renderOptions)}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0)}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1)}render(){return R}};U._$litElement$=!0,U.finalized=!0,be.litElementHydrateSupport?.({LitElement:U});var xe=be.litElementPolyfillSupport;xe?.({LitElement:U}),(be.litElementVersions??=[]).push(`4.2.2`);var Se=`unraid-server-card`,Ce=`unraid-server-card-editor`,we=`unraid-storage-card`,Te=`unraid-storage-card-editor`,Ee=`unraid-docker-card`,De=`unraid-docker-card-editor`,Oe=`unraid-ups-card`,ke=`unraid-ups-card-editor`,Ae=`unraid-vm-card`,je=`unraid-vm-card-editor`,Me=`unraid-shares-card`,Ne=`unraid-shares-card-editor`,Pe=`unraid-network-card`,Fe=`unraid-network-card-editor`,Ie=`unraid-zfs-card`,Le=`unraid-zfs-card-editor`,Re=`unraid-fans-card`,ze=`unraid-fans-card-editor`,Be=`unraid-gpu-card`,Ve=`unraid-gpu-card-editor`,He=`unraid-notifications-card`,Ue=`unraid-notifications-card-editor`,We=`unraid-maintenance-card`,Ge=`unraid-maintenance-card-editor`,Ke=`unraid-remote-shares-card`,qe=`unraid-remote-shares-card-editor`,Je=`unraid-unassigned-devices-card`,Ye=`unraid-unassigned-devices-card-editor`,Xe=`unraid-dashboard-card`,Ze=`unraid-dashboard-card-editor`,Qe=[o`
+  :host {
+    --unraid-primary: var(--primary-color, #f25f22);
+    --unraid-accent: #f25f22;
+    --unraid-online: var(--success-color, #2ecc71);
+    --unraid-warning: var(--warning-color, #f39c12);
+    --unraid-error: var(--error-color, #e74c3c);
+    --unraid-standby: var(--disabled-text-color, #7f8c8d);
+    --unraid-info: var(--info-color, #3498db);
+    --unraid-card-bg: var(--ha-card-background, var(--card-background-color, #1c1c20));
+    --unraid-border: var(--ha-card-border-color, var(--divider-color, rgba(255, 255, 255, 0.08)));
+    --unraid-radius: var(--ha-card-border-radius, 12px);
+    --unraid-text: var(--primary-text-color, #e1e1e6);
+    --unraid-subtext: var(--secondary-text-color, #8a8a93);
+  }
+`,o`
+    :host {
+      display: block;
+      height: 100%;
+      box-sizing: border-box;
+    }
+
+    ha-card {
+      height: 100%;
+      box-sizing: border-box;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow: hidden;
+      background: var(--unraid-card-bg);
+      border: 1px solid var(--unraid-border);
+      border-radius: var(--unraid-radius);
+      color: var(--unraid-text);
+      font-family: var(--ha-card-font-family, inherit);
+    }
+
+    :host([embedded]) ha-card {
+      border: none;
+      box-shadow: none;
+      background: transparent;
+      padding: 0;
+    }
+
+    .icon {
+      display: inline-block;
+      vertical-align: middle;
+      fill: currentColor;
+      flex-shrink: 0;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .header-main {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .header-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--unraid-accent) 15%, transparent);
+      color: var(--unraid-accent);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    .header-titles {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .header-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--unraid-text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      line-height: 1.25;
+    }
+
+    .header-subtitle {
+      font-size: 0.78rem;
+      color: var(--unraid-subtext);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    /* Badges / Chips */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .badge-online {
+      background: color-mix(in srgb, var(--unraid-online) 15%, transparent);
+      color: var(--unraid-online);
+      border: 1px solid color-mix(in srgb, var(--unraid-online) 25%, transparent);
+    }
+
+    .badge-warning {
+      background: color-mix(in srgb, var(--unraid-warning) 15%, transparent);
+      color: var(--unraid-warning);
+      border: 1px solid color-mix(in srgb, var(--unraid-warning) 25%, transparent);
+    }
+
+    .badge-error {
+      background: color-mix(in srgb, var(--unraid-error) 15%, transparent);
+      color: var(--unraid-error);
+      border: 1px solid color-mix(in srgb, var(--unraid-error) 25%, transparent);
+    }
+
+    .badge-standby {
+      background: color-mix(in srgb, var(--unraid-standby) 15%, transparent);
+      color: var(--unraid-standby);
+      border: 1px solid color-mix(in srgb, var(--unraid-standby) 25%, transparent);
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* Conic Ring Gauges */
+    .rings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(85px, 1fr));
+      gap: 8px;
+    }
+
+    .ring-card {
+      background: color-mix(in srgb, var(--unraid-text) 3%, transparent);
+      border: 1px solid var(--unraid-border);
+      border-radius: 10px;
+      padding: 10px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 6px;
+    }
+
+    .ring-card[role="button"]:focus-visible {
+      outline: 2px solid var(--unraid-primary);
+      outline-offset: 2px;
+    }
+
+    .ring-gauge {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      position: relative;
+      display: grid;
+      place-items: center;
+      background: conic-gradient(
+        var(--ring-color, var(--unraid-primary)) calc(var(--pct, 0) * 1%),
+        color-mix(in srgb, var(--unraid-text) 8%, transparent) 0
+      );
+      flex-shrink: 0;
+    }
+
+    .ring-gauge::after {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      background: var(--unraid-card-bg);
+    }
+
+    .ring-content {
+      position: relative;
+      z-index: 2;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--unraid-text);
+    }
+
+    .ring-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--unraid-text);
+      line-height: 1.1;
+    }
+
+    .ring-subtext {
+      font-size: 0.68rem;
+      color: var(--unraid-subtext);
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+
+    /* Progress Bars */
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: color-mix(in srgb, var(--unraid-text) 10%, transparent);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--fill-color, var(--unraid-accent));
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    /* Lists / Tables */
+    .item-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .list-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--unraid-text) 3%, transparent);
+      border: 1px solid var(--unraid-border);
+      gap: 10px;
+      font-size: 0.8rem;
+      transition: border-color 0.2s ease;
+    }
+
+    .list-row:hover {
+      border-color: color-mix(in srgb, var(--unraid-accent) 40%, transparent);
+    }
+
+    .row-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .row-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    /* Disk / Storage Item Lists */
+    .disk-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .disk-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--unraid-text) 3%, transparent);
+      border: 1px solid var(--unraid-border);
+      gap: 10px;
+      font-size: 0.8rem;
+      transition: border-color 0.2s ease;
+    }
+
+    .disk-row:hover {
+      border-color: color-mix(in srgb, var(--unraid-accent) 40%, transparent);
+    }
+
+    .disk-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .disk-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      flex-shrink: 0;
+      background: color-mix(in srgb, var(--unraid-text) 6%, transparent);
+      color: var(--unraid-subtext);
+    }
+
+    .disk-icon.disk-online {
+      background: color-mix(in srgb, var(--unraid-online) 12%, transparent);
+      color: var(--unraid-online);
+    }
+
+    .disk-icon.disk-standby {
+      background: color-mix(in srgb, var(--unraid-standby) 12%, transparent);
+      color: var(--unraid-standby);
+    }
+
+    .disk-icon.disk-warning {
+      background: color-mix(in srgb, var(--unraid-warning) 12%, transparent);
+      color: var(--unraid-warning);
+    }
+
+    .disk-info {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      gap: 2px;
+    }
+
+    .disk-name {
+      font-weight: 600;
+      color: var(--unraid-text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .disk-subtext {
+      font-size: 0.72rem;
+      color: var(--unraid-subtext);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .disk-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .disk-temp {
+      font-weight: 600;
+      font-size: 0.78rem;
+      color: var(--unraid-text);
+    }
+
+    /* Empty States */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px 16px;
+      gap: 8px;
+      color: var(--unraid-subtext);
+    }
+
+    .empty-title {
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: var(--unraid-text);
+    }
+
+    .empty-subtext {
+      font-size: 0.75rem;
+      max-width: 320px;
+      line-height: 1.3;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border: 1px solid var(--unraid-border);
+      background: color-mix(in srgb, var(--unraid-text) 6%, transparent);
+      color: var(--unraid-text);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      background: color-mix(in srgb, var(--unraid-text) 12%, transparent);
+    }
+
+    .btn-primary {
+      background: var(--unraid-accent);
+      color: white;
+      border-color: transparent;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.1);
+    }
+
+    .btn-icon {
+      padding: 6px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--unraid-subtext);
+      cursor: pointer;
+    }
+
+    .btn-icon:hover {
+      background: color-mix(in srgb, var(--unraid-text) 8%, transparent);
+      color: var(--unraid-text);
+    }
+
+    /* Docker Containers Grid View (like Unraid GUI) */
+    .container-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 8px;
+    }
+
+    .container-tile {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--unraid-text) 4%, transparent);
+      border: 1px solid var(--unraid-border);
+      cursor: pointer;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .container-tile:hover {
+      border-color: var(--unraid-accent);
+    }
+
+    .tile-name {
+      font-size: 0.76rem;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .status-dot.online {
+      background: var(--unraid-online);
+    }
+
+    .status-dot.offline {
+      background: var(--unraid-error);
+      border-radius: 2px;
+    }
+
+    /* Section divider */
+    .divider {
+      height: 1px;
+      background: var(--unraid-border);
+      width: 100%;
+      margin: 4px 0;
+    }
+
+    /* Details Rows */
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 8px;
+      font-size: 0.75rem;
+    }
+
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .detail-item[role="button"]:focus-visible {
+      outline: 2px solid var(--unraid-primary);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    .detail-label {
+      color: var(--unraid-subtext);
+      font-size: 0.68rem;
+    }
+
+    .detail-val {
+      font-weight: 600;
+      color: var(--unraid-text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Tab strip for unified dashboard card */
+    .tab-strip {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--unraid-border);
+      padding-bottom: 6px;
+    }
+
+    .tab-btn {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      background: transparent;
+      border: none;
+      color: var(--unraid-subtext);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--unraid-text);
+      background: color-mix(in srgb, var(--unraid-text) 5%, transparent);
+    }
+
+    .tab-btn.active {
+      background: color-mix(in srgb, var(--unraid-accent) 15%, transparent);
+      color: var(--unraid-accent);
+    }
+  `];function W(e,t,n,r){let i=new CustomEvent(t,{bubbles:r?.bubbles??!0,cancelable:!!r?.cancelable,composed:r?.composed??!0,detail:n});return e.dispatchEvent(i),i}var G=`M13,13H11V7H13M13,17H11V15H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z`,$e=`M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M14,21A2,2 0 0,1 12,23A2,2 0 0,1 10,21`,et=`M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z`,tt=`M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z`,K=`M12,3C7.58,3 4,4.79 4,7C4,9.21 7.58,11 12,11C16.42,11 20,9.21 20,7C20,4.79 16.42,3 12,3M4,9V12C4,14.21 7.58,16 12,16C16.42,16 20,14.21 20,12V9C20,11.21 16.42,13 12,13C7.58,13 4,11.21 4,9M4,14V17C4,19.21 7.58,21 12,21C16.42,21 20,19.21 20,17V14C20,16.21 16.42,18 12,18C7.58,18 4,16.21 4,14Z`,nt=`M21.81 10.25C21.75 10.21 21.25 9.82 20.17 9.82C19.89 9.82 19.61 9.85 19.33 9.9C19.12 8.5 17.95 7.79 17.9 7.76L17.61 7.59L17.43 7.86C17.19 8.22 17 8.63 16.92 9.05C16.72 9.85 16.84 10.61 17.25 11.26C16.76 11.54 15.96 11.61 15.79 11.61H2.62C2.28 11.61 2 11.89 2 12.24C2 13.39 2.18 14.54 2.58 15.62C3.03 16.81 3.71 17.69 4.58 18.23C5.56 18.83 7.17 19.17 9 19.17C9.79 19.17 10.61 19.1 11.42 18.95C12.54 18.75 13.62 18.36 14.61 17.79C15.43 17.32 16.16 16.72 16.78 16C17.83 14.83 18.45 13.5 18.9 12.35H19.09C20.23 12.35 20.94 11.89 21.33 11.5C21.59 11.26 21.78 10.97 21.92 10.63L22 10.39L21.81 10.25M3.85 11.24H5.61C5.69 11.24 5.77 11.17 5.77 11.08V9.5C5.77 9.42 5.7 9.34 5.61 9.34H3.85C3.76 9.34 3.69 9.41 3.69 9.5V11.08C3.7 11.17 3.76 11.24 3.85 11.24M6.28 11.24H8.04C8.12 11.24 8.2 11.17 8.2 11.08V9.5C8.2 9.42 8.13 9.34 8.04 9.34H6.28C6.19 9.34 6.12 9.41 6.12 9.5V11.08C6.13 11.17 6.19 11.24 6.28 11.24M8.75 11.24H10.5C10.6 11.24 10.67 11.17 10.67 11.08V9.5C10.67 9.42 10.61 9.34 10.5 9.34H8.75C8.67 9.34 8.6 9.41 8.6 9.5V11.08C8.6 11.17 8.66 11.24 8.75 11.24M11.19 11.24H12.96C13.04 11.24 13.11 11.17 13.11 11.08V9.5C13.11 9.42 13.05 9.34 12.96 9.34H11.19C11.11 9.34 11.04 9.41 11.04 9.5V11.08C11.04 11.17 11.11 11.24 11.19 11.24M6.28 9H8.04C8.12 9 8.2 8.91 8.2 8.82V7.25C8.2 7.16 8.13 7.09 8.04 7.09H6.28C6.19 7.09 6.12 7.15 6.12 7.25V8.82C6.13 8.91 6.19 9 6.28 9M8.75 9H10.5C10.6 9 10.67 8.91 10.67 8.82V7.25C10.67 7.16 10.61 7.09 10.5 7.09H8.75C8.67 7.09 8.6 7.15 8.6 7.25V8.82C8.6 8.91 8.66 9 8.75 9M11.19 9H12.96C13.04 9 13.11 8.91 13.11 8.82V7.25C13.11 7.16 13.04 7.09 12.96 7.09H11.19C11.11 7.09 11.04 7.15 11.04 7.25V8.82C11.04 8.91 11.11 9 11.19 9M11.19 6.72H12.96C13.04 6.72 13.11 6.65 13.11 6.56V5C13.11 4.9 13.04 4.83 12.96 4.83H11.19C11.11 4.83 11.04 4.89 11.04 5V6.56C11.04 6.64 11.11 6.72 11.19 6.72M13.65 11.24H15.41C15.5 11.24 15.57 11.17 15.57 11.08V9.5C15.57 9.42 15.5 9.34 15.41 9.34H13.65C13.57 9.34 13.5 9.41 13.5 9.5V11.08C13.5 11.17 13.57 11.24 13.65 11.24`,rt=`M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z`,it=`M7,15H9V18H11V15H13V18H15V15H17V18H19V9H15V6H9V9H5V18H7V15M4.38,3H19.63C20.94,3 22,4.06 22,5.38V19.63A2.37,2.37 0 0,1 19.63,22H4.38C3.06,22 2,20.94 2,19.63V5.38C2,4.06 3.06,3 4.38,3Z`,q=`M2,7V8.5H3V17H4.5V7C3.7,7 2.8,7 2,7M6,7V7L6,16H7V17H14V16H22V7H6M17.5,9A2.5,2.5 0 0,1 20,11.5A2.5,2.5 0 0,1 17.5,14A2.5,2.5 0 0,1 15,11.5A2.5,2.5 0 0,1 17.5,9Z`,at=`M12,11A1,1 0 0,0 11,12A1,1 0 0,0 12,13A1,1 0 0,0 13,12A1,1 0 0,0 12,11M12.5,2C17,2 17.11,5.57 14.75,6.75C13.76,7.24 13.32,8.29 13.13,9.22C13.61,9.42 14.03,9.73 14.35,10.13C18.05,8.13 22.03,8.92 22.03,12.5C22.03,17 18.46,17.1 17.28,14.73C16.78,13.74 15.72,13.3 14.79,13.11C14.59,13.59 14.28,14 13.88,14.34C15.87,18.03 15.08,22 11.5,22C7,22 6.91,18.42 9.27,17.24C10.25,16.75 10.69,15.71 10.89,14.79C10.4,14.59 9.97,14.27 9.65,13.87C5.96,15.85 2,15.07 2,11.5C2,7 5.56,6.89 6.74,9.26C7.24,10.25 8.29,10.68 9.22,10.87C9.41,10.39 9.73,9.97 10.14,9.65C8.15,5.96 8.94,2 12.5,2Z`,ot=`M7,2V13H10V22L17,10H13L17,2H7Z`,st=`M10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6H12L10,4Z`,ct=`M6,2H18A2,2 0 0,1 20,4V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V4A2,2 0 0,1 6,2M12,4A6,6 0 0,0 6,10C6,13.31 8.69,16 12.1,16L11.22,13.77C10.95,13.29 11.11,12.68 11.59,12.4L12.45,11.9C12.93,11.63 13.54,11.79 13.82,12.27L15.74,14.69C17.12,13.59 18,11.9 18,10A6,6 0 0,0 12,4M12,9A1,1 0 0,1 13,10A1,1 0 0,1 12,11A1,1 0 0,1 11,10A1,1 0 0,1 12,9M7,18A1,1 0 0,0 6,19A1,1 0 0,0 7,20A1,1 0 0,0 8,19A1,1 0 0,0 7,18M12.09,13.27L14.58,19.58L17.17,18.08L12.95,12.77L12.09,13.27Z`,lt=`M12 9A1 1 0 1 0 13 10A1 1 0 0 0 12 9M12 9A1 1 0 1 0 13 10A1 1 0 0 0 12 9M18 2H6A2 2 0 0 0 4 4V13.09A5.47 5.47 0 0 1 5 13A5.71 5.71 0 0 1 7 13.36A6 6 0 1 1 15.71 14.69L13.79 12.27A1 1 0 0 0 12.42 11.9L11.56 12.4A1 1 0 0 0 11.19 13.77L12.1 16A6.12 6.12 0 0 1 10 15.62A6 6 0 0 1 10.19 22H18A2 2 0 0 0 20 20V4A2 2 0 0 0 18 2M14.58 19.58L12.09 13.27L12.95 12.77L17.17 18.08M12 11A1 1 0 1 0 11 10A1 1 0 0 0 12 11M9 20H6V23H4V20H1V18H4V15H6V18H9Z`,ut=`M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z`,dt=`M4,1C2.89,1 2,1.89 2,3V7C2,8.11 2.89,9 4,9H1V11H13V9H10C11.11,9 12,8.11 12,7V3C12,1.89 11.11,1 10,1H4M4,3H10V7H4V3M3,13V18L3,20H10V18H5V13H3M14,13C12.89,13 12,13.89 12,15V19C12,20.11 12.89,21 14,21H11V23H23V21H20C21.11,21 22,20.11 22,19V15C22,13.89 21.11,13 20,13H14M14,15H20V19H14V15Z`,ft=`M21,16H3V4H21M21,2H3C1.89,2 1,2.89 1,4V16A2,2 0 0,0 3,18H10V20H8V22H16V20H14V18H21A2,2 0 0,0 23,16V4C23,2.89 22.1,2 21,2Z`,pt=`M14,19H18V5H14M6,19H10V5H6V19Z`,mt=`M8,5.14V19.14L19,12.14L8,5.14Z`,ht=`M16.56,5.44L15.11,6.89C16.84,7.94 18,9.83 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12C6,9.83 7.16,7.94 8.88,6.88L7.44,5.44C5.36,6.88 4,9.28 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12C20,9.28 18.64,6.88 16.56,5.44M13,3H11V13H13`,gt=`M12,4C14.1,4 16.1,4.8 17.6,6.3C20.7,9.4 20.7,14.5 17.6,17.6C15.8,19.5 13.3,20.2 10.9,19.9L11.4,17.9C13.1,18.1 14.9,17.5 16.2,16.2C18.5,13.9 18.5,10.1 16.2,7.7C15.1,6.6 13.5,6 12,6V10.6L7,5.6L12,0.6V4M6.3,17.6C3.7,15 3.3,11 5.1,7.9L6.6,9.4C5.5,11.6 5.9,14.4 7.8,16.2C8.3,16.7 8.9,17.1 9.6,17.4L9,19.4C8,19 7.1,18.4 6.3,17.6Z`,_t=`M4,1H20A1,1 0 0,1 21,2V6A1,1 0 0,1 20,7H4A1,1 0 0,1 3,6V2A1,1 0 0,1 4,1M4,9H20A1,1 0 0,1 21,10V14A1,1 0 0,1 20,15H4A1,1 0 0,1 3,14V10A1,1 0 0,1 4,9M4,17H20A1,1 0 0,1 21,18V22A1,1 0 0,1 20,23H4A1,1 0 0,1 3,22V18A1,1 0 0,1 4,17M9,5H10V3H9V5M9,13H10V11H9V13M9,21H10V19H9V21M5,3V5H7V3H5M5,11V13H7V11H5M5,19V21H7V19H5Z`,vt=`M13,19H14A1,1 0 0,1 15,20H22V22H15A1,1 0 0,1 14,23H10A1,1 0 0,1 9,22H2V20H9A1,1 0 0,1 10,19H11V17H4A1,1 0 0,1 3,16V12A1,1 0 0,1 4,11H20A1,1 0 0,1 21,12V16A1,1 0 0,1 20,17H13V19M4,3H20A1,1 0 0,1 21,4V8A1,1 0 0,1 20,9H4A1,1 0 0,1 3,8V4A1,1 0 0,1 4,3M9,7H10V5H9V7M9,15H10V13H9V15M5,5V7H7V5H5M5,13V15H7V13H5Z`,yt=`M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5M11,7H13V13H11M11,15H13V17H11`,bt=`M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1Z`,xt=`M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z`,St=`M8 15C8.55 15 9 15.45 9 16C9 16.55 8.55 17 8 17C7.45 17 7 16.55 7 16C7 15.45 7.45 15 8 15M15.07 4.69L16.5 6.1L15.07 7.5L13.66 6.1L15.07 4.69M17.9 7.5L19.31 8.93L17.9 10.34L16.5 8.93L17.9 7.5M8 13C6.34 13 5 14.34 5 16C5 17.66 6.34 19 8 19C9.66 19 11 17.66 11 16C11 14.34 9.66 13 8 13M9.77 4.33L10.5 5.08L14.29 1.29C14.47 1.11 14.72 1 15 1C15.28 1 15.53 1.11 15.71 1.29L22.78 8.36L22.78 8.37C22.92 8.54 23 8.76 23 9C23 9.3 22.87 9.57 22.66 9.76L22.66 9.76L18.93 13.5L19.67 14.23L12.95 20.95C11.68 22.22 9.93 23 8 23C4.13 23 1 19.87 1 16C1 14.07 1.78 12.32 3.05 11.05L9.77 4.33M20.59 9L15 3.41L11.93 6.5L17.5 12.08L20.59 9Z`,Ct=`M3,11H11V3H3M3,21H11V13H3M13,21H21V13H13M13,3V11H21V3`,wt=`M9,5V9H21V5M9,19H21V15H9M9,14H21V10H9M4,9H8V5H4M4,19H8V15H4M4,14H8V10H4V14Z`,Tt=`M22.7,19L13.6,9.9C14.5,7.6 14,4.9 12.1,3C10.1,1 7.1,0.6 4.7,1.7L9,6L6,9L1.6,4.7C0.4,7.1 0.9,10.1 2.9,12.1C4.8,14 7.5,14.5 9.8,13.6L18.9,22.7C19.3,23.1 19.9,23.1 20.3,22.7L22.6,20.4C23.1,20 23.1,19.3 22.7,19Z`;function J(e,t=20,n=`icon`){return L`
+    <svg
+      class="${n}"
+      style="width: ${t}px; height: ${t}px;"
+      viewBox="0 0 24 24"
+    >
+      <path d="${e}" fill="currentColor"></path>
+    </svg>
+  `}var Y=class extends U{static styles=Qe;static editorTag=``;static async getConfigElement(){return document.createElement(this.editorTag)}static properties={hass:{attribute:!1},config:{attribute:!1}};constructor(){super(),this.config={type:``}}willUpdate(e){super.willUpdate(e),e.has(`config`)&&(this.config.embedded?this.setAttribute(`embedded`,``):this.removeAttribute(`embedded`))}setConfig(e){if(!e||typeof e.type!=`string`)throw Error(`Invalid card configuration`);this.config={...e},this.config.embedded?this.setAttribute(`embedded`,``):this.removeAttribute(`embedded`)}getCardSize(){return 4}getGridOptions(){return{columns:6,rows:4,min_columns:3,min_rows:3}}getUnraidDevices(){return this.hass?.devices?Object.values(this.hass.devices).filter(e=>e.identifiers?.some(([e])=>e===`unraid_management_agent`||e===`unraid`)):[]}getActiveDevice(){let e=this.getUnraidDevices();if(e.length!==0){if(this.config.server){let t=e.find(e=>e.id===this.config.server||e.name?.toLowerCase()===this.config.server?.toLowerCase()||e.name_by_user?.toLowerCase()===this.config.server?.toLowerCase());if(t)return t}return e[0]}}getEntity(e,t){if(!this.hass?.states)return;let n=this.getActiveDevice(),r=n?.id;if(this.hass.entities&&r){for(let n of Object.values(this.hass.entities))if(n.device_id===r&&n.translation_key===e&&(!t||n.entity_id.startsWith(`${t}.`))){let e=this.hass.states[n.entity_id];if(e)return e}}return Object.values(this.hass.states).find(r=>{if(t&&!r.entity_id.startsWith(`${t}.`))return!1;if(this.hass?.entities){let e=this.hass.entities[r.entity_id];if(e&&e.platform!==`unraid_management_agent`&&e.platform!==`unraid`)return!1}let i=r.entity_id.split(`.`)[1]||``,a=i.endsWith(`_${e}`)||i===e||e===`uptime`&&(i.endsWith(`_up_since`)||i===`up_since`)||e===`network_interface_ip`&&i.includes(`_network_`)&&(i.endsWith(`_ip`)||i.endsWith(`_ip_address`));if(n?.name){let e=n.name.toLowerCase().replace(/[^a-z0-9]/g,`_`);return a&&i.includes(e)}return a})}getNetworkInterfaces(){if(!this.hass?.states)return[];let e=this.getActiveDevice(),t=e?.name?e.name.toLowerCase().replace(/[^a-z0-9]/g,`_`):void 0,n=new Map;for(let[e,r]of Object.entries(this.hass.states)){if(t&&!e.includes(t))continue;let i=e.match(/_network_([a-zA-Z0-9_-]+)_(inbound(?:_throughput)?|outbound(?:_throughput)?|rx(?:_throughput)?|tx(?:_throughput)?|speed|ip|ip_address|link)$/i);if(!i||!i[1]||!i[2])continue;let a=i[1],o=i[2].toLowerCase();n.has(a)||n.set(a,{name:a,displayName:a.toUpperCase()});let s=n.get(a);o.startsWith(`inbound`)||o.startsWith(`rx`)?s.rx=r:o.startsWith(`outbound`)||o.startsWith(`tx`)?s.tx=r:o===`speed`?s.speed=r:o===`ip`||o===`ip_address`?s.ip=r:o===`link`&&(s.link=r)}return Array.from(n.values()).sort((e,t)=>e.name.localeCompare(t.name,void 0,{numeric:!0}))}getBootDiskEntity(){if(!this.hass?.states)return;let e=this.getActiveDevice(),t=e?.name?e.name.toLowerCase().replace(/[^a-z0-9]/g,`_`):void 0;return Object.values(this.hass.states).find(e=>!e.entity_id.startsWith(`sensor.`)||t&&!e.entity_id.includes(t)?!1:(e.entity_id.includes(`_disk_flash_`)||e.entity_id.includes(`_disk_boot_`))&&e.entity_id.endsWith(`_usage`))}getEntities(e,t){if(!this.hass?.states)return[];let n=this.getActiveDevice(),r=n?.id;if(this.hass.entities&&r){let n=[];for(let i of Object.values(this.hass.entities))if(i.device_id===r&&i.translation_key===e&&(!t||i.entity_id.startsWith(`${t}.`))){let e=this.hass.states[i.entity_id];e&&n.push(e)}if(n.length>0)return n}let i=n?.name?n.name.toLowerCase().replace(/[^a-z0-9]/g,`_`):void 0,a=t=>{if(this.hass?.entities){let e=this.hass.entities[t.entity_id];if(e&&e.platform!==`unraid_management_agent`&&e.platform!==`unraid`)return!1}if(e===`disk_usage`)return(t.entity_id.includes(`_disk_`)||t.entity_id.includes(`_cache`)||t.entity_id.includes(`_parity`)||t.entity_id.includes(`_boot`)||t.entity_id.includes(`_flash`))&&t.entity_id.endsWith(`_usage`)&&!t.entity_id.includes(`_array_usage`)&&!t.entity_id.includes(`_share_`);if(e===`disk_temperature`)return(t.entity_id.includes(`_disk_`)||t.entity_id.includes(`_cache`)||t.entity_id.includes(`_parity`)||t.entity_id.includes(`_boot`))&&(t.entity_id.endsWith(`_temperature`)||t.entity_id.includes(`_temp`));if(e===`disk_spin`)return(t.entity_id.includes(`_disk_`)||t.entity_id.includes(`_cache`)||t.entity_id.includes(`_parity`))&&t.entity_id.includes(`_spin`);if(e===`disk_health`)return(t.entity_id.includes(`_disk_`)||t.entity_id.includes(`_cache`)||t.entity_id.includes(`_parity`)||t.entity_id.includes(`_boot`))&&(t.entity_id.endsWith(`_health`)||t.entity_id.includes(`_health_`));if(e===`share_usage`||e===`share`)return t.entity_id.includes(`_share_`)&&t.entity_id.endsWith(`_usage`);let n=t.entity_id.split(`.`)[1]||``;return n===e||n.endsWith(`_${e}`)||n.includes(`_${e}_`)||n.startsWith(`${e}_`)},o=Object.values(this.hass.states),s=t?o.filter(e=>e.entity_id.startsWith(`${t}.`)):o;return i?s.filter(e=>e.entity_id.includes(i)&&a(e)):s.filter(e=>a(e))}findEntity(e){if(this.hass?.states)return typeof e==`string`?this.hass.states[e]:Object.values(this.hass.states).find(t=>e.test(t.entity_id))}async toggleEntity(e){if(!this.hass)return;let t=e.split(`.`)[0]||`homeassistant`;await this.hass.callService(t,`toggle`,{entity_id:e})}async pressButton(e){this.hass&&await this.hass.callService(`button`,`press`,{entity_id:e})}openMoreInfo(e){W(this,`hass-more-info`,{entityId:e})}navigate(e,t=!1){e&&(t?window.history.replaceState(null,``,e):window.history.pushState(null,``,e),W(window,`location-changed`,{replace:t}))}renderHeader(e,t,n,r){return this.config.embedded||this.config.hide_header?z:L`
+      <div class="header">
+        <div class="header-main">
+          <div class="header-icon">${J(n,22)}</div>
+          <div class="header-titles">
+            <span class="header-title">${e}</span>
+            <span class="header-subtitle">${t}</span>
+          </div>
+        </div>
+        ${r?L`<div class="header-actions">${r}</div>`:``}
+      </div>
+    `}},X=class extends U{static properties={hass:{attribute:!1},_config:{state:!0}};static styles=o`
+    .card-config {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 8px 0;
+      color: var(--primary-text-color, #fff);
+      font-size: 0.9rem;
+    }
+    .form-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--secondary-text-color, #aaa);
+    }
+    input[type="text"],
+    select {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
+      background: var(--card-background-color, #1e1e24);
+      color: var(--primary-text-color, #fff);
+      font-size: 0.85rem;
+    }
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+    }
+    .checkbox-row input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--primary-color, #f25f22);
+    }
+  `;setConfig(e){this._config={...e}}_valueChanged(e,t){this._config&&(this._config={...this._config,[e]:t},W(this,`config-changed`,{config:this._config}))}render(){if(!this._config)return L``;let e=this.hass?.devices?Object.values(this.hass.devices).filter(e=>e.identifiers?.some(([e])=>e===`unraid_management_agent`||e===`unraid`)):[];return L`
+      <div class="card-config">
+        <div class="form-row">
+          <label for="server">Unraid Server</label>
+          ${e.length>0?L`
+                <select
+                  id="server"
+                  @change=${e=>this._valueChanged(`server`,e.target.value)}
+                >
+                  ${(()=>{let t=this._config.server||e[0]?.id||``;return e.map(e=>L`
+                        <option
+                          value=${e.id}
+                          ?selected=${e.id===t}
+                        >
+                          ${e.name_by_user||e.name||e.id}
+                        </option>
+                      `)})()}
+                </select>
+              `:L`
+                <input
+                  type="text"
+                  id="server"
+                  placeholder="Auto-detecting server..."
+                  .value=${this._config.server||``}
+                  @input=${e=>this._valueChanged(`server`,e.target.value)}
+                />
+              `}
+        </div>
+        <div class="form-row">
+          <label for="title">Custom Title (optional)</label>
+          <input
+            type="text"
+            id="title"
+            placeholder="Leave empty for default"
+            .value=${this._config.title||``}
+            @input=${e=>this._valueChanged(`title`,e.target.value)}
+          />
+        </div>
+        ${this._config.type?.includes(`docker`)?L`
+              <div class="form-row">
+                <label for="view_mode">Default View Mode</label>
+                <select
+                  id="view_mode"
+                  .value=${this._config.view_mode||`grid`}
+                  @change=${e=>this._valueChanged(`view_mode`,e.target.value)}
+                >
+                  <option value="grid">Grid View (Icons & Status)</option>
+                  <option value="list">List View (Detailed Table)</option>
+                </select>
+              </div>
+            `:``}
+        <label class="checkbox-row">
+          <input
+            type="checkbox"
+            .checked=${this._config.show_system_info!==!1}
+            @change=${e=>this._valueChanged(`show_system_info`,e.target.checked)}
+          />
+          <span>Show System Details</span>
+        </label>
+      </div>
+    `}},Et=class extends X{},Dt=class extends X{},Ot=class extends X{},kt=class extends X{},At=class extends X{},jt=class extends X{},Mt=class extends X{},Nt=class extends X{},Pt=class extends X{},Ft=class extends X{},It=class extends X{},Lt=class extends X{},Rt=class extends X{},zt=class extends X{},Bt=class extends X{};function Vt(e,t){if(!customElements.get(e))try{customElements.define(e,t)}catch(n){if(n instanceof Error&&(n.name===`NotSupportedError`||n.message.includes(`already been registered`))){class n extends t{}customElements.define(e,n)}else throw n}}function Z(e){Vt(e.tag,e.card),Vt(e.editorTag,e.editor),window.customCards??=[],window.customCards.some(t=>t.type===e.tag)||window.customCards.push({type:e.tag,name:e.name,description:e.description,preview:!0,documentationURL:`https://github.com/ruaan-deysel/ha-unraid-management-agent`})}Z({tag:Se,editorTag:Ce,card:class extends Y{static editorTag=Ce;formatUptime(e){if(!e)return`Unknown`;let t=e.trim(),n=0;if(/^\d+(\.\d+)?$/.test(t))n=Math.floor(Number(t));else{let t=new Date(e);if(!isNaN(t.getTime()))n=Math.max(0,Math.floor((Date.now()-t.getTime())/1e3));else return e}let r=Math.floor(n/86400),i=Math.floor(n%86400/3600),a=Math.floor(n%3600/60);return r>0?`${r}d ${i}h`:i>0?`${i}h ${a}m`:`${a}m`}render(){let e=this.getActiveDevice(),t=this.config.title||e?.name_by_user||e?.name||`Unraid Server`,n=this.getEntity(`cpu_usage`),r=this.getEntity(`ram_usage`),i=this.getEntity(`array_usage`),a=this.getEntity(`array_state`),o=this.getEntity(`system_temperature`)||this.getEntity(`temperature_average`),s=this.getEntity(`cpu_power`),c=this.getEntity(`uptime`),l=this.getEntity(`notifications_unread_alert`),u=this.getEntity(`network_interface_ip`),d=Math.round(Number(n?.state)||0),f=Math.round(Number(r?.state)||0),p=Math.round(Number(i?.state)||0),m=a?.state?.toLowerCase()===`started`||a?.state===`Normal`,h=Number(l?.state)||0,g=n?.attributes?.cpu_model||(e?.model??`Multi-Core CPU`),_=r?.attributes?.used||``,v=r?.attributes?.total||``,y=i?.attributes?.capacity_used||``,b=i?.attributes?.capacity_total||``,x=this.getNetworkInterfaces(),S=x.length>0?x[0]:void 0,C=S?.speed?.state||S?.link?.attributes?.speed_mbps,w=C==null?void 0:Number(C),T=w?w>=1e3?`${w/1e3} Gbps`:`${w} Mbps`:``,E=S?.rx?.state?parseFloat(S.rx.state):NaN,D=S?.tx?.state?parseFloat(S.tx.state):NaN,O=isNaN(E)?``:E<.1?`${(E*1e3).toFixed(1)} kB/s`:`${E.toFixed(2)} MB/s`,k=isNaN(D)?``:D<.1?`${(D*1e3).toFixed(1)} kB/s`:`${D.toFixed(2)} MB/s`,ee=O&&k?`↓ ${O} • ↑ ${k}`:T||`Active`,A=this.getBootDiskEntity(),j=A?.attributes,M=j?.used||j?.fs_used,N=j?.total||j?.fs_size,P=j?.device,te=M&&N?`Flash (${M} / ${N})`:P?`Flash (${P})`:`Flash (USB)`,ne=j?.filesystem?`Device: ${P||`USB`} • FS: ${j.filesystem}`:`USB Flash Boot Drive`,F=L`
+      <span class="badge ${m?`badge-online`:`badge-error`}">
+        <span class="pulse-dot"></span>
+        <span>Array ${a?.state||(m?`Started`:`Stopped`)}</span>
+      </span>
+      ${h>0?L`
+            <span class="badge badge-error">
+              ${J(G,13)}
+              <span>${h}</span>
+            </span>
+          `:z}
+    `;return L`
+      <ha-card>
+        ${this.renderHeader(t,`${e?.model||`Unraid OS`} • Up ${this.formatUptime(c?.state)}`,_t,F)}
+        <div class="rings-grid">
+          <div
+            class="ring-card"
+            role="${n?`button`:`none`}"
+            tabindex="${n?`0`:`-1`}"
+            style="${n?`cursor: pointer;`:``}"
+            @click=${()=>n&&this.openMoreInfo(n.entity_id)}
+            @keydown=${e=>(e.key===`Enter`||e.key===` `)&&n&&(e.preventDefault(),this.openMoreInfo(n.entity_id))}
+            title="Click to view CPU details"
+          >
+            <div
+              class="ring-gauge"
+              style="--pct: ${d}; --ring-color: ${d>80?`var(--unraid-error)`:d>50?`var(--unraid-warning)`:`var(--unraid-online)`}"
+            >
+              <span class="ring-content">${d}%</span>
+            </div>
+            <span class="ring-label">CPU Load</span>
+            <span class="ring-subtext">
+              ${o?.state?`${o.state}°C`:``}${s?.state?` • ${s.state}W`:``}
+            </span>
+          </div>
+          <div
+            class="ring-card"
+            role="${r?`button`:`none`}"
+            tabindex="${r?`0`:`-1`}"
+            style="${r?`cursor: pointer;`:``}"
+            @click=${()=>r&&this.openMoreInfo(r.entity_id)}
+            @keydown=${e=>(e.key===`Enter`||e.key===` `)&&r&&(e.preventDefault(),this.openMoreInfo(r.entity_id))}
+            title="Click to view Memory details"
+          >
+            <div
+              class="ring-gauge"
+              style="--pct: ${f}; --ring-color: ${f>85?`var(--unraid-error)`:`var(--unraid-info)`}"
+            >
+              <span class="ring-content">${f}%</span>
+            </div>
+            <span class="ring-label">Memory</span>
+            <span class="ring-subtext">${_&&v?`${_} / ${v}`:`${f}% used`}</span>
+          </div>
+          <div
+            class="ring-card"
+            role="${i?`button`:`none`}"
+            tabindex="${i?`0`:`-1`}"
+            style="${i?`cursor: pointer;`:``}"
+            @click=${()=>i&&this.openMoreInfo(i.entity_id)}
+            @keydown=${e=>(e.key===`Enter`||e.key===` `)&&i&&(e.preventDefault(),this.openMoreInfo(i.entity_id))}
+            title="Click to view Array storage details"
+          >
+            <div
+              class="ring-gauge"
+              style="--pct: ${p}; --ring-color: var(--unraid-accent)"
+            >
+              <span class="ring-content">${p}%</span>
+            </div>
+            <span class="ring-label">Array Storage</span>
+            <span class="ring-subtext">${y&&b?`${y} / ${b}`:`${p}% used`}</span>
+          </div>
+        </div>
+
+        ${this.config.show_system_info===!1?z:L`
+              <div class="divider"></div>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="detail-label">Processor</span>
+                  <span class="detail-val" title="${g}">${g}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">OS Version</span>
+                  <span class="detail-val">${e?.sw_version||`Unraid OS`}</span>
+                </div>
+                <div
+                  class="detail-item"
+                  role="${c?`button`:`none`}"
+                  tabindex="${c?`0`:`-1`}"
+                  style="${c?`cursor: pointer;`:``}"
+                  @click=${()=>c&&this.openMoreInfo(c.entity_id)}
+                  @keydown=${e=>(e.key===`Enter`||e.key===` `)&&c&&(e.preventDefault(),this.openMoreInfo(c.entity_id))}
+                  title="Click to view Uptime details"
+                >
+                  <span class="detail-label">System Uptime</span>
+                  <span class="detail-val">${this.formatUptime(c?.state)}</span>
+                </div>
+                <div
+                  class="detail-item"
+                  role="${S?.rx||u?`button`:`none`}"
+                  tabindex="${S?.rx||u?`0`:`-1`}"
+                  style="${S?.rx||u?`cursor: pointer;`:``}"
+                  @click=${()=>S?.rx?this.openMoreInfo(S.rx.entity_id):u&&this.openMoreInfo(u.entity_id)}
+                  @keydown=${e=>(e.key===`Enter`||e.key===` `)&&(S?.rx||u)&&(e.preventDefault(),S?.rx?this.openMoreInfo(S.rx.entity_id):u&&this.openMoreInfo(u.entity_id))}
+                  title="Click to view Network details"
+                >
+                  <span class="detail-label">Primary Network</span>
+                  <span class="detail-val" title="${S?`${S.name} • ${T}`:`Connected`}">
+                    ${S?`${S.name}: `:``}${S?.ip?.state||u?.state||`Connected`}
+                  </span>
+                </div>
+                <div
+                  class="detail-item"
+                  role="${S?.rx||S?.speed?`button`:`none`}"
+                  tabindex="${S?.rx||S?.speed?`0`:`-1`}"
+                  style="${S?.rx||S?.speed?`cursor: pointer;`:``}"
+                  @click=${()=>S?.rx?this.openMoreInfo(S.rx.entity_id):S?.speed&&this.openMoreInfo(S.speed.entity_id)}
+                  @keydown=${e=>(e.key===`Enter`||e.key===` `)&&(S?.rx||S?.speed)&&(e.preventDefault(),S?.rx?this.openMoreInfo(S.rx.entity_id):S?.speed&&this.openMoreInfo(S.speed.entity_id))}
+                  title="Click to view Network traffic details"
+                >
+                  <span class="detail-label">Network Traffic</span>
+                  <span class="detail-val" title="${T?`Link Speed: ${T}`:`Network Speed`}">${ee}</span>
+                </div>
+                <div
+                  class="detail-item"
+                  role="${A?`button`:`none`}"
+                  tabindex="${A?`0`:`-1`}"
+                  style="${A?`cursor: pointer;`:``}"
+                  @click=${()=>A&&this.openMoreInfo(A.entity_id)}
+                  @keydown=${e=>(e.key===`Enter`||e.key===` `)&&A&&(e.preventDefault(),this.openMoreInfo(A.entity_id))}
+                  title="Click to view Boot device details"
+                >
+                  <span class="detail-label">Boot Device</span>
+                  <span class="detail-val" title="${ne}">${te}</span>
+                </div>
+                <div
+                  class="detail-item"
+                  role="${l?`button`:`none`}"
+                  tabindex="${l?`0`:`-1`}"
+                  style="${l?`cursor: pointer;`:``}"
+                  @click=${()=>l&&this.openMoreInfo(l.entity_id)}
+                  @keydown=${e=>(e.key===`Enter`||e.key===` `)&&l&&(e.preventDefault(),this.openMoreInfo(l.entity_id))}
+                  title="Click to view Notifications"
+                >
+                  <span class="detail-label">System Health</span>
+                  <span class="detail-val" style="color: ${h===0?`var(--unraid-online)`:`var(--unraid-error)`}">
+                    ${h===0?`Normal • Healthy`:`${h} Active Alerts`}
+                  </span>
+                </div>
+              </div>
+            `}
+      </ha-card>
+    `}},editor:Et,name:`Unraid Server Overview Card`,description:`Server metrics, CPU/RAM ring gauges, and hardware health.`});function Ht(e,t){let n=e.trim(),r=n.match(/^(?:.*?\s+)?(?:Disk\s+)?([a-zA-Z0-9_-]+)(?:\s+(?:usage|health|temperature|temp|spin|errors))?$/i);if(r&&r[1]){let e=r[1],t=e.match(/^disk[_\s]?(\d+)$/i);if(t)return`Disk ${t[1]}`;if(/^\d+$/.test(e))return`Disk ${e}`;if(e.toLowerCase()===`parity`)return`Parity`;let n=e.match(/^parity[_\s]?(\d+)$/i);return n?`Parity ${n[1]}`:e.toLowerCase()===`cache`?`Cache`:e.toLowerCase().startsWith(`cache_`)?`Cache (${e.slice(6).toUpperCase()})`:e.toLowerCase()===`boot`||e.toLowerCase()===`flash`?`Flash (Boot)`:e.replace(/\b\w/g,e=>e.toUpperCase())}return n||t}function Q(e){let t=(e.split(`.`)[1]||``).replace(/^.*?_disk_/,``).replace(/_usage$|_temperature$|_temp$|_errors$|_health$|_spin$/,``).toLowerCase().replace(/_/g,``),n=t.match(/^(?:disk)?(\d+)$/);return n?`disk${n[1]}`:t}Z({tag:we,editorTag:Te,card:class extends Y{static editorTag=Te;getDisks(){let e=this.getEntities(`disk_usage`),t=this.getEntities(`disk_health`,`binary_sensor`),n=this.getEntities(`disk_temperature`),r=this.getEntities(`disk_error_count`),i=this.getEntities(`disk_spin`,`switch`),a=new Map;for(let t of e){let e=Q(t.entity_id),n=Ht(t.attributes.friendly_name||e,e),r=n.toLowerCase().includes(`parity`),i=n.toLowerCase().includes(`cache`)||n.toLowerCase().includes(`pool`),o=n.toLowerCase().includes(`boot`)||n.toLowerCase().includes(`flash`),s=t.attributes.spin_state===`active`||t.attributes.spinning===!0,c=t.attributes.temperature_celsius??t.attributes.temperature,l=Number(t.attributes.num_errors??0),u=t.attributes.status||`DISK_OK`;a.set(e,{id:e,name:n,isParity:r,isCache:i,isBoot:o,usagePct:Math.round(Number(t.state)||0),temp:c==null?`*`:`${c}°C`,tempNum:typeof c==`number`?c:void 0,errors:l,health:`healthy`,statusText:u,isSpinning:s,freeSpace:t.attributes.free,totalSpace:t.attributes.total})}for(let e of t){let t=Q(e.entity_id);if(a.has(t)||t.includes(`disabled`)||t.includes(`missing`)||t.includes(`invalid`))continue;let n=Ht(e.attributes.friendly_name||t,t),r=n.toLowerCase().includes(`parity`),i=n.toLowerCase().includes(`cache`),o=n.toLowerCase().includes(`boot`),s=e.attributes.spinning===!0||e.attributes.standby!==void 0&&!e.attributes.standby,c=e.attributes.temperature,l=e.attributes.status||`DISK_OK`;a.set(t,{id:t,name:n,isParity:r,isCache:i,isBoot:o,usagePct:0,temp:c==null?`*`:`${c}°C`,tempNum:typeof c==`number`?c:void 0,errors:0,health:e.state===`on`?`error`:`healthy`,statusText:l,isSpinning:s})}for(let e of n){let t=Q(e.entity_id),n=a.get(t);n&&e.state!==`unavailable`&&e.state!==`unknown`&&(n.temp=`${e.state}°C`,n.tempNum=parseFloat(e.state))}for(let e of r){let t=Q(e.entity_id),n=a.get(t);if(n){let t=Number(e.state);isNaN(t)||(n.errors=t)}}for(let e of i){let t=Q(e.entity_id),n=a.get(t);n&&(n.isSpinning=e.state===`on`,n.spinEntityId=e.entity_id)}for(let e of t){let t=Q(e.entity_id),n=a.get(t);n&&(e.attributes.status&&(n.statusText=e.attributes.status),e.attributes.spinning===void 0?e.attributes.standby!==void 0&&(n.isSpinning=!e.attributes.standby):n.isSpinning=!!e.attributes.spinning,e.attributes.temperature!==void 0&&n.temp===`*`&&(n.temp=`${e.attributes.temperature}°C`,n.tempNum=Number(e.attributes.temperature)),e.state===`on`&&(n.health=`error`))}for(let e of a.values()){let t=(e.statusText||``).toUpperCase(),n=t.includes(`ERR`)||t.includes(`WRONG`)||t.includes(`INVALID`)||t.includes(`DSBL`)||t.includes(`FAIL`);e.health=e.health===`error`||n||e.errors>=10?`error`:e.errors>0||e.tempNum!==void 0&&e.tempNum>45?`warning`:`healthy`}return Array.from(a.values()).sort((e,t)=>e.isParity===t.isParity?e.isBoot===t.isBoot?e.isCache===t.isCache?e.name.localeCompare(t.name,void 0,{numeric:!0}):e.isCache?1:-1:e.isBoot?1:-1:e.isParity?-1:1)}isUsable(e){if(!e||!e.state)return!1;let t=e.state.toLowerCase().trim();return t!==`unavailable`&&t!==`unknown`&&t!==`none`&&t!==`--`}getParityViewState(){let e=this.getEntity(`parity_valid`,`binary_sensor`),t=this.getEntity(`parity_check_running`,`binary_sensor`),n=this.getEntity(`parity_status`,`binary_sensor`)??this.getEntity(`parity_status`),r=this.getEntity(`parity_progress`),i=`unknown`;if(this.isUsable(e)){let t=e.state.toLowerCase().trim();t===`off`?i=`valid`:t===`on`&&(i=`invalid`)}else if(this.isUsable(n)){let e=n.state.toLowerCase().trim();if(e===`off`)i=`valid`;else if(e===`on`){let e=String(n.attributes?.status??``).toLowerCase().trim();e!==`running`&&e!==`paused`&&(i=`invalid`)}}let a=`unknown`;if(this.isUsable(t)){let e=t.state.toLowerCase().trim();e===`off`?a=`idle`:e===`on`&&(a=String(t.attributes?.status??``).toLowerCase().trim()===`paused`?`paused`:`running`)}else if(this.isUsable(n)){let e=String(n.attributes?.status??``).toLowerCase().trim();e===`running`?a=`running`:e===`paused`?a=`paused`:n.state.toLowerCase().trim()===`off`&&(a=`idle`)}let o=0;if(this.isUsable(r)){let e=Number(r.state);isNaN(e)||(o=Math.round(e))}return{validity:i,activity:a,progressPct:o}}render(){let e=this.getEntity(`array_usage`),t=this.getEntity(`parity_check`,`switch`),n=this.getEntity(`last_parity_check_date`),r=this.getEntity(`last_parity_check_errors`),i=Math.round(Number(e?.state)||0),a=e?.attributes?.capacity_used||``,o=e?.attributes?.capacity_total||``,s=e?.attributes?.capacity_free||``,{validity:c,activity:l,progressPct:u}=this.getParityViewState(),d=l===`running`||l===`paused`,f=`badge-standby`,p=`Parity Status Unknown`,m=yt;c===`valid`?(f=`badge-online`,p=`Parity Valid`,m=bt):c===`invalid`&&(f=`badge-warning`,p=`Parity Check Needed`,m=yt);let h=this.getDisks(),g=L`
+      <span class="badge ${f}">
+        ${J(m,13)}
+        <span>${p}</span>
+      </span>
+    `,_;_=l===`running`?`Parity Check In Progress (${u}%)`:l===`paused`?`Parity Check Paused (${u}%)`:c===`valid`?`Parity Status: Valid`:c===`invalid`?`Parity Status: Check Needed`:`Parity Status: Unknown`;let v=c===`valid`||d?et:G,y=c===`valid`||d?`var(--unraid-online)`:`var(--unraid-warning)`,b=this.isUsable(n),x=Number(r?.state),S=this.isUsable(r)&&!isNaN(x)&&x>0,C=``;b?C=`Last check: ${n.state}`:c===`valid`&&(C=`Parity healthy`);let w=S?` • ${r.state} errors`:``,T=!!(C||w);return L`
+      <ha-card>
+        ${this.renderHeader(this.config.title||`Storage Array & Disks`,`${a||`${i}%`} used of ${o||`Array`}${s?` (${s} Free)`:``}`,ct,g)}
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.76rem; font-weight: 600;">
+            <span>Array Capacity</span>
+            <span>${i}%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${i}%;"></div>
+          </div>
+        </div>
+        <div class="list-row" style="background: color-mix(in srgb, var(--unraid-text) 5%, transparent);">
+          <div class="row-left">
+            <div style="color: ${y}">
+              ${J(v,18)}
+            </div>
+            <div style="display: flex; flex-direction: column; min-width: 0;">
+              <span style="font-weight: 600; font-size: 0.78rem;">
+                ${_}
+              </span>
+              ${T?L`
+                    <span style="font-size: 0.7rem; color: var(--unraid-subtext);">
+                      ${C}${w}
+                    </span>
+                  `:z}
+            </div>
+          </div>
+          <div class="row-right">
+            ${t?L`
+                  <button
+                    class="btn ${d?`btn`:`btn-primary`}"
+                    @click=${()=>this.toggleEntity(t.entity_id)}
+                  >
+                    ${J(d?pt:mt,14)}
+                    <span>${d?`Cancel`:`Check Now`}</span>
+                  </button>
+                `:z}
+          </div>
+        </div>
+        <div class="item-list">
+          ${h.length>0?h.map(e=>{let t=e.tempNum??parseFloat(e.temp),n=e.isSpinning&&!isNaN(t)&&e.temp!==`*`&&e.temp!==`unavailable`,r=n?t>45?`var(--unraid-error)`:t>36?`var(--unraid-warning)`:`var(--unraid-online)`:`var(--unraid-standby)`,i=n?`${Math.round(t)}°C`:`--`,a=e.health===`healthy`?L`
+                      <span class="badge badge-online" style="font-size: 0.68rem; gap: 4px;">
+                        ${J(et,11)}
+                        <span>Healthy</span>
+                      </span>
+                    `:e.health===`warning`?L`
+                      <span class="badge badge-warning" style="font-size: 0.68rem; gap: 4px;">
+                        ${J(G,11)}
+                        <span>Warning${e.errors>0?` (${e.errors})`:``}</span>
+                      </span>
+                    `:L`
+                      <span class="badge badge-error" style="font-size: 0.68rem; gap: 4px;">
+                        ${J(G,11)}
+                        <span>Error${e.errors>0?` (${e.errors})`:``}</span>
+                      </span>
+                    `;return L`
+                  <div class="list-row">
+                    <div class="row-left">
+                      ${e.isBoot?L`
+                            <span
+                              class="badge badge-online"
+                              style="font-size: 0.68rem; gap: 4px; min-width: 60px; justify-content: center;"
+                              title="USB Flash Boot Drive"
+                            >
+                              ${J(St,11)}
+                              <span>Flash</span>
+                            </span>
+                          `:e.spinEntityId?L`
+                            <button
+                              class="badge ${e.isSpinning?`badge-online`:`badge-standby`}"
+                              style="cursor: pointer; border: none;"
+                              title="Click to spin ${e.isSpinning?`down`:`up`}"
+                              @click=${()=>this.toggleEntity(e.spinEntityId)}
+                            >
+                              <span class="status-dot ${e.isSpinning?`online`:`offline`}"></span>
+                              <span>${e.isSpinning?`Active`:`Standby`}</span>
+                            </button>
+                          `:L`
+                            <span class="badge ${e.isSpinning?`badge-online`:`badge-standby`}">
+                              <span>${e.isSpinning?`Active`:`Standby`}</span>
+                            </span>
+                          `}
+
+                      <span style="font-weight: 600; min-width: 75px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        ${e.name}
+                      </span>
+                    </div>
+
+                    <div class="row-right">
+                      <span
+                        class="badge"
+                        style="color: ${e.isBoot?`var(--unraid-text-dim)`:r}; background: color-mix(in srgb, ${e.isBoot?`var(--unraid-text-dim)`:r} 12%, transparent); min-width: 44px; justify-content: center;"
+                        title="${e.isBoot?`USB Flash Drive`:e.isSpinning?`Temperature: ${i}`:`Disk is in standby`}"
+                      >
+                        ${e.isBoot?`--`:i}
+                      </span>
+                      ${a}
+                      <div style="display: flex; align-items: center; gap: 6px; width: 85px;">
+                        ${e.isParity?L`
+                              <span style="font-size: 0.72rem; color: var(--unraid-online); font-weight: 500; font-family: monospace;">
+                                Parity
+                              </span>
+                            `:L`
+                              <div class="progress-bar" style="height: 4px; flex: 1;">
+                                <div
+                                  class="progress-fill"
+                                  style="width: ${e.usagePct}%; background: ${e.isBoot?`var(--unraid-warning)`:e.isCache?`var(--unraid-info)`:`var(--unraid-accent)`};"
+                                ></div>
+                              </div>
+                              <span style="font-size: 0.7rem; font-family: monospace; color: var(--unraid-subtext);">
+                                ${e.usagePct}%
+                              </span>
+                            `}
+                      </div>
+                    </div>
+                  </div>
+                `}):L`<div style="text-align: center; color: var(--unraid-subtext); font-size: 0.8rem; padding: 12px;">No disk devices found</div>`}
+        </div>
+      </ha-card>
+    `}},editor:Dt,name:`Unraid Storage & Disks Card`,description:`Array capacity, parity checks, and interactive disk tray with spin state controls.`});function Ut(e,t){let n=e.trim(),r=n.match(/^(?:.*?\s+)?Share\s+(.+?)(?:\s+usage)?$/i);return r&&r[1]?r[1].trim():(n=n.replace(/\s+usage$/i,``).replace(/_usage$/i,``).replace(/\s+share$/i,``).replace(/_share$/i,``).trim(),n||t)}Z({tag:Me,editorTag:Ne,card:class extends Y{static editorTag=Ne;static properties={...Y.properties,_searchQuery:{state:!0}};constructor(){super(),this._searchQuery=``}getShares(){let e=this.getEntities(`share_usage`),t=[];for(let n of e){let e=(n.entity_id.split(`.`)[1]||``).replace(/^.*?_share_/,``).replace(/_usage$/,``),r=Ut(n.attributes.friendly_name||e,e),i=n.attributes.color||``,a=i===`green-on`;t.push({id:e,name:r,entityId:n.entity_id,usagePct:Math.min(100,Math.max(0,Math.round(Number(n.state)||0))),used:n.attributes.used||``,total:n.attributes.total||``,free:n.attributes.free||``,isProtected:a,color:i,allocator:n.attributes.allocator})}return t.sort((e,t)=>e.name.localeCompare(t.name,void 0,{numeric:!0}))}_openMoreInfo(e){W(this,`hass-more-info`,{entityId:e})}render(){let e=this.getShares(),t=this._searchQuery?e.filter(e=>e.name.toLowerCase().includes(this._searchQuery.toLowerCase())):e,n=e.filter(e=>e.isProtected).length,r=e.length-n,i=L`
+      <span class="badge ${r===0?`badge-online`:`badge-warning`}">
+        ${J(r===0?bt:yt,13)}
+        <span>${n} Protected${r>0?` • ${r} Unprotected`:``}</span>
+      </span>
+    `;return L`
+      <ha-card>
+        ${this.renderHeader(this.config.title||`User Shares`,`${e.length} configured shares`,st,i)}
+        ${e.length>4?L`
+              <div style="margin-bottom: 4px;">
+                <input
+                  type="text"
+                  placeholder="Filter shares..."
+                  style="
+                    width: 100%;
+                    padding: 6px 10px;
+                    border-radius: 6px;
+                    border: 1px solid var(--unraid-border);
+                    background: color-mix(in srgb, var(--unraid-text) 4%, transparent);
+                    color: var(--unraid-text);
+                    font-size: 0.8rem;
+                    box-sizing: border-box;
+                  "
+                  .value=${this._searchQuery}
+                  @input=${e=>this._searchQuery=e.target.value}
+                />
+              </div>
+            `:z}
+        <div class="item-list">
+          ${t.length>0?t.map(e=>{let t=e.usagePct>90?`var(--unraid-error)`:e.usagePct>75?`var(--unraid-warning)`:`var(--unraid-online)`;return L`
+                  <div
+                    class="list-row"
+                    style="cursor: pointer;"
+                    title="Click for details on ${e.name}"
+                    @click=${()=>this._openMoreInfo(e.entityId)}
+                  >
+                    <div class="row-left">
+                      <div
+                        style="color: ${e.isProtected?`var(--unraid-accent)`:`var(--unraid-warning)`}; display: flex; align-items: center;"
+                      >
+                        ${J(st,18)}
+                      </div>
+
+                      <div style="display: flex; flex-direction: column; min-width: 0;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                          <span
+                            style="font-weight: 600; font-size: 0.82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                          >
+                            ${e.name}
+                          </span>
+                          <span
+                            class="badge ${e.isProtected?`badge-online`:`badge-warning`}"
+                            style="font-size: 0.62rem; padding: 1px 6px;"
+                            title="${e.isProtected?`Data protected on parity array`:`Data on pool / unprotected storage`}"
+                          >
+                            ${e.isProtected?`Protected`:`Unprotected`}
+                          </span>
+                        </div>
+
+                        ${e.used&&e.total?L`<span style="font-size: 0.7rem; color: var(--unraid-subtext);">${e.used} / ${e.total}${e.free?` • ${e.free} free`:``}</span>`:z}
+                      </div>
+                    </div>
+
+                    <div class="row-right">
+                      <div style="display: flex; align-items: center; gap: 6px; width: 110px;">
+                        <div class="progress-bar" style="height: 6px; flex: 1;">
+                          <div
+                            class="progress-fill"
+                            style="width: ${e.usagePct}%; background: ${t};"
+                          ></div>
+                        </div>
+                        <span
+                          style="font-size: 0.72rem; font-family: monospace; font-weight: 600; color: var(--unraid-text); min-width: 32px; text-align: right;"
+                        >
+                          ${e.usagePct}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                `}):L`
+                <div style="text-align: center; color: var(--unraid-subtext); font-size: 0.8rem; padding: 16px;">
+                  ${e.length===0?`No user shares found`:`No shares matching filter`}
+                </div>
+              `}
+        </div>
+      </ha-card>
+    `}},editor:Ot,name:`Unraid User Shares Card`,description:`User share storage utilization, capacity allocation, and parity protection status.`}),Z({tag:Pe,editorTag:Fe,card:class extends Y{static editorTag=Fe;formatDataRate(e,t=`MB/s`){if(!e)return`--`;let n=e.toLowerCase().trim();if([`unavailable`,`unknown`,`none`,`--`].includes(n))return`--`;let r=parseFloat(e);return isNaN(r)?`--`:r<=0?`0 kB/s`:r<.1?`${(r*1e3).toFixed(1)} kB/s`:`${r.toFixed(2)} ${t}`}isValidIp(e){return!!e&&![`unavailable`,`unknown`,`none`,`--`].includes(e.toLowerCase().trim())}formatSpeed(e){if(!e)return``;let t=e.toLowerCase().trim();if([`unavailable`,`unknown`,`none`,`--`].includes(t))return``;let n=Number(e);return isNaN(n)?e:n>=1e3?`${n/1e3} Gbps`:`${n} Mbps`}handleMoreInfo(e){e&&W(this,`hass-more-info`,{entityId:e})}sanitizeHttpUrl(e){if(typeof e==`string`&&e.trim())try{let t=new URL(e);if(t.protocol===`http:`||t.protocol===`https:`)return t.toString()}catch{}}render(){let e=this.getActiveDevice(),t=this.config.title||e?.name_by_user||e?.name||`Unraid Server`,n=this.getNetworkInterfaces(),r=this.getEntity(`network_access`),i=r?.attributes,a=this.sanitizeHttpUrl(i?.LAN_IPv4_ipv4)||this.sanitizeHttpUrl(r?.state),o=this.sanitizeHttpUrl(i?.FQDN_LAN_ipv4),s=n.filter(e=>e.link?.state===`on`||this.isValidIp(e.ip?.state)).length,c=L`
+      <span class="badge ${s>0?`badge-online`:`badge-error`}">
+        <span class="pulse-dot"></span>
+        <span>${s} Connected</span>
+      </span>
+    `;return L`
+      <ha-card>
+        ${this.renderHeader(this.config.title||`${t} Network`,`${e?.model||`Unraid`} • ${n.length} Interface${n.length===1?``:`s`}`,dt,c)}
+        <div class="item-list">
+          ${n.length>0?n.map(e=>{let t=e.link?.state===`on`||this.isValidIp(e.ip?.state),n=this.isValidIp(e.ip?.state)?e.ip.state:`--`,r=e.ip?.attributes?.mac_address||e.link?.attributes?.mac_address||``,i=e.link?.attributes?.mtu||e.ip?.attributes?.mtu||void 0,a=e.speed?.state||e.link?.attributes?.speed_mbps,o=this.formatSpeed(a==null?void 0:String(a)),s=this.formatDataRate(e.rx?.state),c=this.formatDataRate(e.tx?.state),l=e.rx?.attributes?.total_received||``,u=e.tx?.attributes?.total_sent||``,d=e.ip?.entity_id||e.rx?.entity_id||e.link?.entity_id;return L`
+                  <div
+                    class="list-row"
+                    style="cursor: pointer; flex-direction: column; align-items: stretch; gap: 8px; padding: 12px 14px;"
+                    @click=${()=>this.handleMoreInfo(d)}
+                  >
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                      <div class="row-left" style="gap: 8px;">
+                        <span class="badge ${t?`badge-online`:`badge-error`}" style="min-width: 50px; justify-content: center;">
+                          ${J(it,13)}
+                          <span>${e.name}</span>
+                        </span>
+                        <span style="font-weight: 600; font-size: 0.88rem;">
+                          ${n}
+                        </span>
+                      </div>
+
+                      <div class="row-right" style="gap: 6px;">
+                        ${o?L`
+                              <span
+                                class="badge"
+                                style="color: var(--unraid-info); background: color-mix(in srgb, var(--unraid-info) 12%, transparent); font-weight: 600; font-size: 0.72rem;"
+                              >
+                                ${o}
+                              </span>
+                            `:z}
+                        <span
+                          class="badge ${t?`badge-online`:`badge-standby`}"
+                          style="font-size: 0.68rem;"
+                        >
+                          ${t?`Up`:`Down`}
+                        </span>
+                      </div>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; color: var(--unraid-subtext); border-top: 1px solid var(--unraid-border, rgba(255,255,255,0.06)); padding-top: 6px;">
+                      <div style="display: flex; align-items: center; gap: 14px;">
+                        <span style="display: flex; align-items: center; gap: 4px;" title="${l?`Total Inbound: ${l}`:`Inbound Transfer Rate`}">
+                          <span style="color: var(--unraid-online);">${J(rt,13)}</span>
+                          <span style="font-family: monospace; font-weight: 500;">${s}</span>
+                          ${l?L`<span style="opacity: 0.7; font-size: 0.68rem;">(${l})</span>`:z}
+                        </span>
+
+                        <span style="display: flex; align-items: center; gap: 4px;" title="${u?`Total Outbound: ${u}`:`Outbound Transfer Rate`}">
+                          <span style="color: var(--unraid-info);">${J(xt,13)}</span>
+                          <span style="font-family: monospace; font-weight: 500;">${c}</span>
+                          ${u?L`<span style="opacity: 0.7; font-size: 0.68rem;">(${u})</span>`:z}
+                        </span>
+                      </div>
+
+                      <div style="display: flex; align-items: center; gap: 8px; opacity: 0.8; font-size: 0.7rem;">
+                        ${i?L`<span>MTU ${i}</span>`:z}
+                        ${r?L`<span style="font-family: monospace;">${r}</span>`:z}
+                      </div>
+                    </div>
+                  </div>
+                `}):L`
+                <div class="empty-state">
+                  No network interfaces discovered for this server.
+                </div>
+              `}
+        </div>
+
+        ${a||o?L`
+              <div class="divider"></div>
+              <div class="detail-grid">
+                ${a?L`
+                      <div class="detail-item">
+                        <span class="detail-label">LAN WebGUI</span>
+                        <a
+                          href="${a}"
+                          target="_blank"
+                          rel="noreferrer"
+                          class="detail-val"
+                          style="color: var(--unraid-accent); text-decoration: none;"
+                        >
+                          ${a}
+                        </a>
+                      </div>
+                    `:z}
+                ${o?L`
+                      <div class="detail-item">
+                        <span class="detail-label">Remote Access URL</span>
+                        <a
+                          href="${o}"
+                          target="_blank"
+                          rel="noreferrer"
+                          class="detail-val"
+                          style="color: var(--unraid-info); text-decoration: none;"
+                        >
+                          Connect FQDN
+                        </a>
+                      </div>
+                    `:z}
+              </div>
+            `:z}
+      </ha-card>
+    `}},editor:kt,name:`Unraid Network Card`,description:`Network interfaces, link speeds, live throughput, and IP addresses.`});function $(e){let t=e.split(`.`)[1]||``;return t.replace(/^.*?_container_restart_/,``).replace(/^.*?_docker_container_restart_/,``).replace(/^.*?_container_autostart_/,``).replace(/^.*?_docker_container_autostart_/,``).replace(/^.*?_container_update_/,``).replace(/^.*?_docker_container_update_/,``).replace(/^.*?_docker_container_/,``).replace(/^.*?_container_switch_/,``).replace(/^docker_container_/,``).replace(/^container_switch_/,``).replace(/_cpu$/,``).replace(/_memory_usage$/,``).replace(/_memory$/,``).replace(/_docker_container$/,``).replace(/_container_switch$/,``).replace(/^.*?_container_/,``)||t}Z({tag:Ee,editorTag:De,card:class extends Y{static editorTag=De;static properties={...Y.properties,_filter:{state:!0},_viewMode:{state:!0}};constructor(){super(),this._filter=`all`,this._viewMode=`grid`}willUpdate(e){super.willUpdate(e),e.has(`config`)&&this.config.view_mode&&e.get(`config`)?.view_mode!==this.config.view_mode&&(this._viewMode=this.config.view_mode)}handleToggle(e,t,n){(!t||confirm(`Are you sure you want to stop container "${n}"?`))&&this.toggleEntity(e)}getContainers(){let e=this.getEntities(`docker_container_autostart`,`switch`),t=new Set(e.map(e=>e.entity_id)),n=this.getEntities(`docker_container`,`switch`).filter(e=>!t.has(e.entity_id)),r=this.getEntities(`docker_container_restart`,`button`),i=this.getEntities(`container_cpu`),a=this.getEntities(`container_memory_usage`),o=this.getEntities(`docker_container_update`,`update`),s=[];for(let t of n){let n=$(t.entity_id),c=t.attributes.friendly_name||n,l=t.state===`on`,u=r.find(e=>$(e.entity_id)===n),d=e.find(e=>$(e.entity_id)===n),f=i.find(e=>$(e.entity_id)===n),p=a.find(e=>$(e.entity_id)===n),m=o.find(e=>$(e.entity_id)===n);s.push({id:n,name:c,isRunning:l,switchEntityId:t.entity_id,restartEntityId:u?.entity_id,autostartEntityId:d?.entity_id,cpuPct:f?.state&&Number.isFinite(parseFloat(f.state))?parseFloat(f.state):void 0,memoryUsage:p?.state&&p.state!==`unavailable`?`${p.state} ${p.attributes.unit_of_measurement||`B`}`:void 0,hasUpdate:m?.state===`on`,updateEntityId:m?.entity_id})}return s.sort((e,t)=>e.isRunning&&!t.isRunning?-1:!e.isRunning&&t.isRunning?1:e.name.localeCompare(t.name))}render(){let e=this.getContainers(),t=e.filter(e=>e.isRunning).length,n=e.length-t,r=e.filter(e=>e.hasUpdate).length,i=this.getEntity(`check_container_updates`,`button`),a=e.filter(e=>this._filter===`running`?e.isRunning:this._filter===`stopped`?!e.isRunning:this._filter!==`updates`||e.hasUpdate),o=L`
+      <span class="badge ${t>0?`badge-online`:`badge-standby`}">
+        ${t} Running
+      </span>
+      ${r>0?L`
+            <span class="badge badge-warning">
+              ${J(G,12)}
+              <span>${r} Updates</span>
+            </span>
+          `:z}
+    `;return L`
+      <ha-card>
+        ${this.renderHeader(this.config.title||`Docker Containers`,`${t} running • ${n} stopped`,nt,o)}
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+          <div style="display: flex; gap: 4px; overflow-x: auto;">
+            <button
+              class="tab-btn ${this._filter===`all`?`active`:``}"
+              @click=${()=>this._filter=`all`}
+            >
+              All (${e.length})
+            </button>
+            <button
+              class="tab-btn ${this._filter===`running`?`active`:``}"
+              @click=${()=>this._filter=`running`}
+            >
+              Running (${t})
+            </button>
+            <button
+              class="tab-btn ${this._filter===`stopped`?`active`:``}"
+              @click=${()=>this._filter=`stopped`}
+            >
+              Stopped (${n})
+            </button>
+            ${r>0?L`
+                  <button
+                    class="tab-btn ${this._filter===`updates`?`active`:``}"
+                    style="color: var(--unraid-warning);"
+                    @click=${()=>this._filter=`updates`}
+                  >
+                    Updates (${r})
+                  </button>
+                `:z}
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 6px;">
+            ${i?L`
+                  <button
+                    class="btn"
+                    title="Check for updates"
+                    @click=${()=>this.pressButton(i.entity_id)}
+                  >
+                    Check Updates
+                  </button>
+                `:z}
+            <button
+              class="btn-icon"
+              title="Toggle View Mode"
+              @click=${()=>this._viewMode=this._viewMode===`grid`?`list`:`grid`}
+            >
+              ${J(this._viewMode===`grid`?wt:Ct,18)}
+            </button>
+          </div>
+        </div>
+        ${this._viewMode===`grid`?L`
+              <div class="container-grid">
+                ${a.map(e=>L`
+                    <div
+                      class="container-tile"
+                      @click=${()=>this.openMoreInfo(e.switchEntityId)}
+                    >
+                      <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                        <span class="status-dot ${e.isRunning?`online`:`offline`}"></span>
+                        <span class="tile-name" title="${e.name}">${e.name}</span>
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 4px;">
+                        ${e.hasUpdate?L`<span style="color: var(--unraid-warning);">${J(G,14)}</span>`:z}
+                        ${e.restartEntityId?L`
+                              <button
+                                class="btn-icon"
+                                style="padding: 2px;"
+                                title="Restart ${e.name}"
+                                @click=${t=>{t.stopPropagation(),this.pressButton(e.restartEntityId)}}
+                              >
+                                ${J(gt,14)}
+                              </button>
+                            `:z}
+                        <button
+                          class="btn-icon"
+                          style="padding: 2px; color: ${e.isRunning?`var(--unraid-online)`:`var(--unraid-subtext)`};"
+                          title="${e.isRunning?`Stop`:`Start`} ${e.name}"
+                          @click=${t=>{t.stopPropagation(),this.handleToggle(e.switchEntityId,e.isRunning,e.name)}}
+                        >
+                          ${J(ht,14)}
+                        </button>
+                      </div>
+                    </div>
+                  `)}
+              </div>
+            `:L`
+              <div class="item-list">
+                ${a.map(e=>L`
+                    <div class="list-row">
+                      <div class="row-left">
+                        <span class="status-dot ${e.isRunning?`online`:`offline`}"></span>
+                        <span style="font-weight: 600; min-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                          ${e.name}
+                        </span>
+                        ${e.cpuPct===void 0?z:L`<span style="font-size: 0.72rem; color: var(--unraid-subtext);">${e.cpuPct}% CPU</span>`}
+                        ${e.memoryUsage?L`<span style="font-size: 0.72rem; color: var(--unraid-subtext);">${e.memoryUsage}</span>`:z}
+                      </div>
+                      <div class="row-right">
+                        ${e.hasUpdate?L`
+                              <span class="badge badge-warning">Update Available</span>
+                            `:z}
+                        ${e.restartEntityId?L`
+                              <button
+                                class="btn"
+                                style="padding: 3px 8px;"
+                                @click=${()=>this.pressButton(e.restartEntityId)}
+                              >
+                                ${J(gt,13)}
+                                <span>Restart</span>
+                              </button>
+                            `:z}
+                        <button
+                          class="btn ${e.isRunning?`btn`:`btn-primary`}"
+                          style="padding: 3px 8px;"
+                          @click=${()=>this.handleToggle(e.switchEntityId,e.isRunning,e.name)}
+                        >
+                          ${J(ht,13)}
+                          <span>${e.isRunning?`Stop`:`Start`}</span>
+                        </button>
+                      </div>
+                    </div>
+                  `)}
+              </div>
+            `}
+      </ha-card>
+    `}},editor:At,name:`Unraid Docker Containers Card`,description:`Monitor, start, stop, restart, and update Docker containers in grid or list view.`});function Wt(e,t){if(!e||e===`unavailable`||e===`unknown`)return null;let n=e.trim();if(!n)return null;if(/[a-zA-Z]/.test(n))return n.replace(/(\b(?:minute|minutes|hour|hours|sec|second|seconds|min|mins)\b.*)\s+min$/i,`$1`);let r=Number(n);if(Number.isFinite(r)){let e=typeof t?.unit_of_measurement==`string`?t.unit_of_measurement.toLowerCase():``,n=r;n=Math.round(e===`s`||e===`sec`||e===`seconds`?r/60:r);let i=Math.floor(n/60),a=n%60;return i>0?a>0?`${i} hour${i>1?`s`:``} ${a} minute${a>1?`s`:``}`:`${i} hour${i>1?`s`:``}`:`${a} minute${a===1?``:`s`}`}return n}Z({tag:Oe,editorTag:ke,card:class extends Y{static editorTag=ke;render(){let e=this.getEntity(`ups_status`),t=this.getEntity(`ups_battery`),n=this.getEntity(`ups_load`),r=this.getEntity(`ups_runtime`),i=this.getEntity(`ups_power`),a=this.getEntity(`ups_output_voltage`),o=this.getEntity(`ups_battery_health`),s=!!(e&&e.state!==`unavailable`&&e.state!==`unknown`),c=s&&e?e.state:e?.state||`Unavailable`,l=s&&c.toLowerCase().includes(`online`),u=s&&(c.toLowerCase().includes(`battery`)||c.toLowerCase().includes(`discharge`)),d=!s||c===`Unavailable`||c===`unavailable`,f=t&&t.state!==`unavailable`&&t.state!==`unknown`&&t?Math.round(Number(t.state)||0):null,p=n&&n.state!==`unavailable`&&n.state!==`unknown`&&n?Math.round(Number(n.state)||0):null,m=i&&i.state!==`unavailable`&&i.state!==`unknown`&&i?`${i.state} W`:null,h=Wt(r?.state,r?.attributes),g=a&&a.state!==`unavailable`&&a.state!==`unknown`&&a?`${a.state} V`:null,_=o&&o.state!==`unavailable`&&o.state!==`unknown`&&o?o.state:null,v=L`
+      <span class="badge ${d?`badge-standby`:l?`badge-online`:u?`badge-warning`:`badge-error`}">
+        ${d?z:L`<span class="pulse-dot"></span>`}
+        <span>${d?`Unavailable`:c}</span>
+      </span>
+    `;return L`
+      <ha-card>
+        ${this.renderHeader(this.config.title||`UPS Power & Battery`,e?.attributes?.model||`Uninterruptible Power Supply`,ot,v)}
+        <div class="rings-grid" style="grid-template-columns: repeat(2, 1fr);">
+          <div
+            class="ring-card"
+            role="${t?`button`:`none`}"
+            tabindex="${t?`0`:`-1`}"
+            style="${t?`cursor: pointer;`:``}"
+            @click=${()=>t&&this.openMoreInfo(t.entity_id)}
+            @keydown=${e=>(e.key===`Enter`||e.key===` `)&&t&&(e.preventDefault(),this.openMoreInfo(t.entity_id))}
+            title="Click to view Battery details"
+          >
+            <div
+              class="ring-gauge"
+              style="--pct: ${f??0}; --ring-color: ${f===null?`var(--unraid-border)`:f<20?`var(--unraid-error)`:f<50?`var(--unraid-warning)`:`var(--unraid-online)`}"
+            >
+              <span class="ring-content">${f===null?`—`:`${f}%`}</span>
+            </div>
+            <span class="ring-label">Battery Level</span>
+            <span class="ring-subtext">${h?`${h} left`:f===null?`No Data`:`Healthy`}</span>
+          </div>
+          <div
+            class="ring-card"
+            role="${n?`button`:`none`}"
+            tabindex="${n?`0`:`-1`}"
+            style="${n?`cursor: pointer;`:``}"
+            @click=${()=>n&&this.openMoreInfo(n.entity_id)}
+            @keydown=${e=>(e.key===`Enter`||e.key===` `)&&n&&(e.preventDefault(),this.openMoreInfo(n.entity_id))}
+            title="Click to view Load details"
+          >
+            <div
+              class="ring-gauge"
+              style="--pct: ${p??0}; --ring-color: ${p===null?`var(--unraid-border)`:p>80?`var(--unraid-error)`:p>50?`var(--unraid-warning)`:`var(--unraid-info)`}"
+            >
+              <span class="ring-content">${p===null?`—`:`${p}%`}</span>
+            </div>
+            <span class="ring-label">UPS Load</span>
+            <span class="ring-subtext">${m||(p===null?`No Data`:`${p}% capacity`)}</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="detail-grid">
+          <div
+            class="detail-item"
+            role="${r?`button`:`none`}"
+            tabindex="${r?`0`:`-1`}"
+            style="${r?`cursor: pointer;`:``}"
+            @click=${()=>r&&this.openMoreInfo(r.entity_id)}
+            @keydown=${e=>(e.key===`Enter`||e.key===` `)&&r&&(e.preventDefault(),this.openMoreInfo(r.entity_id))}
+            title="Click to view Runtime details"
+          >
+            <span class="detail-label">Runtime Remaining</span>
+            <span class="detail-val">${h||`—`}</span>
+          </div>
+          <div
+            class="detail-item"
+            role="${i?`button`:`none`}"
+            tabindex="${i?`0`:`-1`}"
+            style="${i?`cursor: pointer;`:``}"
+            @click=${()=>i&&this.openMoreInfo(i.entity_id)}
+            @keydown=${e=>(e.key===`Enter`||e.key===` `)&&i&&(e.preventDefault(),this.openMoreInfo(i.entity_id))}
+            title="Click to view Power details"
+          >
+            <span class="detail-label">Power Consumption</span>
+            <span class="detail-val">${m||`—`}</span>
+          </div>
+          <div
+            class="detail-item"
+            role="${a?`button`:`none`}"
+            tabindex="${a?`0`:`-1`}"
+            style="${a?`cursor: pointer;`:``}"
+            @click=${()=>a&&this.openMoreInfo(a.entity_id)}
+            @keydown=${e=>(e.key===`Enter`||e.key===` `)&&a&&(e.preventDefault(),this.openMoreInfo(a.entity_id))}
+            title="Click to view Voltage details"
+          >
+            <span class="detail-label">Output Voltage</span>
+            <span class="detail-val">${g||`—`}</span>
+          </div>
+          <div
+            class="detail-item"
+            role="${o?`button`:`none`}"
+            tabindex="${o?`0`:`-1`}"
+            style="${o?`cursor: pointer;`:``}"
+            @click=${()=>o&&this.openMoreInfo(o.entity_id)}
+            @keydown=${e=>(e.key===`Enter`||e.key===` `)&&o&&(e.preventDefault(),this.openMoreInfo(o.entity_id))}
+            title="Click to view Battery Health details"
+          >
+            <span class="detail-label">Battery Health</span>
+            <span class="detail-val" style="${_?`color: var(--unraid-online);`:``}">${_||`—`}</span>
+          </div>
+        </div>
+      </ha-card>
+    `}},editor:jt,name:`Unraid Power & UPS Card`,description:`Monitor UPS battery level, power draw in Watts, load %, and estimated runtime.`});function Gt(e){let t=e.split(`.`)[1]||``;return t.replace(/^.*?_vm_reboot_/,``).replace(/^vm_reboot_/,``).replace(/^.*?_virtual_machine_status_/,``).replace(/^virtual_machine_status_/,``).replace(/^.*?_virtual_machine_/,``).replace(/^virtual_machine_/,``).replace(/_status$/,``).replace(/_virtual_machine$/,``)||t}Z({tag:Ae,editorTag:je,card:class extends Y{static editorTag=je;handleToggle(e,t,n){(!t||confirm(`Are you sure you want to shut down virtual machine "${n}"?`))&&this.toggleEntity(e)}getVms(){let e=this.getEntities(`virtual_machine`,`switch`),t=this.getEntities(`virtual_machine_status`,`sensor`),n=this.getEntities(`vm_reboot`,`button`),r=[];for(let i of e){let e=Gt(i.entity_id),a=i.attributes.friendly_name||e,o=i.state===`on`,s=t.find(t=>Gt(t.entity_id)===e)?.state||(o?`running`:`shut off`),c=n.find(t=>Gt(t.entity_id)===e);r.push({id:e,name:a,isRunning:o,status:s,switchEntityId:i.entity_id,rebootEntityId:c?.entity_id})}return r.sort((e,t)=>e.isRunning&&!t.isRunning?-1:!e.isRunning&&t.isRunning?1:e.name.localeCompare(t.name))}render(){let e=this.getVms(),t=e.filter(e=>e.isRunning).length,n=L`
+      <span class="badge ${t>0?`badge-online`:`badge-standby`}">
+        ${t} Running
+      </span>
+    `;return L`
+      <ha-card>
+        ${this.renderHeader(this.config.title||`Virtual Machines`,`${t} running of ${e.length} VMs`,ft,n)}
+
+        <div class="item-list">
+          ${e.length>0?e.map(e=>L`
+                  <div class="list-row">
+                    <div class="row-left">
+                      <span class="status-dot ${e.isRunning?`online`:`offline`}"></span>
+                      <div style="display: flex; flex-direction: column;">
+                        <span style="font-weight: 600;">${e.name}</span>
+                        <span style="font-size: 0.7rem; color: var(--unraid-subtext); text-transform: capitalize;">
+                          ${e.status}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="row-right">
+                      ${e.rebootEntityId?L`
+                            <button
+                              class="btn"
+                              style="padding: 3px 8px;"
+                              title="Reboot VM"
+                              @click=${()=>this.pressButton(e.rebootEntityId)}
+                            >
+                              ${J(gt,13)}
+                              <span>Reboot</span>
+                            </button>
+                          `:z}
+                      <button
+                        class="btn ${e.isRunning?`btn`:`btn-primary`}"
+                        style="padding: 3px 8px;"
+                        @click=${()=>this.handleToggle(e.switchEntityId,e.isRunning,e.name)}
+                      >
+                        ${J(ht,13)}
+                        <span>${e.isRunning?`Stop`:`Start`}</span>
+                      </button>
+                    </div>
+                  </div>
+                `):L`<div style="text-align: center; color: var(--unraid-subtext); font-size: 0.8rem; padding: 12px;">No virtual machines configured</div>`}
+        </div>
+      </ha-card>
+    `}},editor:Mt,name:`Unraid Virtual Machines Card`,description:`Monitor and manage Unraid virtual machines.`}),Z({tag:Ie,editorTag:Le,card:class extends Y{static editorTag=Le;getArcData(){let e=this.getEntity(`zfs_arc_hit_ratio`),t=this.getEntity(`zfs_arc_configured_max`),n=e?.state!=null&&!isNaN(Number(e.state))?Math.round(Number(e.state)):void 0,r;if(t?.state!=null){let e=t.state;if(e===`0`||e===`Auto`)r=`Auto`;else{let n=Number(e);r=!isNaN(n)&&n>0?`${(n/1073741824).toFixed(1)} GB`:`${e} ${t.attributes?.unit_of_measurement||``}`.trim()}}return{hitRatio:n,hitRatioEntityId:e?.entity_id,configuredMax:r,configuredMaxEntityId:t?.entity_id,attributes:e?.attributes}}getPools(){let e=this.getEntities(`zfs_pool_usage`),t=this.getEntities(`zfs_pool_health`),n=this.getEntities(`corrupted_files`),r=new Map;if(this.hass?.states)for(let[e,t]of Object.entries(this.hass.states)){let n=e.match(/_zfs_([a-zA-Z0-9_-]+)_usage$/i);if(n&&n[1]){let i=n[1];if(!r.has(i)){let n=parseFloat(t.state);r.set(i,{name:t.attributes?.pool_name||i,usagePct:isNaN(n)?0:Math.round(n),totalSize:t.attributes?.total_size,usedSize:t.attributes?.used_size,freeSize:t.attributes?.free_space||t.attributes?.free_size,health:`ONLINE`,usageEntityId:e})}}}for(let t of e){let e=t.attributes?.pool_name||t.entity_id.replace(/^.*?_zfs_/,``).replace(/_usage$/,``),n=parseFloat(t.state);r.has(e)||r.set(e,{name:e,usagePct:isNaN(n)?0:Math.round(n),totalSize:t.attributes?.total_size,usedSize:t.attributes?.used_size,freeSize:t.attributes?.free_space||t.attributes?.free_size,health:`ONLINE`,usageEntityId:t.entity_id})}for(let e of t){let t=e.attributes?.pool_name||e.entity_id.replace(/^.*?_zfs_/,``).replace(/_health$/,``),n=r.get(t);n&&(n.health=e.state||`ONLINE`,n.healthEntityId=e.entity_id,e.attributes?.errors!==void 0&&(n.errors=Number(e.attributes.errors)))}for(let e of n){let t=e.entity_id.replace(/^.*?_zfs_/,``).replace(/_corrupted_files$/,``),n=r.get(t);if(n){let t=parseInt(e.state,10);isNaN(t)||(n.corruptedFiles=t)}}return Array.from(r.values()).sort((e,t)=>e.name.localeCompare(t.name))}render(){let e=this.getActiveDevice(),t=this.config.title||e?.name_by_user||e?.name||`Unraid Server`,n=this.getArcData(),r=this.getPools(),i=n.hitRatio!==void 0||r.length>0;return L`
+      <ha-card>
+        ${this.renderHeader(t,`ZFS Storage & Cache`,K,L`
+            <span class="badge ${r.some(e=>e.health!==`ONLINE`)?`badge-warning`:`badge-online`}">
+              <span class="pulse-dot"></span>
+              <span>${r.length} Pool${r.length===1?``:`s`}</span>
+            </span>
+          `)}
+
+        ${i?L`
+              ${n.hitRatio===void 0?z:L`
+                    <div class="rings-grid">
+                      <div
+                        class="ring-card"
+                        role="${n.hitRatioEntityId?`button`:`none`}"
+                        tabindex="${n.hitRatioEntityId?`0`:`-1`}"
+                        style="${n.hitRatioEntityId?`cursor: pointer;`:``}"
+                        @click=${()=>n.hitRatioEntityId&&this.openMoreInfo(n.hitRatioEntityId)}
+                        @keydown=${e=>(e.key===`Enter`||e.key===` `)&&n.hitRatioEntityId&&(e.preventDefault(),this.openMoreInfo(n.hitRatioEntityId))}
+                        title="Click to view ARC Cache details"
+                      >
+                        <div
+                          class="ring-gauge"
+                          style="--pct: ${n.hitRatio}; --ring-color: ${n.hitRatio>90?`var(--unraid-online)`:n.hitRatio>70?`var(--unraid-warning)`:`var(--unraid-error)`}"
+                        >
+                          <span class="ring-content">${n.hitRatio}%</span>
+                        </div>
+                        <span class="ring-label">ARC Hit Ratio</span>
+                        <span class="ring-subtext">
+                          ${n.configuredMax?`Max: ${n.configuredMax}`:`ZFS Adaptive Cache`}
+                        </span>
+                      </div>
+                    </div>
+                  `}
+
+              ${r.length>0?L`
+                    <div class="divider"></div>
+                    <div class="disk-list">
+                      ${r.map(e=>{let t=e.health.toUpperCase()!==`ONLINE`,n=(e.corruptedFiles||0)>0;return L`
+                          <div
+                            class="disk-row"
+                            @click=${()=>e.usageEntityId&&this.openMoreInfo(e.usageEntityId)}
+                            style="${e.usageEntityId?`cursor: pointer;`:``}"
+                          >
+                            <div class="disk-main">
+                              <span class="disk-icon ${t?`disk-warning`:`disk-online`}">
+                                ${J(t?G:K,18)}
+                              </span>
+                              <div class="disk-info">
+                                <span class="disk-name">${e.name}</span>
+                                <span class="disk-subtext">
+                                  ${e.usedSize&&e.totalSize?`${e.usedSize} / ${e.totalSize}`:`${e.usagePct}% used`}
+                                  ${n?` • ${e.corruptedFiles} corrupted`:``}
+                                </span>
+                              </div>
+                            </div>
+                            <div class="disk-meta">
+                              <span class="disk-temp">${e.usagePct}%</span>
+                              <span class="badge ${t?`badge-error`:`badge-online`}">
+                                ${e.health}
+                              </span>
+                            </div>
+                          </div>
+                        `})}
+                    </div>
+                  `:z}
+            `:L`
+              <div class="empty-state">
+                ${J(K,32)}
+                <div class="empty-title">No ZFS Telemetry Available</div>
+                <div class="empty-subtext">Enable the ZFS collector in Unraid Management Agent to monitor pools and ARC cache.</div>
+              </div>
+            `}
+      </ha-card>
+    `}},editor:Nt,name:`Unraid ZFS Card`,description:`Monitor ZFS pools, pool health, corrupted files, and ARC cache performance`}),Z({tag:Re,editorTag:ze,card:class extends Y{static editorTag=ze;getFans(){let e=[];if(!this.hass?.states)return e;let t=this.getActiveDevice()?.id,n=new Map;for(let[e,t]of Object.entries(this.hass.states))if(e.startsWith(`number.`)&&(e.includes(`_fan_`)||e.includes(`fan_control`))){let r=t.attributes?.fan_id;r!==void 0&&n.set(String(r),e)}for(let[r,i]of Object.entries(this.hass.states)){if(!r.startsWith(`sensor.`))continue;if(t&&this.hass.entities){let e=this.hass.entities[r];if(e&&e.device_id&&e.device_id!==t)continue}if(!(i.attributes?.unit_of_measurement===`RPM`||i.attributes?.unit_of_measurement===`rpm`||r.includes(`_fan_`)||r.endsWith(`_fan`)))continue;let a=parseInt(i.state,10),o=i.attributes?.is_failed===!0||i.attributes?.status===`failed`,s=i.attributes?.fan_id,c=(i.attributes?.original_name||i.attributes?.friendly_name||r.split(`.`)[1]||`Fan`).replace(/^(?:.*?\s+)?Fan\s+/i,`Fan `).replace(/\s+RPM$/i,``).replace(/\s+Speed$/i,``).trim();e.push({id:r,name:c,rpm:isNaN(a)?0:a,rpmText:isNaN(a)?i.state:`${a} RPM`,isFailed:o,fanId:s,controlEntityId:s===void 0?void 0:n.get(String(s)),rpmEntityId:r})}return e.sort((e,t)=>e.name.localeCompare(t.name,void 0,{numeric:!0}))}render(){let e=this.getActiveDevice(),t=this.config.title||e?.name_by_user||e?.name||`Unraid Server`,n=this.getFans();return L`
+      <ha-card>
+        ${this.renderHeader(t,`Cooling & Fans`,at,L`
+            <span class="badge ${n.some(e=>e.isFailed)?`badge-error`:`badge-online`}">
+              <span class="pulse-dot"></span>
+              <span>${n.length} Fan${n.length===1?``:`s`}</span>
+            </span>
+          `)}
+
+        ${n.length===0?L`
+              <div class="empty-state">
+                ${J(at,32)}
+                <div class="empty-title">No Fan Sensors Found</div>
+                <div class="empty-subtext">No cooling fans reported by system sensors or IPMI.</div>
+              </div>
+            `:L`
+              <div class="disk-list">
+                ${n.map(e=>L`
+                    <div
+                      class="disk-row"
+                      @click=${()=>this.openMoreInfo(e.controlEntityId||e.rpmEntityId)}
+                      style="cursor: pointer;"
+                      title="Click to view fan details / controls"
+                    >
+                      <div class="disk-main">
+                        <span class="disk-icon ${e.isFailed?`disk-warning`:`disk-online`}">
+                          ${J(e.isFailed?G:at,18)}
+                        </span>
+                        <div class="disk-info">
+                          <span class="disk-name">${e.name}</span>
+                          <span class="disk-subtext">
+                            ${e.isFailed?`Fan Fault Detected`:e.rpm>0?`Operating Normally`:`Stopped / Idle`}
+                          </span>
+                        </div>
+                      </div>
+                      <div class="disk-meta">
+                        <span class="disk-temp" style="color: ${e.isFailed?`var(--unraid-error)`:e.rpm>2e3?`var(--unraid-warning)`:`var(--unraid-text)`};">
+                          ${e.rpmText}
+                        </span>
+                        ${e.isFailed?L`<span class="badge badge-error">FAULT</span>`:e.rpm>0?L`<span class="badge badge-online">ACTIVE</span>`:L`<span class="badge">OFF</span>`}
+                      </div>
+                    </div>
+                  `)}
+              </div>
+            `}
+      </ha-card>
+    `}},editor:Pt,name:`Unraid Fans Card`,description:`Monitor system cooling fans, RPM speeds, and control statuses`}),Z({tag:Be,editorTag:Ve,card:class extends Y{static editorTag=Ve;getGpus(){let e=new Map;if(!this.hass?.states)return[];let t=this.getActiveDevice()?.id;for(let[n,r]of Object.entries(this.hass.states)){if(!n.startsWith(`sensor.`))continue;if(t&&this.hass.entities){let e=this.hass.entities[n];if(e&&e.device_id&&e.device_id!==t)continue}let i=n.match(/_gpu_(\d+)_(utilization|temperature|power|energy|memory_utilization)$/i);if(!i||!i[1]||!i[2])continue;let a=parseInt(i[1],10),o=i[2].toLowerCase();if(!e.has(a)){let t=r.attributes?.gpu_name||`GPU ${a}`,n=r.attributes?.driver_version||void 0;e.set(a,{index:a,name:t,driver:n})}let s=e.get(a),c=parseFloat(r.state);o===`utilization`?(s.utilizationPct=isNaN(c)?void 0:Math.round(c),s.utilizationEntityId=n):o===`temperature`?(s.temp=isNaN(c)?void 0:Math.round(c),s.tempEntityId=n):o===`power`?(s.power=isNaN(c)?void 0:Math.round(c),s.powerEntityId=n):o===`energy`?(s.energy=isNaN(c)?void 0:Number(c.toFixed(2)),s.energyEntityId=n):o===`memory_utilization`&&(s.memUtilPct=isNaN(c)?void 0:Math.round(c),s.memUtilEntityId=n)}return Array.from(e.values()).sort((e,t)=>e.index-t.index)}render(){let e=this.getActiveDevice(),t=this.config.title||e?.name_by_user||e?.name||`Unraid Server`,n=this.getGpus();return L`
+      <ha-card>
+        ${this.renderHeader(t,`GPU Accelerators`,q,L`
+            <span class="badge ${n.length>0?`badge-online`:``}">
+              <span class="pulse-dot"></span>
+              <span>${n.length} GPU${n.length===1?``:`s`}</span>
+            </span>
+          `)}
+
+        ${n.length===0?L`
+              <div class="empty-state">
+                ${J(q,32)}
+                <div class="empty-title">No GPU Telemetry Available</div>
+                <div class="empty-subtext">Enable GPU monitoring or install NVIDIA / Intel GPU plugins to view GPU stats.</div>
+              </div>
+            `:L`
+              <div class="gpu-grid" style="display: flex; flex-direction: column; gap: 14px;">
+                ${n.map(e=>{let t=e.utilizationPct??0;return L`
+                    <div class="ring-card" style="padding: 12px; background: rgba(255, 255, 255, 0.02); border-radius: 8px;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; width: 100%;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                          ${J(q,20)}
+                          <span style="font-weight: 600; font-size: 14px;">${e.name}</span>
+                        </div>
+                        ${e.driver?L`<span class="badge">${e.driver}</span>`:z}
+                      </div>
+
+                      <div class="rings-grid" style="grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));">
+                        ${e.utilizationPct===void 0?z:L`
+                              <div
+                                class="ring-card"
+                                @click=${()=>e.utilizationEntityId&&this.openMoreInfo(e.utilizationEntityId)}
+                                style="cursor: pointer;"
+                                title="Click for GPU load details"
+                              >
+                                <div
+                                  class="ring-gauge"
+                                  style="--pct: ${t}; --ring-color: ${t>80?`var(--unraid-error)`:t>50?`var(--unraid-warning)`:`var(--unraid-online)`}"
+                                >
+                                  <span class="ring-content">${t}%</span>
+                                </div>
+                                <span class="ring-label">GPU Load</span>
+                              </div>
+                            `}
+
+                        ${e.temp===void 0?z:L`
+                              <div
+                                class="ring-card"
+                                @click=${()=>e.tempEntityId&&this.openMoreInfo(e.tempEntityId)}
+                                style="cursor: pointer;"
+                                title="Click for Temperature details"
+                              >
+                                <div
+                                  class="ring-gauge"
+                                  style="--pct: ${Math.min(100,Math.round(e.temp/90*100))}; --ring-color: ${e.temp>80?`var(--unraid-error)`:e.temp>65?`var(--unraid-warning)`:`var(--unraid-info)`}"
+                                >
+                                  <span class="ring-content">${e.temp}°C</span>
+                                </div>
+                                <span class="ring-label">Temperature</span>
+                              </div>
+                            `}
+
+                        ${e.power===void 0?z:L`
+                              <div
+                                class="ring-card"
+                                @click=${()=>e.powerEntityId&&this.openMoreInfo(e.powerEntityId)}
+                                style="cursor: pointer;"
+                                title="Click for Power details"
+                              >
+                                <div class="ring-gauge" style="--pct: 60; --ring-color: var(--unraid-accent)">
+                                  <span class="ring-content">${e.power}W</span>
+                                </div>
+                                <span class="ring-label">Power Draw</span>
+                                ${e.energy===void 0?z:L`<span class="ring-subtext">${e.energy} kWh</span>`}
+                              </div>
+                            `}
+
+                        ${e.memUtilPct===void 0?z:L`
+                              <div
+                                class="ring-card"
+                                @click=${()=>e.memUtilEntityId&&this.openMoreInfo(e.memUtilEntityId)}
+                                style="cursor: pointer;"
+                                title="Click for VRAM details"
+                              >
+                                <div class="ring-gauge" style="--pct: ${e.memUtilPct}; --ring-color: var(--unraid-info)">
+                                  <span class="ring-content">${e.memUtilPct}%</span>
+                                </div>
+                                <span class="ring-label">VRAM Usage</span>
+                              </div>
+                            `}
+                      </div>
+                    </div>
+                  `})}
+              </div>
+            `}
+      </ha-card>
+    `}},editor:Ft,name:`Unraid GPU Card`,description:`Monitor graphics cards utilization, temperature, power draw, and VRAM`}),Z({tag:He,editorTag:Ue,card:class extends Y{static editorTag=Ue;render(){let e=this.getActiveDevice(),t=this.config.title||e?.name_by_user||e?.name||`Unraid Server`,n=this.getEntity(`notifications_unread_alert`),r=this.getEntity(`notifications_unread_warning`),i=this.getEntity(`notifications_unread_info`),a=this.getEntity(`notification_count`),o=this.getEntity(`notification_event`,`event`),s=Number(n?.state)||0,c=Number(r?.state)||0,l=Number(i?.state)||0,u=Number(a?.state)||s+c+l,d=u>0,f=!!o?.state&&o?.state!==`unavailable`&&o?.state!==`unknown`,p=!!(o?.attributes?.subject||o?.attributes?.description||o?.attributes?.message),m=f&&p?o?.attributes:void 0;return L`
+      <ha-card>
+        ${this.renderHeader(t,`Notifications Center`,$e,L`
+            <span class="badge ${s>0?`badge-error`:c>0?`badge-warning`:`badge-online`}">
+              <span class="pulse-dot"></span>
+              <span>${u} Unread</span>
+            </span>
+          `)}
+
+        <div class="rings-grid">
+          <div
+            class="ring-card"
+            @click=${()=>n&&this.openMoreInfo(n.entity_id)}
+            style="${n?`cursor: pointer;`:``}"
+            title="Click for Alerts"
+          >
+            <div
+              class="ring-gauge"
+              style="--pct: ${s>0?100:0}; --ring-color: var(--unraid-error)"
+            >
+              <span class="ring-content">${s}</span>
+            </div>
+            <span class="ring-label">Alerts</span>
+            <span class="ring-subtext">Critical Issues</span>
+          </div>
+
+          <div
+            class="ring-card"
+            @click=${()=>r&&this.openMoreInfo(r.entity_id)}
+            style="${r?`cursor: pointer;`:``}"
+            title="Click for Warnings"
+          >
+            <div
+              class="ring-gauge"
+              style="--pct: ${c>0?100:0}; --ring-color: var(--unraid-warning)"
+            >
+              <span class="ring-content">${c}</span>
+            </div>
+            <span class="ring-label">Warnings</span>
+            <span class="ring-subtext">Action Required</span>
+          </div>
+
+          <div
+            class="ring-card"
+            @click=${()=>i&&this.openMoreInfo(i.entity_id)}
+            style="${i?`cursor: pointer;`:``}"
+            title="Click for Informational"
+          >
+            <div
+              class="ring-gauge"
+              style="--pct: ${l>0?100:0}; --ring-color: var(--unraid-info)"
+            >
+              <span class="ring-content">${l}</span>
+            </div>
+            <span class="ring-label">Notices</span>
+            <span class="ring-subtext">System Information</span>
+          </div>
+        </div>
+
+        ${!d&&!m?L`
+              <div class="divider"></div>
+              <div class="empty-state">
+                ${J(et,32)}
+                <div class="empty-title">All Clear</div>
+                <div class="empty-subtext">There are no unread notifications on this Unraid server.</div>
+              </div>
+            `:m?L`
+              <div class="divider"></div>
+              <div class="disk-list">
+                <div class="disk-row">
+                  <div class="disk-main">
+                    <span class="disk-icon ${m.importance===`alert`?`disk-warning`:`disk-online`}">
+                      ${J(m.importance===`alert`||m.importance===`warning`?G:ut,18)}
+                    </span>
+                    <div class="disk-info">
+                      <span class="disk-name">${m.subject||`Latest Notification`}</span>
+                      <span class="disk-subtext">${m.description||m.message||`No message content`}</span>
+                    </div>
+                  </div>
+                  <div class="disk-meta">
+                    <span class="badge ${m.importance===`alert`?`badge-error`:m.importance===`warning`?`badge-warning`:`badge-online`}">
+                      ${m.importance||`Info`}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            `:z}
+      </ha-card>
+    `}},editor:It,name:`Unraid Notifications Card`,description:`View Unraid notification counts, severity alerts, and latest messages`}),Z({tag:We,editorTag:Ge,card:class extends Y{static editorTag=Ge;render(){let e=this.getActiveDevice(),t=this.config.title||e?.name_by_user||e?.name||`Unraid Server`,n=this.getEntity(`last_parity_check`),r=this.getEntity(`next_parity_check`),i=this.getEntity(`parity_check_running`,`binary_sensor`),a=this.getEntity(`parity_valid`,`binary_sensor`),o=this.getEntity(`flash_usage`),s=this.getEntity(`flash_free_space`),c=this.getEntity(`plugins_with_updates`)||this.getEntity(`plugin_updates`),l=this.getEntity(`container_updates_available`),u=i?.state===`on`,d=a?.state===`on`,f=Math.round(Number(o?.state)||0),p=Number(c?.state)||0,m=Number(l?.state)||0,h=p+m,g=n?.attributes?.duration||n?.attributes?.last_duration,_=n?.attributes?.result||n?.state,v=n?.attributes?.errors;return L`
+      <ha-card>
+        ${this.renderHeader(t,`Maintenance & Operations`,Tt,L`
+            <span class="badge ${h>0?`badge-warning`:`badge-online`}">
+              <span class="pulse-dot"></span>
+              <span>${h>0?`${h} Updates`:`Up to Date`}</span>
+            </span>
+          `)}
+
+        <div class="rings-grid">
+          <div
+            class="ring-card"
+            @click=${()=>o&&this.openMoreInfo(o.entity_id)}
+            style="${o?`cursor: pointer;`:``}"
+            title="Click for Flash USB details"
+          >
+            <div
+              class="ring-gauge"
+              style="--pct: ${f}; --ring-color: ${f>80?`var(--unraid-error)`:f>60?`var(--unraid-warning)`:`var(--unraid-online)`}"
+            >
+              <span class="ring-content">${f}%</span>
+            </div>
+            <span class="ring-label">Flash Boot Drive</span>
+            <span class="ring-subtext">${s?.state?`${s.state} Free`:`USB Boot Drive`}</span>
+          </div>
+
+          <div
+            class="ring-card"
+            @click=${()=>n&&this.openMoreInfo(n.entity_id)}
+            style="${n?`cursor: pointer;`:``}"
+            title="Click for Parity status"
+          >
+            <div
+              class="ring-gauge"
+              style="--pct: ${u?50:100}; --ring-color: ${d?`var(--unraid-error)`:`var(--unraid-online)`}"
+            >
+              <span class="ring-content">${u?`SYNC`:d?`FAIL`:`OK`}</span>
+            </div>
+            <span class="ring-label">Parity Health</span>
+            <span class="ring-subtext">${v===void 0?`Parity Protected`:`${v} Sync Errors`}</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="disk-list">
+          <div class="disk-row" @click=${()=>n&&this.openMoreInfo(n.entity_id)} style="cursor: pointer;">
+            <div class="disk-main">
+              <span class="disk-icon disk-online">
+                ${J(bt,18)}
+              </span>
+              <div class="disk-info">
+                <span class="disk-name">Last Parity Check</span>
+                <span class="disk-subtext">
+                  ${_||`Completed`}
+                  ${g?` • Duration: ${g}`:``}
+                </span>
+              </div>
+            </div>
+            <div class="disk-meta">
+              <span class="disk-temp">${n?.state||`--`}</span>
+            </div>
+          </div>
+
+          ${r?.state&&r.state!==`unavailable`&&r.state!==`unknown`?L`
+                <div class="disk-row" @click=${()=>this.openMoreInfo(r.entity_id)} style="cursor: pointer;">
+                  <div class="disk-main">
+                    <span class="disk-icon disk-online">
+                      ${J(tt,18)}
+                    </span>
+                    <div class="disk-info">
+                      <span class="disk-name">Next Scheduled Parity</span>
+                      <span class="disk-subtext">Automated Parity Verification</span>
+                    </div>
+                  </div>
+                  <div class="disk-meta">
+                    <span class="disk-temp">${r.state}</span>
+                  </div>
+                </div>
+              `:z}
+
+          ${c?L`
+                <div class="disk-row" @click=${()=>this.openMoreInfo(c.entity_id)} style="cursor: pointer;">
+                  <div class="disk-main">
+                    <span class="disk-icon ${p>0?`disk-warning`:`disk-online`}">
+                      ${J(rt,18)}
+                    </span>
+                    <div class="disk-info">
+                      <span class="disk-name">Plugin Updates</span>
+                      <span class="disk-subtext">${p>0?`${p} plugin updates pending`:`All plugins are up to date`}</span>
+                    </div>
+                  </div>
+                  <div class="disk-meta">
+                    <span class="badge ${p>0?`badge-warning`:`badge-online`}">
+                      ${p>0?`${p} NEW`:`CURRENT`}
+                    </span>
+                  </div>
+                </div>
+              `:z}
+
+          ${l?L`
+                <div class="disk-row" @click=${()=>this.openMoreInfo(l.entity_id)} style="cursor: pointer;">
+                  <div class="disk-main">
+                    <span class="disk-icon ${m>0?`disk-warning`:`disk-online`}">
+                      ${J(rt,18)}
+                    </span>
+                    <div class="disk-info">
+                      <span class="disk-name">Docker Image Updates</span>
+                      <span class="disk-subtext">${m>0?`${m} container image updates available`:`All container images are current`}</span>
+                    </div>
+                  </div>
+                  <div class="disk-meta">
+                    <span class="badge ${m>0?`badge-warning`:`badge-online`}">
+                      ${m>0?`${m} NEW`:`CURRENT`}
+                    </span>
+                  </div>
+                </div>
+              `:z}
+        </div>
+      </ha-card>
+    `}},editor:Lt,name:`Unraid Maintenance Card`,description:`Parity verification history, flash drive health, and plugin/container update status`}),Z({tag:Ke,editorTag:qe,card:class extends Y{static editorTag=qe;getRemoteShares(){let e=new Map;if(!this.hass?.states)return[];let t=this.getActiveDevice()?.id;for(let[n,r]of Object.entries(this.hass.states)){if(t&&this.hass.entities){let e=this.hass.entities[n];if(e&&e.device_id&&e.device_id!==t)continue}let i=n.match(/_remote_share_([a-zA-Z0-9_-]+)_(usage|mounted|mount)$/i);if(!i||!i[1]||!i[2])continue;let a=(r.attributes?.friendly_name||i[1]||`Remote Share`).replace(/^(?:.*?\s+)?Remote Share\s+/i,``).replace(/\s+(?:usage|mounted|mount)$/i,``).trim();e.has(a)||e.set(a,{name:a,isMounted:!0});let o=e.get(a),s=i[2].toLowerCase();if(s===`usage`){o.usageEntityId=n;let e=parseFloat(r.state);o.usagePct=isNaN(e)?void 0:Math.round(e),o.used=r.attributes?.used,o.total=r.attributes?.total,o.free=r.attributes?.free}else s===`mounted`?(o.mountedEntityId=n,o.isMounted=r.state===`on`||r.state===`true`):s===`mount`&&(o.mountSwitchEntityId=n,o.mountedEntityId||(o.isMounted=r.state===`on`))}return Array.from(e.values()).sort((e,t)=>e.name.localeCompare(t.name))}handleToggleMount(e){e.mountSwitchEntityId&&(!e.isMounted||confirm(`Are you sure you want to unmount remote share "${e.name}"?`))&&this.toggleEntity(e.mountSwitchEntityId)}render(){let e=this.getActiveDevice(),t=this.config.title||e?.name_by_user||e?.name||`Unraid Server`,n=this.getRemoteShares();return L`
+      <ha-card>
+        ${this.renderHeader(t,`Remote SMB & NFS Shares`,vt,L`
+            <span class="badge ${n.some(e=>e.isMounted)?`badge-online`:``}">
+              <span class="pulse-dot"></span>
+              <span>${n.length} Discovered</span>
+            </span>
+          `)}
+
+        ${n.length===0?L`
+              <div class="empty-state">
+                ${J(vt,32)}
+                <div class="empty-title">No Remote Shares Found</div>
+                <div class="empty-subtext">Mount remote SMB or NFS shares using the Unassigned Devices plugin on Unraid.</div>
+              </div>
+            `:L`
+              <div class="disk-list">
+                ${n.map(e=>L`
+                    <div class="disk-row">
+                      <div
+                        class="disk-main"
+                        @click=${()=>e.usageEntityId&&this.openMoreInfo(e.usageEntityId)}
+                        style="${e.usageEntityId?`cursor: pointer;`:``}"
+                      >
+                        <span class="disk-icon ${e.isMounted?`disk-online`:`disk-standby`}">
+                          ${J(st,18)}
+                        </span>
+                        <div class="disk-info">
+                          <span class="disk-name">${e.name}</span>
+                          <span class="disk-subtext">
+                            ${e.isMounted?e.used&&e.total?`${e.used} / ${e.total}`:e.usagePct===void 0?`Mounted`:`${e.usagePct}% used`:`Unmounted`}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div class="disk-meta" style="align-items: center; gap: 8px;">
+                        ${e.usagePct===void 0?z:L`<span class="disk-temp">${e.usagePct}%</span>`}
+                        ${e.mountSwitchEntityId?L`
+                              <button
+                                class="btn-icon ${e.isMounted?`active`:``}"
+                                @click=${()=>this.handleToggleMount(e)}
+                                title="${e.isMounted?`Unmount Remote Share`:`Mount Remote Share`}"
+                                style="border: none; background: transparent; cursor: pointer; color: ${e.isMounted?`var(--unraid-online)`:`var(--unraid-subtext)`}; padding: 4px;"
+                              >
+                                ${J(ht,18)}
+                              </button>
+                            `:L`
+                              <span class="badge ${e.isMounted?`badge-online`:``}">
+                                ${e.isMounted?`MOUNTED`:`UNMOUNTED`}
+                              </span>
+                            `}
+                      </div>
+                    </div>
+                  `)}
+              </div>
+            `}
+      </ha-card>
+    `}},editor:Rt,name:`Unraid Remote Shares Card`,description:`Monitor and mount remote network SMB/NFS storage shares`}),Z({tag:Je,editorTag:Ye,card:class extends Y{static editorTag=Ye;getDevices(){let e=new Map;if(!this.hass?.states)return[];let t=this.getActiveDevice()?.id;for(let[n,r]of Object.entries(this.hass.states)){if(t&&this.hass.entities){let e=this.hass.entities[n];if(e&&e.device_id&&e.device_id!==t)continue}let i=n.match(/_unassigned_device_([a-zA-Z0-9_-]+)_(size|usage|mounted|temperature|temp)$/i);if(!i||!i[1]||!i[2])continue;let a=(r.attributes?.friendly_name||i[1]||`Unassigned Device`).replace(/^(?:.*?\s+)?Unassigned Device\s+/i,``).replace(/\s+(?:size|usage|mounted|temperature|temp)$/i,``).trim();e.has(a)||e.set(a,{id:i[1],name:a,isMounted:!1});let o=e.get(a),s=i[2].toLowerCase();if(s===`size`)o.sizeEntityId=n,o.size=`${r.state} ${r.attributes?.unit_of_measurement||``}`.trim(),o.fsType=r.attributes?.filesystem;else if(s===`usage`){let e=parseFloat(r.state);o.usagePct=isNaN(e)?void 0:Math.round(e)}else s===`mounted`?(o.mountedEntityId=n,o.isMounted=r.state===`on`||r.state===`true`):(s===`temperature`||s===`temp`)&&(o.temp=`${r.state}°C`)}return Array.from(e.values()).sort((e,t)=>e.name.localeCompare(t.name))}render(){let e=this.getActiveDevice(),t=this.config.title||e?.name_by_user||e?.name||`Unraid Server`,n=this.getDevices();return L`
+      <ha-card>
+        ${this.renderHeader(t,`Unassigned Storage Devices`,lt,L`
+            <span class="badge ${n.length>0?`badge-online`:``}">
+              <span class="pulse-dot"></span>
+              <span>${n.length} Connected</span>
+            </span>
+          `)}
+
+        ${n.length===0?L`
+              <div class="empty-state">
+                ${J(lt,32)}
+                <div class="empty-title">No Unassigned Disks Found</div>
+                <div class="empty-subtext">All connected disks are assigned to the array or pools.</div>
+              </div>
+            `:L`
+              <div class="disk-list">
+                ${n.map(e=>L`
+                    <div
+                      class="disk-row"
+                      @click=${()=>(e.sizeEntityId||e.mountedEntityId)&&this.openMoreInfo(e.sizeEntityId||e.mountedEntityId)}
+                      style="cursor: pointer;"
+                    >
+                      <div class="disk-main">
+                        <span class="disk-icon ${e.isMounted?`disk-online`:`disk-standby`}">
+                          ${J(ct,18)}
+                        </span>
+                        <div class="disk-info">
+                          <span class="disk-name">${e.name}</span>
+                          <span class="disk-subtext">
+                            ${e.size?e.size:`Disk`}
+                            ${e.fsType?` • ${e.fsType}`:``}
+                            ${e.temp?` • ${e.temp}`:``}
+                          </span>
+                        </div>
+                      </div>
+                      <div class="disk-meta">
+                        ${e.usagePct===void 0?z:L`<span class="disk-temp">${e.usagePct}%</span>`}
+                        <span class="badge ${e.isMounted?`badge-online`:``}">
+                          ${e.isMounted?`MOUNTED`:`UNMOUNTED`}
+                        </span>
+                      </div>
+                    </div>
+                  `)}
+              </div>
+            `}
+      </ha-card>
+    `}},editor:zt,name:`Unraid Unassigned Devices Card`,description:`Monitor unassigned storage drives, partitions, and external USB disks`}),Z({tag:Xe,editorTag:Ze,card:class extends Y{static editorTag=Ze;static properties={...Y.properties,_activeTab:{state:!0}};constructor(){super(),this._activeTab=`overview`}render(){let e=this.getActiveDevice(),t=this.config.title||e?.name_by_user||e?.name||`Unraid Server`;return L`
+      <ha-card style="gap: 12px;">
+        <div class="header">
+          <div class="header-main">
+            <div class="header-icon">${J(_t,22)}</div>
+            <div class="header-titles">
+              <span class="header-title">${t} Dashboard</span>
+              <span class="header-subtitle">Unified Unraid Control Center</span>
+            </div>
+          </div>
+        </div>
+        <div class="tab-strip" style="display: flex; flex-wrap: wrap; gap: 6px;">
+          <button
+            class="tab-btn ${this._activeTab===`overview`?`active`:``}"
+            @click=${()=>this._activeTab=`overview`}
+          >
+            ${J(_t,14)} Overview
+          </button>
+          <button
+            class="tab-btn ${this._activeTab===`storage`?`active`:``}"
+            @click=${()=>this._activeTab=`storage`}
+          >
+            ${J(ct,14)} Storage
+          </button>
+          <button
+            class="tab-btn ${this._activeTab===`zfs`?`active`:``}"
+            @click=${()=>this._activeTab=`zfs`}
+          >
+            ${J(K,14)} ZFS
+          </button>
+          <button
+            class="tab-btn ${this._activeTab===`shares`?`active`:``}"
+            @click=${()=>this._activeTab=`shares`}
+          >
+            ${J(st,14)} Shares
+          </button>
+          <button
+            class="tab-btn ${this._activeTab===`remote-shares`?`active`:``}"
+            @click=${()=>this._activeTab=`remote-shares`}
+          >
+            ${J(vt,14)} Remote
+          </button>
+          <button
+            class="tab-btn ${this._activeTab===`unassigned`?`active`:``}"
+            @click=${()=>this._activeTab=`unassigned`}
+          >
+            ${J(lt,14)} Unassigned
+          </button>
+          <button
+            class="tab-btn ${this._activeTab===`network`?`active`:``}"
+            @click=${()=>this._activeTab=`network`}
+          >
+            ${J(dt,14)} Network
+          </button>
+          <button
+            class="tab-btn ${this._activeTab===`docker`?`active`:``}"
+            @click=${()=>this._activeTab=`docker`}
+          >
+            ${J(nt,14)} Docker
+          </button>
+          <button
+            class="tab-btn ${this._activeTab===`vms`?`active`:``}"
+            @click=${()=>this._activeTab=`vms`}
+          >
+            ${J(ft,14)} VMs
+          </button>
+          <button
+            class="tab-btn ${this._activeTab===`fans`?`active`:``}"
+            @click=${()=>this._activeTab=`fans`}
+          >
+            ${J(at,14)} Fans
+          </button>
+          <button
+            class="tab-btn ${this._activeTab===`gpu`?`active`:``}"
+            @click=${()=>this._activeTab=`gpu`}
+          >
+            ${J(q,14)} GPU
+          </button>
+          <button
+            class="tab-btn ${this._activeTab===`ups`?`active`:``}"
+            @click=${()=>this._activeTab=`ups`}
+          >
+            ${J(ot,14)} UPS
+          </button>
+          <button
+            class="tab-btn ${this._activeTab===`maintenance`?`active`:``}"
+            @click=${()=>this._activeTab=`maintenance`}
+          >
+            ${J(Tt,14)} Maintenance
+          </button>
+          <button
+            class="tab-btn ${this._activeTab===`notifications`?`active`:``}"
+            @click=${()=>this._activeTab=`notifications`}
+          >
+            ${J($e,14)} Notifications
+          </button>
+        </div>
+        <div>
+          ${this._activeTab===`overview`?L`<unraid-server-card .hass=${this.hass} .config=${{...this.config,type:`custom:unraid-server-card`,embedded:!0}}></unraid-server-card>`:z}
+          ${this._activeTab===`storage`?L`<unraid-storage-card .hass=${this.hass} .config=${{...this.config,type:`custom:unraid-storage-card`,embedded:!0}}></unraid-storage-card>`:z}
+          ${this._activeTab===`zfs`?L`<unraid-zfs-card .hass=${this.hass} .config=${{...this.config,type:`custom:unraid-zfs-card`,embedded:!0}}></unraid-zfs-card>`:z}
+          ${this._activeTab===`shares`?L`<unraid-shares-card .hass=${this.hass} .config=${{...this.config,type:`custom:unraid-shares-card`,embedded:!0}}></unraid-shares-card>`:z}
+          ${this._activeTab===`remote-shares`?L`<unraid-remote-shares-card .hass=${this.hass} .config=${{...this.config,type:`custom:unraid-remote-shares-card`,embedded:!0}}></unraid-remote-shares-card>`:z}
+          ${this._activeTab===`unassigned`?L`<unraid-unassigned-devices-card .hass=${this.hass} .config=${{...this.config,type:`custom:unraid-unassigned-devices-card`,embedded:!0}}></unraid-unassigned-devices-card>`:z}
+          ${this._activeTab===`network`?L`<unraid-network-card .hass=${this.hass} .config=${{...this.config,type:`custom:unraid-network-card`,embedded:!0}}></unraid-network-card>`:z}
+          ${this._activeTab===`docker`?L`<unraid-docker-card .hass=${this.hass} .config=${{...this.config,type:`custom:unraid-docker-card`,embedded:!0}}></unraid-docker-card>`:z}
+          ${this._activeTab===`vms`?L`<unraid-vm-card .hass=${this.hass} .config=${{...this.config,type:`custom:unraid-vm-card`,embedded:!0}}></unraid-vm-card>`:z}
+          ${this._activeTab===`fans`?L`<unraid-fans-card .hass=${this.hass} .config=${{...this.config,type:`custom:unraid-fans-card`,embedded:!0}}></unraid-fans-card>`:z}
+          ${this._activeTab===`gpu`?L`<unraid-gpu-card .hass=${this.hass} .config=${{...this.config,type:`custom:unraid-gpu-card`,embedded:!0}}></unraid-gpu-card>`:z}
+          ${this._activeTab===`ups`?L`<unraid-ups-card .hass=${this.hass} .config=${{...this.config,type:`custom:unraid-ups-card`,embedded:!0}}></unraid-ups-card>`:z}
+          ${this._activeTab===`maintenance`?L`<unraid-maintenance-card .hass=${this.hass} .config=${{...this.config,type:`custom:unraid-maintenance-card`,embedded:!0}}></unraid-maintenance-card>`:z}
+          ${this._activeTab===`notifications`?L`<unraid-notifications-card .hass=${this.hass} .config=${{...this.config,type:`custom:unraid-notifications-card`,embedded:!0}}></unraid-notifications-card>`:z}
+        </div>
+      </ha-card>
+    `}},editor:Bt,name:`Unraid Unified Dashboard Card`,description:`All-in-one Unraid master card with tabbed overview, storage, ZFS, docker, UPS, and VM monitoring.`});

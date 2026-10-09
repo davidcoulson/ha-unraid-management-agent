@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Bundled Lovelace Dashboard Cards Suite** ([#150](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/150)):
+  - Shipped a complete suite of custom Lovelace cards bundled directly with the integration under `custom_components/unraid_management_agent/frontend/unraid-cards.js` (no separate manual HACS card installation required).
+  - Automatically registered via `async_register_frontend` during `async_setup` with cache-busting URLs (`?v={version}-{digest}`) in Lovelace resource storage and YAML mode fallback.
+  - Phase 1 & Phase 2 cards included:
+    - `custom:unraid-server-card`: CPU, RAM, uptime, system telemetry, and navigation rings.
+    - `custom:unraid-storage-card`: Array status, parity status and controls, disk temperatures, and health.
+    - `custom:unraid-shares-card`: User shares, protection state badges, and capacity usage.
+    - `custom:unraid-docker-card`: Docker container list, status badges, and power controls.
+    - `custom:unraid-ups-card`: Battery state, load percentages, and runtime duration formatting.
+    - `custom:unraid-vm-card`: Virtual machines state, vCPUs, and controls.
+    - `custom:unraid-network-card`: Network interfaces, IP addresses, link speed, and transfer throughput.
+    - `custom:unraid-zfs-card`: ZFS storage pools, ARC hit ratio gauge, and pool health.
+    - `custom:unraid-fans-card`: PWM fan speeds (RPM) and telemetry.
+    - `custom:unraid-gpu-card`: Multi-GPU telemetry, utilization rings, temperatures, memory, and clocks.
+    - `custom:unraid-notifications-card`: System notifications center with alert, warning, and info breakdowns.
+    - `custom:unraid-maintenance-card`: Flash boot drive health and parity check history.
+    - `custom:unraid-remote-shares-card`: Remote SMB/NFS share mount states and capacity.
+    - `custom:unraid-unassigned-devices-card`: External unassigned drives and mount toggles.
+    - `custom:unraid-dashboard-card`: Unified tabbed dashboard containing all modules with intuitive sub-navigation.
+  - Added full test coverage for frontend resource registration (`tests/test_frontend.py` at 100%), Vitest component unit tests (32 tests passing), and Playwright headless browser regression tests added to CI (`.github/workflows/test.yml`).
 - **Home Assistant 2026.10 & Quality Scale Uplift** — modernized integration patterns for HA 2026.10+:
   - Added local brand assets (`brand/icon.png` and `brand/logo.png`) adhering to HA 2026.3+ local brands feature and updated `quality_scale.yaml` (`brands: done`).
   - Updated `DeviceInfo` construction to conditionally set `hw_version` only when available to preserve stored hardware versions across entity registrations.

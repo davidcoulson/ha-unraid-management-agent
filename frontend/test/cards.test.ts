@@ -1,0 +1,1032 @@
+import { describe, expect, it } from "vitest";
+import "../src/index";
+import { UnraidServerCard } from "../src/server-card";
+import { UnraidStorageCard, formatDiskName } from "../src/storage-card";
+import { UnraidSharesCard, formatShareName } from "../src/shares-card";
+import { UnraidDockerCard } from "../src/docker-card";
+import { UnraidUpsCard, formatRuntime } from "../src/ups-card";
+import { UnraidVmCard } from "../src/vm-card";
+import { UnraidDashboardCard } from "../src/dashboard-card";
+import { UnraidNetworkCard } from "../src/network-card";
+import { UnraidZfsCard } from "../src/zfs-card";
+import { UnraidFansCard } from "../src/fans-card";
+import { UnraidGpuCard } from "../src/gpu-card";
+import { UnraidNotificationsCard } from "../src/notifications-card";
+import { UnraidMaintenanceCard } from "../src/maintenance-card";
+import { UnraidRemoteSharesCard } from "../src/remote-shares-card";
+import { UnraidUnassignedDevicesCard } from "../src/unassigned-devices-card";
+import {
+  UnraidNetworkCardEditor,
+  UnraidServerCardEditor,
+  UnraidSharesCardEditor,
+} from "../src/dashboard-cards-editor";
+import type { HomeAssistant } from "../src/ha-types";
+
+function createMockHass(): HomeAssistant {
+  return {
+    states: {
+      "sensor.cube_cpu_usage": {
+        entity_id: "sensor.cube_cpu_usage",
+        state: "15",
+        attributes: {
+          friendly_name: "CUBE CPU Usage",
+          cpu_model: "Intel i7-8700K",
+          cpu_cores: 6,
+          cpu_threads: 12,
+        },
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_ram_usage": {
+        entity_id: "sensor.cube_ram_usage",
+        state: "25",
+        attributes: {
+          friendly_name: "CUBE RAM Usage",
+          used: "8 GiB",
+          total: "32 GiB",
+        },
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_array_usage": {
+        entity_id: "sensor.cube_array_usage",
+        state: "10",
+        attributes: {
+          friendly_name: "CUBE Array Usage",
+          capacity_used: "4 TB",
+          capacity_total: "40 TB",
+          capacity_free: "36 TB",
+        },
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_array_state": {
+        entity_id: "sensor.cube_array_state",
+        state: "Started",
+        attributes: {},
+        last_changed: "",
+        last_updated: "",
+      },
+      "binary_sensor.cube_parity_valid": {
+        entity_id: "binary_sensor.cube_parity_valid",
+        state: "off",
+        attributes: { friendly_name: "Cube Parity Valid" },
+        last_changed: "",
+        last_updated: "",
+      },
+      "binary_sensor.cube_parity_check_running": {
+        entity_id: "binary_sensor.cube_parity_check_running",
+        state: "off",
+        attributes: { friendly_name: "Cube Parity Check Running", status: "completed" },
+        last_changed: "",
+        last_updated: "",
+      },
+      "binary_sensor.cube_parity_status": {
+        entity_id: "binary_sensor.cube_parity_status",
+        state: "off",
+        attributes: { status: "completed" },
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_disk_disk1_usage": {
+        entity_id: "sensor.cube_disk_disk1_usage",
+        state: "12",
+        attributes: {
+          friendly_name: "Cube Disk disk1 usage",
+          status: "DISK_OK",
+          num_errors: 0,
+          spin_state: "active",
+        },
+        last_changed: "",
+        last_updated: "",
+      },
+      "binary_sensor.cube_disk_disk1_health": {
+        entity_id: "binary_sensor.cube_disk_disk1_health",
+        state: "off",
+        attributes: { status: "DISK_OK" },
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_disk_disk1_temperature": {
+        entity_id: "sensor.cube_disk_disk1_temperature",
+        state: "32",
+        attributes: {},
+        last_changed: "",
+        last_updated: "",
+      },
+      "switch.cube_disk_disk1_spin": {
+        entity_id: "switch.cube_disk_disk1_spin",
+        state: "on",
+        attributes: {},
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_share_appdata_usage": {
+        entity_id: "sensor.cube_share_appdata_usage",
+        state: "9.7",
+        attributes: {
+          friendly_name: "Cube Share appdata usage",
+          used: "46.6 GB",
+          total: "480.6 GB",
+          free: "434.0 GB",
+          color: "yellow-on",
+        },
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_share_media_usage": {
+        entity_id: "sensor.cube_share_media_usage",
+        state: "45.0",
+        attributes: {
+          friendly_name: "Cube Share media usage",
+          used: "18.0 TB",
+          total: "40.0 TB",
+          free: "22.0 TB",
+          color: "green-on",
+        },
+        last_changed: "",
+        last_updated: "",
+      },
+      "switch.cube_docker_container_plex": {
+        entity_id: "switch.cube_docker_container_plex",
+        state: "on",
+        attributes: { friendly_name: "plex" },
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_ups_battery": {
+        entity_id: "sensor.cube_ups_battery",
+        state: "100",
+        attributes: {},
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_ups_load": {
+        entity_id: "sensor.cube_ups_load",
+        state: "15",
+        attributes: {},
+        last_changed: "",
+        last_updated: "",
+      },
+      "switch.cube_virtual_machine_ha": {
+        entity_id: "switch.cube_virtual_machine_ha",
+        state: "on",
+        attributes: { friendly_name: "Home Assistant" },
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_disk_flash_usage": {
+        entity_id: "sensor.cube_disk_flash_usage",
+        state: "8",
+        attributes: {
+          friendly_name: "Cube Disk flash usage",
+          status: "DISK_OK",
+          num_errors: 0,
+          device: "sdb",
+          fs_size: "31.4 GB",
+          fs_used: "2.68 GB",
+          fs_free: "28.7 GB",
+        },
+        last_changed: "",
+        last_updated: "",
+      },
+      "binary_sensor.cube_disk_flash_health": {
+        entity_id: "binary_sensor.cube_disk_flash_health",
+        state: "off",
+        attributes: { status: "DISK_OK" },
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_network_eth0_ip_address": {
+        entity_id: "sensor.cube_network_eth0_ip_address",
+        state: "192.168.20.21",
+        attributes: {
+          friendly_name: "Cube Network eth0 IP",
+          mac_address: "00:11:22:33:44:55",
+          mtu: 1500,
+        },
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_network_eth0_speed": {
+        entity_id: "sensor.cube_network_eth0_speed",
+        state: "1000",
+        attributes: { unit_of_measurement: "Mbps" },
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_network_eth0_rx_throughput": {
+        entity_id: "sensor.cube_network_eth0_rx_throughput",
+        state: "12.4",
+        attributes: { total_received: "1.2 GB" },
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_network_eth0_tx_throughput": {
+        entity_id: "sensor.cube_network_eth0_tx_throughput",
+        state: "5.8",
+        attributes: { total_sent: "650 MB" },
+        last_changed: "",
+        last_updated: "",
+      },
+      "binary_sensor.cube_network_eth0_link": {
+        entity_id: "binary_sensor.cube_network_eth0_link",
+        state: "on",
+        attributes: {},
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_network_access": {
+        entity_id: "sensor.cube_network_access",
+        state: "http://192.168.20.21",
+        attributes: {
+          LAN_IPv4_ipv4: "http://192.168.20.21",
+          FQDN_LAN_ipv4: "https://cube.myunraid.net",
+        },
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_zfs_arc_hit_ratio": {
+        entity_id: "sensor.cube_zfs_arc_hit_ratio",
+        state: "95",
+        attributes: { unit_of_measurement: "%" },
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_zfs_tank_usage": {
+        entity_id: "sensor.cube_zfs_tank_usage",
+        state: "42",
+        attributes: {
+          pool_name: "tank",
+          total_size: "10 TB",
+          used_size: "4.2 TB",
+          free_space: "5.8 TB",
+        },
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_zfs_tank_health": {
+        entity_id: "sensor.cube_zfs_tank_health",
+        state: "ONLINE",
+        attributes: { pool_name: "tank", errors: 0 },
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_fan_1": {
+        entity_id: "sensor.cube_fan_1",
+        state: "1200",
+        attributes: {
+          friendly_name: "Fan 1 Speed",
+          unit_of_measurement: "RPM",
+          fan_id: 1,
+        },
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_gpu_0_utilization": {
+        entity_id: "sensor.cube_gpu_0_utilization",
+        state: "45",
+        attributes: {
+          gpu_name: "NVIDIA RTX 3080",
+          driver_version: "535.129.03",
+        },
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_gpu_0_temperature": {
+        entity_id: "sensor.cube_gpu_0_temperature",
+        state: "55",
+        attributes: {},
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_notifications_unread_alert": {
+        entity_id: "sensor.cube_notifications_unread_alert",
+        state: "0",
+        attributes: {},
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_notifications_unread_warning": {
+        entity_id: "sensor.cube_notifications_unread_warning",
+        state: "1",
+        attributes: {},
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_notifications_unread_info": {
+        entity_id: "sensor.cube_notifications_unread_info",
+        state: "2",
+        attributes: {},
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_flash_usage": {
+        entity_id: "sensor.cube_flash_usage",
+        state: "15",
+        attributes: {},
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_last_parity_check": {
+        entity_id: "sensor.cube_last_parity_check",
+        state: "Completed",
+        attributes: { result: "Completed", errors: 0, duration: "8h 12m" },
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_remote_share_backup_usage": {
+        entity_id: "sensor.cube_remote_share_backup_usage",
+        state: "35",
+        attributes: { friendly_name: "Remote Share backup usage", used: "350 GB", total: "1 TB" },
+        last_changed: "",
+        last_updated: "",
+      },
+      "binary_sensor.cube_remote_share_backup_mounted": {
+        entity_id: "binary_sensor.cube_remote_share_backup_mounted",
+        state: "on",
+        attributes: {},
+        last_changed: "",
+        last_updated: "",
+      },
+      "sensor.cube_unassigned_device_dev1_size": {
+        entity_id: "sensor.cube_unassigned_device_dev1_size",
+        state: "2",
+        attributes: { friendly_name: "Unassigned Device dev1 size", unit_of_measurement: "TB", filesystem: "exfat" },
+        last_changed: "",
+        last_updated: "",
+      },
+      "binary_sensor.cube_unassigned_device_dev1_mounted": {
+        entity_id: "binary_sensor.cube_unassigned_device_dev1_mounted",
+        state: "on",
+        attributes: {},
+        last_changed: "",
+        last_updated: "",
+      },
+    },
+    devices: {
+      dev_1: {
+        id: "dev_1",
+        name: "CUBE",
+        identifiers: [
+          ["unraid_management_agent", "uuid-1234"],
+          ["unraid", "uuid-1234"],
+        ],
+        model: "Fractal Node 304",
+        sw_version: "6.12.10",
+      },
+    },
+    entities: {},
+    callService: async () => Promise.resolve(),
+  };
+}
+
+describe("Unraid Custom Cards", () => {
+  it("registers all cards in window.customCards", () => {
+    expect(window.customCards).toBeDefined();
+    const tags = window.customCards?.map((c) => c.type);
+    expect(tags).toContain("unraid-server-card");
+    expect(tags).toContain("unraid-storage-card");
+    expect(tags).toContain("unraid-shares-card");
+    expect(tags).toContain("unraid-docker-card");
+    expect(tags).toContain("unraid-ups-card");
+    expect(tags).toContain("unraid-vm-card");
+    expect(tags).toContain("unraid-network-card");
+    expect(tags).toContain("unraid-zfs-card");
+    expect(tags).toContain("unraid-fans-card");
+    expect(tags).toContain("unraid-gpu-card");
+    expect(tags).toContain("unraid-notifications-card");
+    expect(tags).toContain("unraid-maintenance-card");
+    expect(tags).toContain("unraid-remote-shares-card");
+    expect(tags).toContain("unraid-unassigned-devices-card");
+    expect(tags).toContain("unraid-dashboard-card");
+  });
+
+  it("formats disk and share names cleanly", () => {
+    expect(formatDiskName("Cube Disk disk1 usage", "disk1")).toBe("Disk 1");
+    expect(formatDiskName("Tower Disk cache usage", "cache")).toBe("Cache");
+    expect(formatDiskName("Cube Disk parity health", "parity")).toBe("Parity");
+    expect(formatDiskName("Cube Disk flash usage", "flash")).toBe("Flash (Boot)");
+    expect(formatDiskName("disk_2", "disk_2")).toBe("Disk 2");
+
+    expect(formatShareName("Cube Share appdata usage", "appdata")).toBe("appdata");
+    expect(formatShareName("Media Share", "media")).toBe("Media");
+  });
+
+  it("renders UnraidServerCard with mock hass data and formats numeric uptime", async () => {
+    const card = new UnraidServerCard();
+    card.setConfig({ type: "custom:unraid-server-card" });
+    const hass = createMockHass();
+    hass.states["sensor.cube_uptime"] = {
+      entity_id: "sensor.cube_uptime",
+      state: "90000",
+      attributes: {},
+      last_changed: "",
+      last_updated: "",
+    };
+    card.hass = hass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.getCardSize()).toBe(4);
+    expect(card.getGridOptions().columns).toBe(6);
+    expect(card.shadowRoot?.innerHTML).toContain("CUBE");
+    expect(card.shadowRoot?.innerHTML).toContain("CPU Load");
+    expect(card.shadowRoot?.innerHTML).toContain("15%");
+    expect(card.shadowRoot?.innerHTML).toContain("1d 1h");
+    expect(card.shadowRoot?.innerHTML).toContain("192.168.20.21");
+    expect(card.shadowRoot?.innerHTML).toContain("Boot Device");
+    expect(card.shadowRoot?.innerHTML).toContain("Flash");
+    document.body.removeChild(card);
+  });
+
+  it("dispatches hass-more-info event when clicking server rings and supports navigation", async () => {
+    const card = new UnraidServerCard();
+    card.setConfig({ type: "custom:unraid-server-card" });
+    card.hass = createMockHass();
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    let moreInfoEvent: CustomEvent | null = null;
+    card.addEventListener("hass-more-info", ((e: CustomEvent) => {
+      moreInfoEvent = e;
+    }) as EventListener);
+
+    const cpuRing = card.shadowRoot?.querySelector(".ring-card") as HTMLElement;
+    expect(cpuRing).not.toBeNull();
+    cpuRing.click();
+
+    expect(moreInfoEvent).not.toBeNull();
+    expect((moreInfoEvent as any)?.detail?.entityId).toBe("sensor.cube_cpu_usage");
+
+    // Test navigate helper on BaseUnraidCard
+    let locationChanged = false;
+    const locHandler = () => {
+      locationChanged = true;
+    };
+    window.addEventListener("location-changed", locHandler);
+    (card as any).navigate("/dashboard-unraid/storage");
+    expect(locationChanged).toBe(true);
+    window.removeEventListener("location-changed", locHandler);
+
+    document.body.removeChild(card);
+  });
+
+  it("renders UnraidStorageCard with clean disk names and Healthy badge", async () => {
+    const card = new UnraidStorageCard();
+    card.setConfig({ type: "custom:unraid-storage-card" });
+    card.hass = createMockHass();
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("Storage Array &amp; Disks");
+    expect(card.shadowRoot?.innerHTML).toContain("Disk 1");
+    expect(card.shadowRoot?.innerHTML).toContain("Flash (Boot)");
+    expect(card.shadowRoot?.innerHTML).toContain("Healthy");
+    expect(card.shadowRoot?.innerHTML).toContain("Active");
+    expect(card.shadowRoot?.innerHTML).toContain("32°C");
+    expect(card.shadowRoot?.innerHTML).toContain("Parity Valid");
+    expect(card.shadowRoot?.innerHTML).toContain("Parity Status: Valid");
+    document.body.removeChild(card);
+  });
+
+  it("renders UnraidStorageCard with Parity Valid when progress is 100 and check is not running", async () => {
+    const card = new UnraidStorageCard();
+    card.setConfig({ type: "custom:unraid-storage-card" });
+    const mockHass = createMockHass();
+    mockHass.states["sensor.cube_parity_progress"] = {
+      entity_id: "sensor.cube_parity_progress",
+      state: "100",
+      attributes: {},
+      last_changed: "",
+      last_updated: "",
+    };
+    mockHass.states["switch.cube_parity_check"] = {
+      entity_id: "switch.cube_parity_check",
+      state: "off",
+      attributes: {},
+      last_changed: "",
+      last_updated: "",
+    };
+    card.hass = mockHass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("Parity Valid");
+    expect(card.shadowRoot?.innerHTML).toContain("Parity Status: Valid");
+    expect(card.shadowRoot?.innerHTML).not.toContain("Parity Check In Progress");
+    expect(card.shadowRoot?.innerHTML).not.toContain("Parity Check Needed");
+    expect(card.shadowRoot?.innerHTML).toContain("Check Now");
+    document.body.removeChild(card);
+  });
+
+  it("renders UnraidStorageCard with Parity Check Needed when validity sensor is on", async () => {
+    const card = new UnraidStorageCard();
+    card.setConfig({ type: "custom:unraid-storage-card" });
+    const mockHass = createMockHass();
+    mockHass.states["binary_sensor.cube_parity_valid"] = {
+      entity_id: "binary_sensor.cube_parity_valid",
+      state: "on",
+      attributes: { friendly_name: "Cube Parity Valid" },
+      last_changed: "",
+      last_updated: "",
+    };
+    mockHass.states["sensor.cube_last_parity_check_errors"] = {
+      entity_id: "sensor.cube_last_parity_check_errors",
+      state: "5",
+      attributes: {},
+      last_changed: "",
+      last_updated: "",
+    };
+    card.hass = mockHass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("Parity Check Needed");
+    expect(card.shadowRoot?.innerHTML).toContain("Parity Status: Check Needed");
+    expect(card.shadowRoot?.innerHTML).toContain("5 errors");
+    document.body.removeChild(card);
+  });
+
+  it("renders UnraidStorageCard with check in progress at 0% and Cancel button", async () => {
+    const card = new UnraidStorageCard();
+    card.setConfig({ type: "custom:unraid-storage-card" });
+    const mockHass = createMockHass();
+    mockHass.states["binary_sensor.cube_parity_check_running"] = {
+      entity_id: "binary_sensor.cube_parity_check_running",
+      state: "on",
+      attributes: { friendly_name: "Cube Parity Check Running", status: "running" },
+      last_changed: "",
+      last_updated: "",
+    };
+    mockHass.states["sensor.cube_parity_progress"] = {
+      entity_id: "sensor.cube_parity_progress",
+      state: "0",
+      attributes: {},
+      last_changed: "",
+      last_updated: "",
+    };
+    mockHass.states["switch.cube_parity_check"] = {
+      entity_id: "switch.cube_parity_check",
+      state: "on",
+      attributes: {},
+      last_changed: "",
+      last_updated: "",
+    };
+    card.hass = mockHass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("Parity Check In Progress (0%)");
+    expect(card.shadowRoot?.innerHTML).toContain("Cancel");
+    document.body.removeChild(card);
+  });
+
+  it("renders UnraidStorageCard with Parity Check Paused", async () => {
+    const card = new UnraidStorageCard();
+    card.setConfig({ type: "custom:unraid-storage-card" });
+    const mockHass = createMockHass();
+    mockHass.states["binary_sensor.cube_parity_check_running"] = {
+      entity_id: "binary_sensor.cube_parity_check_running",
+      state: "on",
+      attributes: { friendly_name: "Cube Parity Check Running", status: "paused" },
+      last_changed: "",
+      last_updated: "",
+    };
+    mockHass.states["sensor.cube_parity_progress"] = {
+      entity_id: "sensor.cube_parity_progress",
+      state: "42",
+      attributes: {},
+      last_changed: "",
+      last_updated: "",
+    };
+    card.hass = mockHass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("Parity Check Paused (42%)");
+    document.body.removeChild(card);
+  });
+
+  it("renders UnraidStorageCard with Parity Status Unknown when validity is unknown or unavailable", async () => {
+    const card = new UnraidStorageCard();
+    card.setConfig({ type: "custom:unraid-storage-card" });
+    const mockHass = createMockHass();
+    mockHass.states["binary_sensor.cube_parity_valid"] = {
+      entity_id: "binary_sensor.cube_parity_valid",
+      state: "unknown",
+      attributes: {},
+      last_changed: "",
+      last_updated: "",
+    };
+    delete mockHass.states["binary_sensor.cube_parity_status"];
+    card.hass = mockHass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("Parity Status Unknown");
+    expect(card.shadowRoot?.innerHTML).toContain("Parity Status: Unknown");
+    expect(card.shadowRoot?.innerHTML).not.toContain("Parity Check Needed");
+    document.body.removeChild(card);
+  });
+
+  it("renders UnraidStorageCard using legacy sensor fallback when dedicated entities are absent", async () => {
+    const card = new UnraidStorageCard();
+    card.setConfig({ type: "custom:unraid-storage-card" });
+    const mockHass = createMockHass();
+    delete mockHass.states["binary_sensor.cube_parity_valid"];
+    delete mockHass.states["binary_sensor.cube_parity_check_running"];
+
+    // Legacy off -> Parity Valid
+    mockHass.states["binary_sensor.cube_parity_status"] = {
+      entity_id: "binary_sensor.cube_parity_status",
+      state: "off",
+      attributes: { status: "completed" },
+      last_changed: "",
+      last_updated: "",
+    };
+    card.hass = mockHass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("Parity Valid");
+    expect(card.shadowRoot?.innerHTML).toContain("Parity Status: Valid");
+
+    // Legacy on with status running -> In Progress
+    mockHass.states["binary_sensor.cube_parity_status"] = {
+      entity_id: "binary_sensor.cube_parity_status",
+      state: "on",
+      attributes: { status: "running" },
+      last_changed: "",
+      last_updated: "",
+    };
+    mockHass.states["sensor.cube_parity_progress"] = {
+      entity_id: "sensor.cube_parity_progress",
+      state: "65",
+      attributes: {},
+      last_changed: "",
+      last_updated: "",
+    };
+    card.hass = { ...mockHass };
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("Parity Check In Progress (65%)");
+    document.body.removeChild(card);
+  });
+
+  it("does not render unknown last check date text", async () => {
+    const card = new UnraidStorageCard();
+    card.setConfig({ type: "custom:unraid-storage-card" });
+    const mockHass = createMockHass();
+    mockHass.states["sensor.cube_last_parity_check_date"] = {
+      entity_id: "sensor.cube_last_parity_check_date",
+      state: "unknown",
+      attributes: {},
+      last_changed: "",
+      last_updated: "",
+    };
+    card.hass = mockHass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).not.toContain("Last check: unknown");
+    expect(card.shadowRoot?.innerHTML).toContain("Parity healthy");
+    document.body.removeChild(card);
+  });
+
+  it("renders UnraidSharesCard and handles protection states", async () => {
+    const card = new UnraidSharesCard();
+    card.setConfig({ type: "custom:unraid-shares-card" });
+    card.hass = createMockHass();
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("User Shares");
+    expect(card.shadowRoot?.innerHTML).toContain("appdata");
+    expect(card.shadowRoot?.innerHTML).toContain("media");
+    expect(card.shadowRoot?.innerHTML).toContain("Protected");
+    expect(card.shadowRoot?.innerHTML).toContain("46.6 GB");
+    expect(card.shadowRoot?.innerHTML).toContain("480.6 GB");
+    document.body.removeChild(card);
+  });
+
+  it("renders UnraidDockerCard and container list excluding autostart switches", async () => {
+    const card = new UnraidDockerCard();
+    card.setConfig({ type: "custom:unraid-docker-card", view_mode: "list" });
+    const hass = createMockHass();
+    hass.states["switch.cube_docker_container_autostart_plex"] = {
+      entity_id: "switch.cube_docker_container_autostart_plex",
+      state: "on",
+      attributes: { friendly_name: "plex Autostart" },
+      last_changed: "",
+      last_updated: "",
+    };
+    card.hass = hass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("Docker Containers");
+    expect(card.shadowRoot?.innerHTML).toContain("plex");
+    expect(card.shadowRoot?.innerHTML).not.toContain("plex Autostart");
+    document.body.removeChild(card);
+  });
+
+  it("correctly formats UPS runtime for duration strings and numeric values", () => {
+    expect(formatRuntime("1 hour 41 minutes")).toBe("1 hour 41 minutes");
+    expect(formatRuntime("1 hour 41 minutes min")).toBe("1 hour 41 minutes");
+    expect(formatRuntime("45 minutes min")).toBe("45 minutes");
+    expect(formatRuntime("101")).toBe("1 hour 41 minutes");
+    expect(formatRuntime("60")).toBe("1 hour");
+    expect(formatRuntime("1")).toBe("1 minute");
+    expect(formatRuntime("45")).toBe("45 minutes");
+    expect(formatRuntime("3600", { unit_of_measurement: "s" })).toBe("1 hour");
+    expect(formatRuntime("unavailable")).toBeNull();
+    expect(formatRuntime("unknown")).toBeNull();
+    expect(formatRuntime(null)).toBeNull();
+  });
+
+  it("renders UnraidUpsCard with battery, load, and properly formatted runtime", async () => {
+    const card = new UnraidUpsCard();
+    card.setConfig({ type: "custom:unraid-ups-card" });
+    const hass = createMockHass();
+    hass.states["sensor.cube_ups_runtime"] = {
+      entity_id: "sensor.cube_ups_runtime",
+      state: "1 hour 41 minutes",
+      attributes: {},
+      last_changed: "",
+      last_updated: "",
+    };
+    card.hass = hass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("UPS Power &amp; Battery");
+    expect(card.shadowRoot?.innerHTML).toContain("100%");
+    expect(card.shadowRoot?.innerHTML).toContain("1 hour 41 minutes");
+    expect(card.shadowRoot?.innerHTML).not.toContain("1 hour 41 minutes min");
+    document.body.removeChild(card);
+  });
+
+  it("renders UnraidVmCard with virtual machines", async () => {
+    const card = new UnraidVmCard();
+    card.setConfig({ type: "custom:unraid-vm-card" });
+    card.hass = createMockHass();
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("Virtual Machines");
+    expect(card.shadowRoot?.innerHTML).toContain("Home Assistant");
+    document.body.removeChild(card);
+  });
+
+  it("renders UnraidDashboardCard with tabs", async () => {
+    const card = new UnraidDashboardCard();
+    card.setConfig({ type: "custom:unraid-dashboard-card" });
+    card.hass = createMockHass();
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("Unified Unraid Control Center");
+    expect(card.shadowRoot?.innerHTML).toContain("Shares");
+    document.body.removeChild(card);
+  });
+
+  it("renders UnraidServerCardEditor and updates config", async () => {
+    const editor = new UnraidServerCardEditor();
+    editor.setConfig({ type: "custom:unraid-server-card", title: "My Tower" });
+    editor.hass = createMockHass();
+    document.body.appendChild(editor);
+    await editor.updateComplete;
+
+    expect(editor.shadowRoot?.innerHTML).toContain("Unraid Server");
+    expect(editor.shadowRoot?.innerHTML).toContain("Custom Title");
+    document.body.removeChild(editor);
+  });
+
+  it("renders UnraidSharesCardEditor", async () => {
+    const editor = new UnraidSharesCardEditor();
+    editor.setConfig({ type: "custom:unraid-shares-card", title: "My Shares" });
+    editor.hass = createMockHass();
+    document.body.appendChild(editor);
+    await editor.updateComplete;
+
+    expect(editor.shadowRoot?.innerHTML).toContain("Unraid Server");
+    expect(editor.shadowRoot?.innerHTML).toContain("Custom Title");
+    document.body.removeChild(editor);
+  });
+
+  it("renders UnraidServerCard with ISO timestamp uptime", async () => {
+    const card = new UnraidServerCard();
+    card.setConfig({ type: "custom:unraid-server-card" });
+    const hass = createMockHass();
+    const threeHoursAgo = new Date(Date.now() - 3 * 3600 * 1000 - 15 * 60 * 1000).toISOString();
+    hass.states["sensor.cube_up_since"] = {
+      entity_id: "sensor.cube_up_since",
+      state: threeHoursAgo,
+      attributes: { friendly_name: "Cube Up since" },
+      last_changed: "",
+      last_updated: "",
+    };
+    card.hass = hass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("3h 15m");
+    document.body.removeChild(card);
+  });
+
+  it("renders UnraidNetworkCard with interface list and traffic metrics", async () => {
+    const card = new UnraidNetworkCard();
+    card.setConfig({ type: "custom:unraid-network-card" });
+    card.hass = createMockHass();
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("Network");
+    expect(card.shadowRoot?.innerHTML).toContain("eth0");
+    expect(card.shadowRoot?.innerHTML).toContain("192.168.20.21");
+    expect(card.shadowRoot?.innerHTML).toContain("1 Gbps");
+    expect(card.shadowRoot?.innerHTML).toContain("12.40 MB/s");
+    expect(card.shadowRoot?.innerHTML).toContain("5.80 MB/s");
+    expect(card.shadowRoot?.innerHTML).toContain("1 Connected");
+    document.body.removeChild(card);
+  });
+
+  it("handles shares with missing color attribute and clamps usage percentage", async () => {
+    const card = new UnraidSharesCard();
+    card.setConfig({ type: "custom:unraid-shares-card" });
+    const hass = createMockHass();
+    // Add a share with missing color and >100% usage
+    hass.states["sensor.cube_share_unprotected_usage"] = {
+      entity_id: "sensor.cube_share_unprotected_usage",
+      state: "105.0",
+      attributes: {
+        friendly_name: "Cube Share unprotected usage",
+        used: "10.5 TB",
+        total: "10.0 TB",
+        free: "0 TB",
+      },
+      last_changed: "",
+      last_updated: "",
+    };
+    card.hass = hass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("unprotected");
+    expect(card.shadowRoot?.innerHTML).toContain("Unprotected");
+    // Verify width is clamped to 100%
+    expect(card.shadowRoot?.innerHTML).toContain("width: 100%");
+    document.body.removeChild(card);
+  });
+
+  it("filters placeholder IP states from connected count and formats small data rates", async () => {
+    const card = new UnraidNetworkCard();
+    card.setConfig({ type: "custom:unraid-network-card" });
+    const hass = createMockHass();
+    // Add an unavailable interface
+    hass.states["sensor.cube_network_eth1_ip_address"] = {
+      entity_id: "sensor.cube_network_eth1_ip_address",
+      state: "unavailable",
+      attributes: { friendly_name: "Cube Network eth1 IP" },
+      last_changed: "",
+      last_updated: "",
+    };
+    hass.states["binary_sensor.cube_network_eth1_link"] = {
+      entity_id: "binary_sensor.cube_network_eth1_link",
+      state: "off",
+      attributes: {},
+      last_changed: "",
+      last_updated: "",
+    };
+    hass.states["sensor.cube_network_eth1_rx_throughput"] = {
+      entity_id: "sensor.cube_network_eth1_rx_throughput",
+      state: "0.05", // 0.05 MB/s = 50.0 kB/s
+      attributes: {},
+      last_changed: "",
+      last_updated: "",
+    };
+    card.hass = hass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    // eth0 is connected, eth1 is unavailable/off -> still 1 connected
+    expect(card.shadowRoot?.innerHTML).toContain("1 Connected");
+    expect(card.shadowRoot?.innerHTML).toContain("50.0 kB/s");
+    expect(card.shadowRoot?.innerHTML).not.toContain("unavailable");
+
+    // When throughput reports 'unknown' or 'unavailable', placeholder '--' is shown
+    if (hass.states["sensor.cube_network_eth1_rx_throughput"]) {
+      hass.states["sensor.cube_network_eth1_rx_throughput"].state = "unavailable";
+    }
+    card.requestUpdate();
+    await card.updateComplete;
+    expect(card.shadowRoot?.innerHTML).not.toContain("unavailable");
+    document.body.removeChild(card);
+  });
+
+  it("renders UnraidNetworkCardEditor", async () => {
+    const editor = new UnraidNetworkCardEditor();
+    editor.setConfig({ type: "custom:unraid-network-card", title: "My Network" });
+    editor.hass = createMockHass();
+    document.body.appendChild(editor);
+    await editor.updateComplete;
+
+    expect(editor.shadowRoot?.innerHTML).toContain("Unraid Server");
+    expect(editor.shadowRoot?.innerHTML).toContain("Custom Title");
+    document.body.removeChild(editor);
+  });
+
+  it("renders UnraidZfsCard with pools and ARC hit ratio", async () => {
+    const card = new UnraidZfsCard();
+    card.setConfig({ type: "custom:unraid-zfs-card" });
+    card.hass = createMockHass();
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("95%");
+    expect(card.shadowRoot?.innerHTML).toContain("ARC Hit Ratio");
+    expect(card.shadowRoot?.innerHTML).toContain("tank");
+    expect(card.shadowRoot?.innerHTML).toContain("4.2 TB / 10 TB");
+    expect(card.shadowRoot?.innerHTML).toContain("42%");
+    document.body.removeChild(card);
+  });
+
+  it("renders UnraidFansCard with cooling fan telemetry", async () => {
+    const card = new UnraidFansCard();
+    card.setConfig({ type: "custom:unraid-fans-card" });
+    card.hass = createMockHass();
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("Fan 1");
+    expect(card.shadowRoot?.innerHTML).toContain("1200 RPM");
+    expect(card.shadowRoot?.innerHTML).toContain("1 Fan");
+    document.body.removeChild(card);
+  });
+
+  it("renders UnraidGpuCard with GPU loads and temperatures", async () => {
+    const card = new UnraidGpuCard();
+    card.setConfig({ type: "custom:unraid-gpu-card" });
+    card.hass = createMockHass();
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("NVIDIA RTX 3080");
+    expect(card.shadowRoot?.innerHTML).toContain("45%");
+    expect(card.shadowRoot?.innerHTML).toContain("55°C");
+    document.body.removeChild(card);
+  });
+
+  it("renders UnraidNotificationsCard with unread counts", async () => {
+    const card = new UnraidNotificationsCard();
+    card.setConfig({ type: "custom:unraid-notifications-card" });
+    card.hass = createMockHass();
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("Notifications Center");
+    expect(card.shadowRoot?.innerHTML).toContain("Critical Issues");
+    expect(card.shadowRoot?.innerHTML).toContain("Action Required");
+    document.body.removeChild(card);
+  });
+
+  it("renders UnraidMaintenanceCard with flash and parity telemetry", async () => {
+    const card = new UnraidMaintenanceCard();
+    card.setConfig({ type: "custom:unraid-maintenance-card" });
+    card.hass = createMockHass();
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("Maintenance &amp; Operations");
+    expect(card.shadowRoot?.innerHTML).toContain("Flash Boot Drive");
+    expect(card.shadowRoot?.innerHTML).toContain("Parity Health");
+    document.body.removeChild(card);
+  });
+
+  it("renders UnraidRemoteSharesCard with remote share usage and mount status", async () => {
+    const card = new UnraidRemoteSharesCard();
+    card.setConfig({ type: "custom:unraid-remote-shares-card" });
+    card.hass = createMockHass();
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("backup");
+    expect(card.shadowRoot?.innerHTML).toContain("350 GB / 1 TB");
+    expect(card.shadowRoot?.innerHTML).toContain("35%");
+    document.body.removeChild(card);
+  });
+
+  it("renders UnraidUnassignedDevicesCard with external disks", async () => {
+    const card = new UnraidUnassignedDevicesCard();
+    card.setConfig({ type: "custom:unraid-unassigned-devices-card" });
+    card.hass = createMockHass();
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("dev1");
+    expect(card.shadowRoot?.innerHTML).toContain("2 TB");
+    expect(card.shadowRoot?.innerHTML).toContain("MOUNTED");
+    document.body.removeChild(card);
+  });
+});

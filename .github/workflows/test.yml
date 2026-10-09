@@ -49,3 +49,56 @@ jobs:
           flags: unittests
           name: ha-unraid-management-agent
           fail_ci_if_error: false
+
+  frontend:
+    name: Frontend test & build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build bundle
+        run: npm run build
+
+      - name: Committed bundle matches source
+        run: |
+          changes="$(git status --porcelain --untracked-files=all -- ../custom_components/unraid_management_agent/frontend/)"
+          if [ -n "$changes" ]; then
+            echo "Committed frontend bundle is out of date:"
+            echo "$changes"
+            git diff -- ../custom_components/unraid_management_agent/frontend/
+            exit 1
+          fi
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser regression tests
+        run: npm run test:browser
+
+      - name: Upload browser test traces
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-test-results
+          path: frontend/test-results/
+          retention-days: 7
