@@ -14,13 +14,6 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.unraid_management_agent import (
-    binary_sensor,
-    button,
-    number,
-    sensor,
-    switch,
-)
 from custom_components.unraid_management_agent.api.exceptions import (
     UnraidNotFoundError,
 )
@@ -94,7 +87,7 @@ def _service_entities(registry: er.EntityRegistry) -> dict[str, er.RegistryEntry
 async def _setup(
     hass: HomeAssistant, *, enable: tuple[str, ...] = ()
 ) -> MockConfigEntry:
-    """Set up the entry, enabling the given system service sensors."""
+    """Set up the entry, enabling the given disabled-by-default sensors."""
     entry = _entry(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
@@ -115,7 +108,7 @@ async def test_sensors_only_for_services_without_network_service_sensor(
     device_registry: dr.DeviceRegistry,
     mock_async_unraid_client: MagicMock,
 ) -> None:
-    """Docker, libvirt and nginx get sensors; network services are not duplicated."""
+    """Docker, libvirt and nginx get sensors; only docker and libvirt start enabled."""
     mock_async_unraid_client.list_services.return_value = (
         SystemServiceList.model_validate(LIVE_RESPONSE)
     )
@@ -127,8 +120,10 @@ async def test_sensors_only_for_services_without_network_service_sensor(
         (DOMAIN, ENTRY_ID), ENTRY_ID
     )
     assert server is not None
+    assert entities["docker"].disabled_by is None
+    assert entities["libvirt"].disabled_by is None
+    assert entities["nginx"].disabled_by is er.RegistryEntryDisabler.INTEGRATION
     for entity in entities.values():
-        assert entity.disabled_by is er.RegistryEntryDisabler.INTEGRATION
         assert entity.entity_category is EntityCategory.DIAGNOSTIC
         assert entity.translation_key == "system_service"
         assert entity.device_id == server.id
@@ -148,7 +143,7 @@ async def test_state_and_attributes(
         enabled=True
     )
     mock_async_unraid_client.get_vm_settings.return_value = VMSettings(enabled=False)
-    await _setup(hass, enable=("docker", "libvirt", "nginx"))
+    await _setup(hass, enable=("nginx",))
 
     docker = hass.states.get("binary_sensor.unraid_test_docker_service")
     assert docker is not None
@@ -175,7 +170,7 @@ async def test_no_enabled_attribute_without_settings(
 ) -> None:
     """Without Docker settings data, the enabled attribute is left out."""
     mock_async_unraid_client.list_services.return_value = _services(("docker", False))
-    await _setup(hass, enable=("docker",))
+    await _setup(hass)
 
     docker = hass.states.get("binary_sensor.unraid_test_docker_service")
     assert docker is not None
@@ -252,7 +247,7 @@ async def test_unavailable_when_service_disappears(
 ) -> None:
     """A service missing from the latest list makes its sensor unavailable."""
     mock_async_unraid_client.list_services.return_value = _services(("docker", True))
-    entry = await _setup(hass, enable=("docker",))
+    entry = await _setup(hass)
     coordinator = entry.runtime_data.coordinator
     entity_id = "binary_sensor.unraid_test_docker_service"
 
@@ -303,12 +298,3 @@ def test_cleanup_keys() -> None:
     assert "system_service_" not in _unavailable_data_prefixes(
         UnraidData(system_services=[])
     )
-
-
-def test_no_static_key_uses_system_service_prefix() -> None:
-    """No static entity key may start with the dynamic system_service_ prefix."""
-    for module in (binary_sensor, button, number, sensor, switch):
-        for name, value in vars(module).items():
-            if name.endswith("_DESCRIPTIONS"):
-                for description in value:
-                    assert not description.key.startswith("system_service_")

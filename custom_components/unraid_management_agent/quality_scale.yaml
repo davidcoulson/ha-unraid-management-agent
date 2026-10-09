@@ -162,10 +162,11 @@ rules:
     status: done
     comment: >
       User scripts, per-channel hwmon temperature sensors, per-pool ZFS
-      error/fragmentation sensors, network/system service running binary
-      sensors, and storage topology per-element readings (temperature,
-      fan, voltage, current) and per-slot link rate and error sensors
-      are disabled by default with _attr_entity_registry_enabled_default.
+      error/fragmentation sensors, network service running binary sensors,
+      system service running binary sensors other than Docker and Libvirt,
+      and storage topology per-element readings (temperature, fan, voltage,
+      current) and per-slot link rate and error sensors are disabled by
+      default with _attr_entity_registry_enabled_default.
   entity-translations:
     status: done
     comment: Entity translations defined in strings.json entity section
