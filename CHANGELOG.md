@@ -126,6 +126,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **UPS readings the UPS does not report** ([#179](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/179)):
+  The UPS Energy sensor showed `0.000 kWh` for a UPS without a power reading. It is now
+  unknown while UPS power is unknown, adds no energy during that time, and starts a new
+  integration series when power returns instead of interpolating across the gap. The
+  accumulated total is still saved for restarts. UPS Load, Power, Battery and Runtime are
+  unknown when the agent sends `null` or leaves the field out (agent fix
+  [ruaan-deysel/unraid-management-agent#204](https://github.com/ruaan-deysel/unraid-management-agent/issues/204));
+  older agents that send `0` still show 0.
 - **Dashboard card accessibility, entity platform scoping, and slugification**:
   - Replaced ad-hoc regex with Home Assistant compliant NFKD slugification (`slugifyDeviceName`) across base card device matches.
   - Added keyboard interaction (`role="button"`, `tabindex="0"`, Enter/Space keydown handlers) across user shares and network interface rows.
