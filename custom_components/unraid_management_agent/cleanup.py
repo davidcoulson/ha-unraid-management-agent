@@ -31,6 +31,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 from homeassistant.util import slugify
 
+from .alerts import ALERT_RULE_KEY_PREFIX, alert_rule_key, alert_rule_names
 from .const import CONF_ENABLE_VM_DEVICES, DEFAULT_ENABLE_VM_DEVICES, DOMAIN
 
 if TYPE_CHECKING:
@@ -63,6 +64,7 @@ _DYNAMIC_KEY_PREFIXES: tuple[str, ...] = (
     "remote_share_",
     "unassigned_device_",
     "user_script_",
+    ALERT_RULE_KEY_PREFIX,  # "alert_rule_": per-rule alert binary sensors
 )
 
 # Static entity keys that start with a dynamic prefix and must never be removed.
@@ -292,6 +294,10 @@ def _build_valid_dynamic_entity_keys(
         if name:
             keys.add(_user_script_key(name))  # button
 
+    # ── Alert rules ───────────────────────────────────────────────────────────
+    for rule_id in alert_rule_names(data):
+        keys.add(alert_rule_key(rule_id))  # binary sensor
+
     return keys
 
 
@@ -370,6 +376,10 @@ def _unavailable_data_prefixes(data: UnraidData) -> set[str]:
         prefixes.add("unassigned_device_")
     if data.user_scripts is None:
         prefixes.add("user_script_")
+    # The rule list is the source of truth: the status list omits disabled
+    # rules, whose binary sensors must stay.
+    if data.alert_rules is None:
+        prefixes.add(ALERT_RULE_KEY_PREFIX)
     return prefixes
 
 

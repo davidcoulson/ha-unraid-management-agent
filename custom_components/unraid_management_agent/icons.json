@@ -235,6 +235,9 @@
       },
       "container_device_network_tx_rate": {
         "default": "mdi:upload-network"
+      },
+      "alerts_firing": {
+        "default": "mdi:bell-alert-outline"
       }
     },
     "binary_sensor": {
@@ -298,6 +301,13 @@
       },
       "parity_check_scheduled": {
         "default": "mdi:calendar-check"
+      },
+      "alert_rule": {
+        "default": "mdi:bell-check-outline",
+        "state": {
+          "on": "mdi:bell-alert",
+          "off": "mdi:bell-check-outline"
+        }
       }
     },
     "switch": {
@@ -420,6 +430,11 @@
       },
       "container_device_restart": {
         "default": "mdi:restart"
+      }
+    },
+    "event": {
+      "alert_event": {
+        "default": "mdi:bell-alert"
       }
     }
   },
