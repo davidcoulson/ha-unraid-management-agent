@@ -45,20 +45,21 @@ export class UnraidRemoteSharesCard extends BaseUnraidCard {
       const match = entityId.match(/_remote_share_([a-zA-Z0-9_-]+)_(usage|mounted|mount)$/i);
       if (!match || !match[1] || !match[2]) continue;
 
+      const shareKey = match[1].toLowerCase();
       const shareName = (stateObj.attributes?.friendly_name as string) || match[1] || "Remote Share";
       const cleanName = shareName
         .replace(/^(?:.*?\s+)?Remote Share\s+/i, "")
         .replace(/\s+(?:usage|mounted|mount)$/i, "")
         .trim();
 
-      if (!shareMap.has(cleanName)) {
-        shareMap.set(cleanName, {
+      if (!shareMap.has(shareKey)) {
+        shareMap.set(shareKey, {
           name: cleanName,
           isMounted: true,
         });
       }
 
-      const item = shareMap.get(cleanName)!;
+      const item = shareMap.get(shareKey)!;
       const prop = match[2].toLowerCase();
 
       if (prop === "usage") {

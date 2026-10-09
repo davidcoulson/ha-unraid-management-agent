@@ -62,9 +62,10 @@ export class UnraidServerCard extends BaseUnraidCard {
     const ramPct = Math.round(Number(ramState?.state) || 0);
     const arrayPct = Math.round(Number(arrayUsage?.state) || 0);
 
+    const arrayStateNorm = arrayState?.state?.toLowerCase().trim();
     const isArrayStarted = arrayStarted
       ? arrayStarted.state === "on"
-      : arrayState?.state?.toLowerCase() === "started" || arrayState?.state === "Normal";
+      : arrayStateNorm === "started" || arrayStateNorm === "normal";
     const alertCount = Number(alertsState?.state) || 0;
 
     const cpuModel = (cpuState?.attributes?.cpu_model as string) || (device?.model ?? "Multi-Core CPU");

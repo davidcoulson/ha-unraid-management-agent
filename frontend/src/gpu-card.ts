@@ -37,18 +37,18 @@ export class UnraidGpuCard extends BaseUnraidCard {
     const device = this.getActiveDevice();
     const deviceId = device?.id;
     const cleanName = device?.name
-      ? device.name.toLowerCase().replace(/[^a-z0-9]/g, "_")
+      ? this.slugifyDeviceName(device.name)
       : undefined;
 
     for (const [entityId, stateObj] of Object.entries(this.hass.states)) {
       if (!entityId.startsWith("sensor.")) continue;
 
-      if (deviceId && this.hass.entities) {
-        const ent = this.hass.entities[entityId];
-        if (ent && ent.device_id && ent.device_id !== deviceId) continue;
+      const ent = this.hass.entities?.[entityId];
+      if (deviceId && ent?.device_id) {
+        if (ent.device_id !== deviceId) continue;
+      } else if (cleanName && !entityId.includes(cleanName)) {
+        continue;
       }
-
-      if (cleanName && !entityId.includes(cleanName)) continue;
 
       const match = entityId.match(
         /_gpu_(?:(.+?)_)?(utilization|temperature|power|energy|memory_utilization|vram_usage)$/i

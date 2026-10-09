@@ -43,21 +43,22 @@ export class UnraidUnassignedDevicesCard extends BaseUnraidCard {
       const match = entityId.match(/_unassigned_device_([a-zA-Z0-9_-]+)_(size|usage|mounted|temperature|temp)$/i);
       if (!match || !match[1] || !match[2]) continue;
 
+      const devKey = match[1].toLowerCase();
       const rawName = (stateObj.attributes?.friendly_name as string) || match[1] || "Unassigned Device";
       const cleanName = rawName
         .replace(/^(?:.*?\s+)?Unassigned Device\s+/i, "")
         .replace(/\s+(?:size|usage|mounted|temperature|temp)$/i, "")
         .trim();
 
-      if (!devMap.has(cleanName)) {
-        devMap.set(cleanName, {
+      if (!devMap.has(devKey)) {
+        devMap.set(devKey, {
           id: match[1],
           name: cleanName,
           isMounted: false,
         });
       }
 
-      const item = devMap.get(cleanName)!;
+      const item = devMap.get(devKey)!;
       const prop = match[2].toLowerCase();
 
       if (prop === "size") {

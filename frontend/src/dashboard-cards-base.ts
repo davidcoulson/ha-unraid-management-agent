@@ -62,6 +62,15 @@ export abstract class BaseUnraidCard extends LitElement {
     this.config = { type: "" };
   }
 
+  protected slugifyDeviceName(name: string): string {
+    return name
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "");
+  }
+
   override willUpdate(changedProperties: PropertyValues<this>): void {
     super.willUpdate(changedProperties);
     if (changedProperties.has("config")) {
@@ -169,7 +178,7 @@ export abstract class BaseUnraidCard extends LitElement {
           (objectId.endsWith("_ip") || objectId.endsWith("_ip_address")));
 
       if (device?.name) {
-        const cleanName = device.name.toLowerCase().replace(/[^a-z0-9]/g, "_");
+        const cleanName = this.slugifyDeviceName(device.name);
         return keyMatch && objectId.includes(cleanName);
       }
       return keyMatch;
@@ -191,7 +200,7 @@ export abstract class BaseUnraidCard extends LitElement {
     if (!this.hass?.states) return [];
     const device = this.getActiveDevice();
     const cleanName = device?.name
-      ? device.name.toLowerCase().replace(/[^a-z0-9]/g, "_")
+      ? this.slugifyDeviceName(device.name)
       : undefined;
 
     const ifaceMap = new Map<
@@ -261,7 +270,7 @@ export abstract class BaseUnraidCard extends LitElement {
     if (!this.hass?.states) return undefined;
     const device = this.getActiveDevice();
     const cleanName = device?.name
-      ? device.name.toLowerCase().replace(/[^a-z0-9]/g, "_")
+      ? this.slugifyDeviceName(device.name)
       : undefined;
 
     return Object.values(this.hass.states).find((s) => {
@@ -323,7 +332,7 @@ export abstract class BaseUnraidCard extends LitElement {
 
     // Fallback to name pattern
     const cleanName = device?.name
-      ? device.name.toLowerCase().replace(/[^a-z0-9]/g, "_")
+      ? this.slugifyDeviceName(device.name)
       : undefined;
 
     const matchesTranslation = (s: HassEntity) => {

@@ -72,6 +72,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Dashboard card accessibility, entity platform scoping, and slugification**:
+  - Replaced ad-hoc regex with Home Assistant compliant NFKD slugification (`slugifyDeviceName`) across base card device matches.
+  - Added keyboard interaction (`role="button"`, `tabindex="0"`, Enter/Space keydown handlers) across user shares and network interface rows.
+  - Scoped fan and control entities in `unraid-fans-card` strictly to `unraid_management_agent` and `unraid` platforms.
+  - Prioritized device registry linking in `unraid-gpu-card` and normalized parity cancel action icon to `mdiStop`.
+  - Normalized array status parsing in `unraid-server-card` and entity grouping keys in remote shares and unassigned devices cards.
 - **WebSocket keepalive ping timeouts** ([#138](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/138), fixes [#135](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/135)): Disabled client-initiated keepalive pings (`ping_interval=None`) to prevent spurious `1011` keepalive timeout disconnects every ~30 seconds; the Unraid agent server manages connection keepalive directly.
 - **WebSocket disconnect close metadata** ([#138](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/138), fixes [#135](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/135)): Extracted and surfaced close code and reason metadata from `ConnectionClosed` frames on disconnect instead of dropping close context.
 - **ZFS pool usage always Unknown** ([#139](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/139)):

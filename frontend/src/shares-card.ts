@@ -167,9 +167,12 @@ export class UnraidSharesCard extends BaseUnraidCard {
                 return html`
                   <div
                     class="list-row"
+                    role="button"
+                    tabindex="0"
                     style="cursor: pointer;"
                     title="Click for details on ${share.name}"
                     @click=${() => this._openMoreInfo(share.entityId)}
+                    @keydown=${(e: KeyboardEvent) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), this._openMoreInfo(share.entityId))}
                   >
                     <div class="row-left">
                       <div

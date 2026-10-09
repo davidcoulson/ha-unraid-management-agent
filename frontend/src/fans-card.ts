@@ -37,6 +37,12 @@ export class UnraidFansCard extends BaseUnraidCard {
     const controlMap = new Map<string, string>();
     for (const [entityId, stateObj] of Object.entries(this.hass.states)) {
       if (entityId.startsWith("number.") && (entityId.includes("_fan_") || entityId.includes("fan_control"))) {
+        if (deviceId && this.hass.entities) {
+          const ent = this.hass.entities[entityId];
+          if (ent && ent.device_id && ent.device_id !== deviceId) continue;
+        }
+        const reg = this.hass.entities?.[entityId];
+        if (reg && reg.platform !== "unraid_management_agent" && reg.platform !== "unraid") continue;
         const fanIdAttr = stateObj.attributes?.fan_id;
         if (fanIdAttr !== undefined) {
           controlMap.set(String(fanIdAttr), entityId);
@@ -52,6 +58,8 @@ export class UnraidFansCard extends BaseUnraidCard {
         const ent = this.hass.entities[entityId];
         if (ent && ent.device_id && ent.device_id !== deviceId) continue;
       }
+      const reg = this.hass.entities?.[entityId];
+      if (reg && reg.platform !== "unraid_management_agent" && reg.platform !== "unraid") continue;
 
       // Check fan sensor pattern
       const isFan =
@@ -99,6 +107,8 @@ export class UnraidFansCard extends BaseUnraidCard {
           const ent = this.hass.entities[entityId];
           if (ent && ent.device_id && ent.device_id !== deviceId) continue;
         }
+        const reg = this.hass.entities?.[entityId];
+        if (reg && reg.platform !== "unraid_management_agent" && reg.platform !== "unraid") continue;
         if (!entityId.includes("_fan_")) continue;
 
         const fanId = stateObj.attributes?.fan_id as string | number | undefined;

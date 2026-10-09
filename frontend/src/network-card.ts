@@ -123,8 +123,14 @@ export class UnraidNetworkCard extends BaseUnraidCard {
                 return html`
                   <div
                     class="list-row"
+                    role="button"
+                    tabindex="0"
                     style="cursor: pointer; flex-direction: column; align-items: stretch; gap: 8px; padding: 12px 14px;"
+                    title="Click for details on ${iface.name}"
                     @click=${() => this.handleMoreInfo(primaryEntityId)}
+                    @keydown=${(e: KeyboardEvent) =>
+                      (e.key === "Enter" || e.key === " ") &&
+                      (e.preventDefault(), this.handleMoreInfo(primaryEntityId))}
                   >
                     <div style="display: flex; align-items: center; justify-content: space-between;">
                       <div class="row-left" style="gap: 8px;">
