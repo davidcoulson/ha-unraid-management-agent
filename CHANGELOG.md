@@ -152,6 +152,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   "<pool> Corrupted Files" sensor shows the number of files, and its `files`
   attribute lists the first 10 paths. The attribute is not recorded in history.
   Agents up to 2026.09.01 never fill the list (ruaan-deysel/unraid-management-agent#190).
+- **WebSocket events were never applied** ([#185](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/185), contributed by @davidcoulson):
+  The agent wraps every websocket message as `{"event": ..., "timestamp": ..., "data": ...}`,
+  but the integration looked for payload fields on the wrapper. Every event except
+  `source_status_changed` was dropped, so entities only changed on the 30-second poll.
+  Events are now unwrapped and matched by topic name (including `gpu_metrics_update`,
+  `notifications_update` and the `zfs_*` names). Messages named `update` (agents before
+  v2026.03.00, and `collector_state_change`) fall back to the payload shape, and bare
+  payloads still parse. Empty or `null` lists now count as empty lists. A collector event
+  keeps the collector's other polled fields, and events the integration does not use no
+  longer refresh every entity.
 
 ### Changed
 
