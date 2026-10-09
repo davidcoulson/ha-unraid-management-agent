@@ -1,0 +1,3958 @@
+{
+  "state": "ok",
+  "sources": {
+    "storcli": true,
+    "storcli_path": "/sbin/storcli",
+    "storcli_version": "007.3305.0000.0000 Jan 23, 2025",
+    "ses": true,
+    "ses_devices": 5
+  },
+  "controllers": [
+    {
+      "id": "DLP9672282",
+      "index": 0,
+      "model": "MegaRAID 9580-8i8e",
+      "serial_number": "DLP9672282",
+      "sas_address": "0x500062bc5ab7e3a0",
+      "firmware_version": "5.310.02-4101",
+      "firmware_package": "52.31.0-5827",
+      "bios_version": "7.31.00.0_0x071F0000",
+      "driver_name": "megaraid_sas",
+      "driver_version": "07.734.00.00-rc1",
+      "personality": "JBOD-Mode",
+      "status": "Optimal",
+      "temperature_celsius": 63,
+      "pci_address": "0000:02:00.0",
+      "pcie_link_speed": "16.0 GT/s PCIe",
+      "pcie_link_width": 8,
+      "pcie_max_link_speed": "16.0 GT/s PCIe",
+      "pcie_max_link_width": 8,
+      "memory_correctable_errors": 0,
+      "memory_uncorrectable_errors": 0,
+      "bbu_status": "NA",
+      "physical_drives": 43,
+      "ports": [
+        {
+          "port": 0,
+          "phys": [0, 1, 2, 3],
+          "width": 4,
+          "link_rate_gbps": 12,
+          "attached_sas_address": "0x500a09809ef42c5d",
+          "attached_device_type": "Edge Expander",
+          "attached_enclosure_id": "50050ccb33cbcba2",
+          "attached_iom": 1
+        },
+        {
+          "port": 1,
+          "phys": [4, 5, 6, 7],
+          "width": 4,
+          "link_rate_gbps": 12,
+          "attached_sas_address": "0x500a098be2d98d01",
+          "attached_device_type": "Edge Expander",
+          "attached_enclosure_id": "500a098aa6236e71",
+          "attached_iom": 0
+        }
+      ],
+      "phys": [
+        {
+          "phy": 0,
+          "port": 0,
+          "connected": true,
+          "link_rate_gbps": 12,
+          "attached_sas_address": "0x500a09809ef42c5d",
+          "attached_device_type": "Edge Expander",
+          "attached_phy": 13,
+          "enabled": true
+        },
+        {
+          "phy": 1,
+          "port": 0,
+          "connected": true,
+          "link_rate_gbps": 12,
+          "attached_sas_address": "0x500a09809ef42c5d",
+          "attached_device_type": "Edge Expander",
+          "attached_phy": 12,
+          "enabled": true
+        },
+        {
+          "phy": 2,
+          "port": 0,
+          "connected": true,
+          "link_rate_gbps": 12,
+          "attached_sas_address": "0x500a09809ef42c5d",
+          "attached_device_type": "Edge Expander",
+          "attached_phy": 14,
+          "enabled": true
+        },
+        {
+          "phy": 3,
+          "port": 0,
+          "connected": true,
+          "link_rate_gbps": 12,
+          "attached_sas_address": "0x500a09809ef42c5d",
+          "attached_device_type": "Edge Expander",
+          "attached_phy": 15,
+          "enabled": true
+        },
+        {
+          "phy": 4,
+          "port": 1,
+          "connected": true,
+          "link_rate_gbps": 12,
+          "attached_sas_address": "0x500a098be2d98d01",
+          "attached_device_type": "Edge Expander",
+          "attached_phy": 13,
+          "enabled": true
+        },
+        {
+          "phy": 5,
+          "port": 1,
+          "connected": true,
+          "link_rate_gbps": 12,
+          "attached_sas_address": "0x500a098be2d98d01",
+          "attached_device_type": "Edge Expander",
+          "attached_phy": 12,
+          "enabled": true
+        },
+        {
+          "phy": 6,
+          "port": 1,
+          "connected": true,
+          "link_rate_gbps": 12,
+          "attached_sas_address": "0x500a098be2d98d01",
+          "attached_device_type": "Edge Expander",
+          "attached_phy": 14,
+          "enabled": true
+        },
+        {
+          "phy": 7,
+          "port": 1,
+          "connected": true,
+          "link_rate_gbps": 12,
+          "attached_sas_address": "0x500a098be2d98d01",
+          "attached_device_type": "Edge Expander",
+          "attached_phy": 15,
+          "enabled": true
+        },
+        {
+          "phy": 8,
+          "connected": false,
+          "enabled": true
+        },
+        {
+          "phy": 9,
+          "connected": false,
+          "enabled": true
+        },
+        {
+          "phy": 10,
+          "connected": false,
+          "enabled": true
+        },
+        {
+          "phy": 11,
+          "connected": false,
+          "enabled": true
+        },
+        {
+          "phy": 12,
+          "connected": false,
+          "enabled": true
+        },
+        {
+          "phy": 13,
+          "connected": false,
+          "enabled": true
+        },
+        {
+          "phy": 14,
+          "connected": false,
+          "enabled": true
+        },
+        {
+          "phy": 15,
+          "connected": false,
+          "enabled": true
+        }
+      ]
+    }
+  ],
+  "enclosures": [
+    {
+      "id": "50050ccb33cbcba2",
+      "logical_id": "0x50050ccb33cbcba2",
+      "vendor": "NETAPP",
+      "product": "DS424IOM12A",
+      "serial_number": "BSS2128537M0VLE",
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "partner_device_id": 241,
+      "connector_name": "C1 x4 \u0026 C2 x4",
+      "port_mode": "Multipath",
+      "status": "OK",
+      "slots": 24,
+      "slots_populated": 22,
+      "ses_devices": [
+        {
+          "device": "sg4",
+          "revision": "0281",
+          "reporting_iom": 1,
+          "expander_sas_address": "0x500a09809ef42c5d"
+        },
+        {
+          "device": "sg5",
+          "revision": "0281",
+          "reporting_iom": 0,
+          "expander_sas_address": "0x500a098cd24ee6f1"
+        }
+      ],
+      "power_supplies": [
+        {
+          "index": 0,
+          "status": "OK",
+          "problem": false,
+          "serial_number": "EXH465859062585",
+          "firmware": "0311",
+          "part_number": "0082562-12",
+          "rated_watts": 580,
+          "fail": false,
+          "ac_fail": false,
+          "dc_fail": false,
+          "over_temp_fail": false,
+          "temp_warning": false,
+          "dc_over_voltage": false,
+          "dc_under_voltage": false,
+          "dc_over_current": false,
+          "off": false,
+          "predicted_failure": false
+        },
+        {
+          "index": 1,
+          "status": "OK",
+          "problem": false,
+          "serial_number": "PUD32857320N80N",
+          "firmware": "0311",
+          "part_number": "0082562-12",
+          "rated_watts": 580,
+          "fail": false,
+          "ac_fail": false,
+          "dc_fail": false,
+          "over_temp_fail": false,
+          "temp_warning": false,
+          "dc_over_voltage": false,
+          "dc_under_voltage": false,
+          "dc_over_current": false,
+          "off": false,
+          "predicted_failure": false
+        },
+        {
+          "index": 2,
+          "status": "OK",
+          "problem": false,
+          "serial_number": "PAN4564353420A3",
+          "firmware": "0305",
+          "part_number": "0082562-11",
+          "rated_watts": 580,
+          "fail": false,
+          "ac_fail": false,
+          "dc_fail": false,
+          "over_temp_fail": false,
+          "temp_warning": false,
+          "dc_over_voltage": false,
+          "dc_under_voltage": false,
+          "dc_over_current": false,
+          "off": false,
+          "predicted_failure": false
+        },
+        {
+          "index": 3,
+          "status": "OK",
+          "problem": false,
+          "serial_number": "CCQ81626627T8CS",
+          "firmware": "0305",
+          "part_number": "0082562-11",
+          "rated_watts": 580,
+          "fail": false,
+          "ac_fail": false,
+          "dc_fail": false,
+          "over_temp_fail": false,
+          "temp_warning": false,
+          "dc_over_voltage": false,
+          "dc_under_voltage": false,
+          "dc_over_current": false,
+          "off": false,
+          "predicted_failure": false
+        }
+      ],
+      "fans": [
+        {
+          "index": 0,
+          "status": "OK",
+          "problem": false,
+          "rpm": 3370,
+          "speed": "at lowest speed",
+          "fail": false,
+          "off": false
+        },
+        {
+          "index": 1,
+          "status": "OK",
+          "problem": false,
+          "rpm": 2920,
+          "speed": "at lowest speed",
+          "fail": false,
+          "off": false
+        },
+        {
+          "index": 2,
+          "status": "OK",
+          "problem": false,
+          "rpm": 3000,
+          "speed": "at lowest speed",
+          "fail": false,
+          "off": false
+        },
+        {
+          "index": 3,
+          "status": "OK",
+          "problem": false,
+          "rpm": 3370,
+          "speed": "at lowest speed",
+          "fail": false,
+          "off": false
+        },
+        {
+          "index": 4,
+          "status": "OK",
+          "problem": false,
+          "rpm": 3000,
+          "speed": "at lowest speed",
+          "fail": false,
+          "off": false
+        },
+        {
+          "index": 5,
+          "status": "OK",
+          "problem": false,
+          "rpm": 2250,
+          "speed": "at lowest speed",
+          "fail": false,
+          "off": false
+        },
+        {
+          "index": 6,
+          "status": "OK",
+          "problem": false,
+          "rpm": 2920,
+          "speed": "at lowest speed",
+          "fail": false,
+          "off": false
+        },
+        {
+          "index": 7,
+          "status": "OK",
+          "problem": false,
+          "rpm": 2170,
+          "speed": "at lowest speed",
+          "fail": false,
+          "off": false
+        }
+      ],
+      "temperature_sensors": [
+        {
+          "index": 0,
+          "status": "OK",
+          "problem": false,
+          "value": 25,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 1,
+          "status": "OK",
+          "problem": false,
+          "value": 32,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 2,
+          "status": "OK",
+          "problem": false,
+          "value": 32,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 3,
+          "status": "OK",
+          "problem": false,
+          "value": 42,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 4,
+          "status": "OK",
+          "problem": false,
+          "value": 35,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 5,
+          "status": "OK",
+          "problem": false,
+          "value": 47,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 6,
+          "status": "OK",
+          "problem": false,
+          "value": 32,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 7,
+          "status": "OK",
+          "problem": false,
+          "value": 45,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 8,
+          "status": "OK",
+          "problem": false,
+          "value": 38,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 9,
+          "status": "OK",
+          "problem": false,
+          "value": 57,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 10,
+          "status": "OK",
+          "problem": false,
+          "value": 43,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 11,
+          "status": "OK",
+          "problem": false,
+          "value": 63,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        }
+      ],
+      "voltage_sensors": [
+        {
+          "index": 0,
+          "status": "OK",
+          "problem": false,
+          "value": 5.11,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 1,
+          "status": "OK",
+          "problem": false,
+          "value": 12.22,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 2,
+          "status": "OK",
+          "problem": false,
+          "value": 5.11,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 3,
+          "status": "OK",
+          "problem": false,
+          "value": 12.26,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 4,
+          "status": "OK",
+          "problem": false,
+          "value": 5.11,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 5,
+          "status": "OK",
+          "problem": false,
+          "value": 12.22,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 6,
+          "status": "OK",
+          "problem": false,
+          "value": 5.15,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 7,
+          "status": "OK",
+          "problem": false,
+          "value": 12.3,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        }
+      ],
+      "current_sensors": [
+        {
+          "index": 0,
+          "status": "OK",
+          "problem": false,
+          "value": 4.33,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 1,
+          "status": "OK",
+          "problem": false,
+          "value": 3.78,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 2,
+          "status": "OK",
+          "problem": false,
+          "value": 2.38,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 3,
+          "status": "OK",
+          "problem": false,
+          "value": 2.42,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 4,
+          "status": "OK",
+          "problem": false,
+          "value": 1.99,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 5,
+          "status": "OK",
+          "problem": false,
+          "value": 1.75,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 6,
+          "status": "OK",
+          "problem": false,
+          "value": 1.48,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 7,
+          "status": "OK",
+          "problem": false,
+          "value": 1.99,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        }
+      ],
+      "ioms": [
+        {
+          "index": 0,
+          "status": "OK",
+          "problem": false,
+          "serial_number": "232779516232",
+          "firmware": "0281",
+          "part_number": "111-02850+C1",
+          "expander_sas_address": "0x500a098cd24ee6f1",
+          "host_visible": true,
+          "fail": false
+        },
+        {
+          "index": 1,
+          "status": "OK",
+          "problem": false,
+          "serial_number": "969007963513",
+          "firmware": "0281",
+          "part_number": "111-02850+C1",
+          "expander_sas_address": "0x500a09809ef42c5d",
+          "host_visible": true,
+          "fail": false
+        }
+      ],
+      "connectors": [
+        {
+          "index": 0,
+          "status": "OK",
+          "problem": false,
+          "type": "Mini SAS HD 4x receptacle (SFF-8644) [max 4 phys]",
+          "installed": true,
+          "fail": false,
+          "attached_sas_address": "0x500a098be2d98d01",
+          "attached_phy": 0,
+          "attached_kind": "enclosure",
+          "attached_id": "500a098aa6236e71",
+          "attached_iom": 0,
+          "cable_vendor": "HEWLETT-PACKARD",
+          "cable_part_number": "691970-001+E",
+          "cable_serial_number": "E610461182997"
+        },
+        {
+          "index": 1,
+          "status": "OK",
+          "problem": false,
+          "type": "Mini SAS HD 4x receptacle (SFF-8644) [max 4 phys]",
+          "installed": true,
+          "fail": false,
+          "attached_sas_address": "0x500a098be2d98d01",
+          "attached_phy": 4,
+          "attached_kind": "enclosure",
+          "attached_id": "500a098aa6236e71",
+          "attached_iom": 0,
+          "cable_vendor": "HEWLETT-PACKARD",
+          "cable_part_number": "691970-001+E",
+          "cable_serial_number": "N396325631039"
+        },
+        {
+          "index": 2,
+          "status": "Not installed",
+          "problem": false,
+          "installed": false,
+          "fail": false
+        },
+        {
+          "index": 3,
+          "status": "Not installed",
+          "problem": false,
+          "installed": false,
+          "fail": false
+        },
+        {
+          "index": 4,
+          "status": "OK",
+          "problem": false,
+          "type": "Mini SAS HD 4x receptacle (SFF-8644) [max 4 phys]",
+          "installed": true,
+          "fail": false,
+          "attached_sas_address": "0x500a098cbf781241",
+          "attached_phy": 0,
+          "attached_kind": "enclosure",
+          "attached_id": "500a098aa6236e71",
+          "attached_iom": 1,
+          "cable_vendor": "HEWLETT-PACKARD",
+          "cable_part_number": "691970-001+E",
+          "cable_serial_number": "T703491581413"
+        },
+        {
+          "index": 5,
+          "status": "OK",
+          "problem": false,
+          "type": "Mini SAS HD 4x receptacle (SFF-8644) [max 4 phys]",
+          "installed": true,
+          "fail": false,
+          "attached_sas_address": "0x500a098cbf781241",
+          "attached_phy": 4,
+          "attached_kind": "enclosure",
+          "attached_id": "500a098aa6236e71",
+          "attached_iom": 1,
+          "cable_vendor": "HEWLETT-PACKARD",
+          "cable_part_number": "691970-001+E",
+          "cable_serial_number": "C127785435895"
+        },
+        {
+          "index": 6,
+          "status": "Not installed",
+          "problem": false,
+          "installed": false,
+          "fail": false
+        },
+        {
+          "index": 7,
+          "status": "OK",
+          "problem": false,
+          "type": "Mini SAS HD 4x receptacle (SFF-8644) [max 4 phys]",
+          "installed": true,
+          "fail": false,
+          "attached_sas_address": "0x500062bc5ab7e3a0",
+          "attached_phy": 0,
+          "attached_kind": "controller",
+          "attached_id": "DLP9672282",
+          "attached_port": 0,
+          "cable_vendor": "THE MATE COMPANY",
+          "cable_part_number": "C5555-1M+00",
+          "cable_serial_number": "033281714389"
+        }
+      ],
+      "slot_details": [
+        {
+          "index": 0,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 1,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 2,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 3,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 4,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 5,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 6,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 7,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 8,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 9,
+          "status": "Not installed",
+          "problem": false,
+          "occupied": false,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 10,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 11,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 12,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 13,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 14,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 15,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 16,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 17,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 18,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 19,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 20,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 21,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 22,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 23,
+          "status": "Not installed",
+          "problem": false,
+          "occupied": false,
+          "fault": false,
+          "identify": false
+        }
+      ],
+      "iom_firmware_mismatch": false,
+      "iom_firmware_differs_from_peers": true,
+      "redundancy": {
+        "expected_paths": 2,
+        "active_paths": 2,
+        "single_path_drives": 0,
+        "degraded": false,
+        "reasons": []
+      },
+      "problems": []
+    },
+    {
+      "id": "500a098aa6236e71",
+      "logical_id": "0x500a098aa6236e71",
+      "vendor": "NETAPP",
+      "product": "DS424IOM12A",
+      "serial_number": "RCPTW03814621NO",
+      "controller_index": 0,
+      "enclosure_device_id": 245,
+      "partner_device_id": 244,
+      "connector_name": "C1 x4 \u0026 C2 x4",
+      "port_mode": "Multipath",
+      "status": "OK",
+      "slots": 24,
+      "slots_populated": 21,
+      "ses_devices": [
+        {
+          "device": "sg6",
+          "revision": "0260",
+          "reporting_iom": 1,
+          "expander_sas_address": "0x500a098cbf781241"
+        },
+        {
+          "device": "sg7",
+          "revision": "0260",
+          "reporting_iom": 0,
+          "expander_sas_address": "0x500a098be2d98d01"
+        }
+      ],
+      "power_supplies": [
+        {
+          "index": 0,
+          "status": "OK",
+          "problem": false,
+          "serial_number": "CFF98151495Z1K8",
+          "firmware": "0311",
+          "part_number": "0082562-21",
+          "rated_watts": 580,
+          "fail": false,
+          "ac_fail": false,
+          "dc_fail": false,
+          "over_temp_fail": false,
+          "temp_warning": false,
+          "dc_over_voltage": false,
+          "dc_under_voltage": false,
+          "dc_over_current": false,
+          "off": false,
+          "predicted_failure": false
+        },
+        {
+          "index": 1,
+          "status": "OK",
+          "problem": false,
+          "serial_number": "RGO317262578P64",
+          "firmware": "0305",
+          "part_number": "0082562-11",
+          "rated_watts": 580,
+          "fail": false,
+          "ac_fail": false,
+          "dc_fail": false,
+          "over_temp_fail": false,
+          "temp_warning": false,
+          "dc_over_voltage": false,
+          "dc_under_voltage": false,
+          "dc_over_current": false,
+          "off": false,
+          "predicted_failure": false
+        },
+        {
+          "index": 2,
+          "status": "OK",
+          "problem": false,
+          "serial_number": "WQF996238301463",
+          "firmware": "0311",
+          "part_number": "0082562-12",
+          "rated_watts": 580,
+          "fail": false,
+          "ac_fail": false,
+          "dc_fail": false,
+          "over_temp_fail": false,
+          "temp_warning": false,
+          "dc_over_voltage": false,
+          "dc_under_voltage": false,
+          "dc_over_current": false,
+          "off": false,
+          "predicted_failure": false
+        },
+        {
+          "index": 3,
+          "status": "OK",
+          "problem": false,
+          "serial_number": "FZE66349192N90S",
+          "firmware": "0311",
+          "part_number": "0082562-21",
+          "rated_watts": 580,
+          "fail": false,
+          "ac_fail": false,
+          "dc_fail": false,
+          "over_temp_fail": false,
+          "temp_warning": false,
+          "dc_over_voltage": false,
+          "dc_under_voltage": false,
+          "dc_over_current": false,
+          "off": false,
+          "predicted_failure": false
+        }
+      ],
+      "fans": [
+        {
+          "index": 0,
+          "status": "OK",
+          "problem": false,
+          "rpm": 3300,
+          "speed": "at lowest speed",
+          "fail": false,
+          "off": false
+        },
+        {
+          "index": 1,
+          "status": "OK",
+          "problem": false,
+          "rpm": 2920,
+          "speed": "at lowest speed",
+          "fail": false,
+          "off": false
+        },
+        {
+          "index": 2,
+          "status": "OK",
+          "problem": false,
+          "rpm": 3000,
+          "speed": "at lowest speed",
+          "fail": false,
+          "off": false
+        },
+        {
+          "index": 3,
+          "status": "OK",
+          "problem": false,
+          "rpm": 2250,
+          "speed": "at lowest speed",
+          "fail": false,
+          "off": false
+        },
+        {
+          "index": 4,
+          "status": "OK",
+          "problem": false,
+          "rpm": 3600,
+          "speed": "at lowest speed",
+          "fail": false,
+          "off": false
+        },
+        {
+          "index": 5,
+          "status": "OK",
+          "problem": false,
+          "rpm": 2920,
+          "speed": "at lowest speed",
+          "fail": false,
+          "off": false
+        },
+        {
+          "index": 6,
+          "status": "OK",
+          "problem": false,
+          "rpm": 3600,
+          "speed": "at lowest speed",
+          "fail": false,
+          "off": false
+        },
+        {
+          "index": 7,
+          "status": "OK",
+          "problem": false,
+          "rpm": 3000,
+          "speed": "at lowest speed",
+          "fail": false,
+          "off": false
+        }
+      ],
+      "temperature_sensors": [
+        {
+          "index": 0,
+          "status": "OK",
+          "problem": false,
+          "value": 20,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 1,
+          "status": "OK",
+          "problem": false,
+          "value": 33,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 2,
+          "status": "OK",
+          "problem": false,
+          "value": 33,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 3,
+          "status": "OK",
+          "problem": false,
+          "value": 42,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 4,
+          "status": "OK",
+          "problem": false,
+          "value": 36,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 5,
+          "status": "OK",
+          "problem": false,
+          "value": 50,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 6,
+          "status": "OK",
+          "problem": false,
+          "value": 29,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 7,
+          "status": "OK",
+          "problem": false,
+          "value": 39,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 8,
+          "status": "OK",
+          "problem": false,
+          "value": 35,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 9,
+          "status": "OK",
+          "problem": false,
+          "value": 44,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 10,
+          "status": "OK",
+          "problem": false,
+          "value": 48,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 11,
+          "status": "OK",
+          "problem": false,
+          "value": 41,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        }
+      ],
+      "voltage_sensors": [
+        {
+          "index": 0,
+          "status": "OK",
+          "problem": false,
+          "value": 5.15,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 1,
+          "status": "OK",
+          "problem": false,
+          "value": 12.26,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 2,
+          "status": "OK",
+          "problem": false,
+          "value": 5.19,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 3,
+          "status": "OK",
+          "problem": false,
+          "value": 12.38,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 4,
+          "status": "OK",
+          "problem": false,
+          "value": 5.15,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 5,
+          "status": "OK",
+          "problem": false,
+          "value": 12.26,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 6,
+          "status": "OK",
+          "problem": false,
+          "value": 5.15,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 7,
+          "status": "OK",
+          "problem": false,
+          "value": 12.3,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        }
+      ],
+      "current_sensors": [
+        {
+          "index": 0,
+          "status": "OK",
+          "problem": false,
+          "value": 3.32,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 1,
+          "status": "OK",
+          "problem": false,
+          "value": 3.32,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 2,
+          "status": "OK",
+          "problem": false,
+          "value": 2.61,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 3,
+          "status": "OK",
+          "problem": false,
+          "value": 2.07,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 4,
+          "status": "OK",
+          "problem": false,
+          "value": 2.26,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 5,
+          "status": "OK",
+          "problem": false,
+          "value": 2.61,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 6,
+          "status": "OK",
+          "problem": false,
+          "value": 5.66,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        },
+        {
+          "index": 7,
+          "status": "OK",
+          "problem": false,
+          "value": 5.35,
+          "fail": false,
+          "warn_over": false,
+          "warn_under": false,
+          "crit_over": false,
+          "crit_under": false
+        }
+      ],
+      "ioms": [
+        {
+          "index": 0,
+          "status": "OK",
+          "problem": false,
+          "serial_number": "656848815836",
+          "firmware": "0260",
+          "part_number": "111-02850+C3",
+          "expander_sas_address": "0x500a098be2d98d01",
+          "host_visible": true,
+          "fail": false
+        },
+        {
+          "index": 1,
+          "status": "OK",
+          "problem": false,
+          "serial_number": "502111435963",
+          "firmware": "0260",
+          "part_number": "111-02850+C4",
+          "expander_sas_address": "0x500a098cbf781241",
+          "host_visible": true,
+          "fail": false
+        }
+      ],
+      "connectors": [
+        {
+          "index": 0,
+          "status": "OK",
+          "problem": false,
+          "type": "Mini SAS HD 4x receptacle (SFF-8644) [max 4 phys]",
+          "installed": true,
+          "fail": false,
+          "attached_sas_address": "0x500a098cd24ee6f1",
+          "attached_phy": 0,
+          "attached_kind": "enclosure",
+          "attached_id": "50050ccb33cbcba2",
+          "attached_iom": 0,
+          "cable_vendor": "HEWLETT-PACKARD",
+          "cable_part_number": "691970-001+E",
+          "cable_serial_number": "E610461182997"
+        },
+        {
+          "index": 1,
+          "status": "OK",
+          "problem": false,
+          "type": "Mini SAS HD 4x receptacle (SFF-8644) [max 4 phys]",
+          "installed": true,
+          "fail": false,
+          "attached_sas_address": "0x500a098cd24ee6f1",
+          "attached_phy": 4,
+          "attached_kind": "enclosure",
+          "attached_id": "50050ccb33cbcba2",
+          "attached_iom": 0,
+          "cable_vendor": "HEWLETT-PACKARD",
+          "cable_part_number": "691970-001+E",
+          "cable_serial_number": "N396325631039"
+        },
+        {
+          "index": 2,
+          "status": "Not installed",
+          "problem": false,
+          "installed": false,
+          "fail": false
+        },
+        {
+          "index": 3,
+          "status": "OK",
+          "problem": false,
+          "type": "Mini SAS HD 4x receptacle (SFF-8644) [max 4 phys]",
+          "installed": true,
+          "fail": false,
+          "attached_sas_address": "0x500062bc5ab7e3a1",
+          "attached_phy": 4,
+          "attached_kind": "controller",
+          "attached_id": "DLP9672282",
+          "attached_port": 1,
+          "cable_vendor": "THE MATE COMPANY",
+          "cable_part_number": "C5555-1M+00",
+          "cable_serial_number": "724244474382"
+        },
+        {
+          "index": 4,
+          "status": "OK",
+          "problem": false,
+          "type": "Mini SAS HD 4x receptacle (SFF-8644) [max 4 phys]",
+          "installed": true,
+          "fail": false,
+          "attached_sas_address": "0x500a09809ef42c5d",
+          "attached_phy": 0,
+          "attached_kind": "enclosure",
+          "attached_id": "50050ccb33cbcba2",
+          "attached_iom": 1,
+          "cable_vendor": "HEWLETT-PACKARD",
+          "cable_part_number": "691970-001+E",
+          "cable_serial_number": "T703491581413"
+        },
+        {
+          "index": 5,
+          "status": "OK",
+          "problem": false,
+          "type": "Mini SAS HD 4x receptacle (SFF-8644) [max 4 phys]",
+          "installed": true,
+          "fail": false,
+          "attached_sas_address": "0x500a09809ef42c5d",
+          "attached_phy": 4,
+          "attached_kind": "enclosure",
+          "attached_id": "50050ccb33cbcba2",
+          "attached_iom": 1,
+          "cable_vendor": "HEWLETT-PACKARD",
+          "cable_part_number": "691970-001+E",
+          "cable_serial_number": "C127785435895"
+        },
+        {
+          "index": 6,
+          "status": "Not installed",
+          "problem": false,
+          "installed": false,
+          "fail": false
+        },
+        {
+          "index": 7,
+          "status": "Not installed",
+          "problem": false,
+          "installed": false,
+          "fail": false
+        }
+      ],
+      "slot_details": [
+        {
+          "index": 0,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 1,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 2,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 3,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 4,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 5,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 6,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 7,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 8,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 9,
+          "status": "Not installed",
+          "problem": false,
+          "occupied": false,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 10,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 11,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 12,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 13,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 14,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 15,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 16,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 17,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 18,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 19,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 20,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 21,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 22,
+          "status": "Not installed",
+          "problem": false,
+          "occupied": false,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 23,
+          "status": "Not installed",
+          "problem": false,
+          "occupied": false,
+          "fault": false,
+          "identify": false
+        }
+      ],
+      "iom_firmware_mismatch": false,
+      "iom_firmware_differs_from_peers": true,
+      "redundancy": {
+        "expected_paths": 2,
+        "active_paths": 2,
+        "single_path_drives": 0,
+        "degraded": false,
+        "reasons": []
+      },
+      "problems": []
+    },
+    {
+      "id": "500605bbd7eb76e8",
+      "logical_id": "0x500605bbd7eb76e8",
+      "vendor": "HPT",
+      "product": "R1528D",
+      "status": "Critical",
+      "slots": 8,
+      "slots_populated": 2,
+      "ses_devices": [
+        {
+          "device": "sg0",
+          "revision": "00"
+        }
+      ],
+      "power_supplies": [],
+      "fans": [
+        {
+          "index": 0,
+          "status": "OK",
+          "problem": false,
+          "description": "CoolingElement00",
+          "rpm": 0,
+          "speed": "stopped",
+          "fail": false,
+          "off": true
+        }
+      ],
+      "temperature_sensors": [
+        {
+          "index": 0,
+          "status": "Critical",
+          "problem": true,
+          "description": "TempSense01",
+          "value": 84,
+          "fail": false,
+          "warn_over": true,
+          "warn_under": false,
+          "crit_over": true,
+          "crit_under": false
+        }
+      ],
+      "voltage_sensors": [
+        {
+          "index": 0,
+          "status": "Critical",
+          "problem": false,
+          "description": "VoltageSense01",
+          "fail": false,
+          "warn_over": true,
+          "warn_under": false,
+          "crit_over": true,
+          "crit_under": false
+        },
+        {
+          "index": 1,
+          "status": "Critical",
+          "problem": false,
+          "description": "VoltageSense02",
+          "fail": false,
+          "warn_over": true,
+          "warn_under": false,
+          "crit_over": true,
+          "crit_under": false
+        },
+        {
+          "index": 2,
+          "status": "Critical",
+          "problem": false,
+          "description": "VoltageSense03",
+          "fail": false,
+          "warn_over": true,
+          "warn_under": false,
+          "crit_over": true,
+          "crit_under": false
+        },
+        {
+          "index": 3,
+          "status": "Critical",
+          "problem": false,
+          "description": "VoltageSense04",
+          "fail": false,
+          "warn_over": true,
+          "warn_under": false,
+          "crit_over": true,
+          "crit_under": false
+        }
+      ],
+      "current_sensors": [],
+      "ioms": [],
+      "connectors": [
+        {
+          "index": 0,
+          "status": "OK",
+          "problem": false,
+          "description": "Connector00",
+          "type": "Mini SAS HD 4x receptacle (SFF-8644) [max 4 phys]",
+          "installed": true,
+          "fail": false
+        },
+        {
+          "index": 1,
+          "status": "OK",
+          "problem": false,
+          "description": "Connector01",
+          "type": "Mini SAS HD 4x receptacle (SFF-8644) [max 4 phys]",
+          "installed": true,
+          "fail": false
+        },
+        {
+          "index": 2,
+          "status": "OK",
+          "problem": false,
+          "description": "Connector02",
+          "type": "Mini SAS HD 4x receptacle (SFF-8644) [max 4 phys]",
+          "installed": true,
+          "fail": false
+        },
+        {
+          "index": 3,
+          "status": "OK",
+          "problem": false,
+          "description": "Connector03",
+          "type": "Mini SAS HD 4x receptacle (SFF-8644) [max 4 phys]",
+          "installed": true,
+          "fail": false
+        },
+        {
+          "index": 4,
+          "status": "Not installed",
+          "problem": false,
+          "installed": false,
+          "fail": false
+        },
+        {
+          "index": 5,
+          "status": "Not installed",
+          "problem": false,
+          "installed": false,
+          "fail": false
+        },
+        {
+          "index": 6,
+          "status": "Not installed",
+          "problem": false,
+          "installed": false,
+          "fail": false
+        },
+        {
+          "index": 7,
+          "status": "Not installed",
+          "problem": false,
+          "installed": false,
+          "fail": false
+        }
+      ],
+      "slot_details": [
+        {
+          "index": 0,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 1,
+          "status": "OK",
+          "problem": false,
+          "occupied": true,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 2,
+          "status": "Not installed",
+          "problem": false,
+          "occupied": false,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 3,
+          "status": "Not installed",
+          "problem": false,
+          "occupied": false,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 4,
+          "status": "Not installed",
+          "problem": false,
+          "occupied": false,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 5,
+          "status": "Not installed",
+          "problem": false,
+          "occupied": false,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 6,
+          "status": "Not installed",
+          "problem": false,
+          "occupied": false,
+          "fault": false,
+          "identify": false
+        },
+        {
+          "index": 7,
+          "status": "Not installed",
+          "problem": false,
+          "occupied": false,
+          "fault": false,
+          "identify": false
+        }
+      ],
+      "iom_firmware_mismatch": false,
+      "iom_firmware_differs_from_peers": false,
+      "redundancy": {
+        "expected_paths": 0,
+        "active_paths": 1,
+        "single_path_drives": 0,
+        "degraded": false,
+        "reasons": []
+      },
+      "problems": [
+        "temperature sensor 0: Critical (84 °C, over critical, over warning)"
+      ]
+    }
+  ],
+  "drives": [
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "enclosure_id": "50050ccb33cbcba2",
+      "slot": 0,
+      "device_id": 97,
+      "device": "sdy",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST24000NM007H",
+      "vendor": "SEAGATE",
+      "serial_number": "OSQ0MLAO",
+      "wwn": "5000c508f5932df4",
+      "firmware": "EE05",
+      "size": "21.828 TB",
+      "temperature_celsius": 37,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 0,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [1, 0],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c508f5932df5"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c508f5932df6"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "enclosure_id": "50050ccb33cbcba2",
+      "slot": 1,
+      "device_id": 93,
+      "device": "sdz",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST24000NM007H",
+      "vendor": "SEAGATE",
+      "serial_number": "STG1WOBG",
+      "wwn": "5000c509ddcc2454",
+      "firmware": "EE05",
+      "size": "21.828 TB",
+      "temperature_celsius": 36,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 0,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c509ddcc2456"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c509ddcc2455"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "enclosure_id": "50050ccb33cbcba2",
+      "slot": 2,
+      "device_id": 92,
+      "device": "sdaa",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST24000NM007H",
+      "vendor": "SEAGATE",
+      "serial_number": "PGG3TLKF",
+      "wwn": "5000c500532a7998",
+      "firmware": "EE05",
+      "size": "21.828 TB",
+      "temperature_celsius": 37,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [1, 0],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c500532a7999"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c500532a799a"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "enclosure_id": "50050ccb33cbcba2",
+      "slot": 3,
+      "device_id": 84,
+      "device": "sdab",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST24000NM007H",
+      "vendor": "SEAGATE",
+      "serial_number": "RWS3PYWL",
+      "wwn": "5000c50f497c3884",
+      "firmware": "EE05",
+      "size": "21.828 TB",
+      "temperature_celsius": 36,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [1, 0],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50f497c3885"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50f497c3886"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "enclosure_id": "50050ccb33cbcba2",
+      "slot": 4,
+      "device_id": 5,
+      "device": "sdac",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "M003D-3DL103  SM",
+      "vendor": "ST18000N",
+      "serial_number": "AGJKQFMQ",
+      "firmware": "4321",
+      "size": "16.371 TB",
+      "temperature_celsius": 36,
+      "max_link_rate_gbps": 6,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": false,
+      "media_errors": 0,
+      "other_errors": 0,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605b7b05d6d86"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605b7b05d6d85"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "enclosure_id": "50050ccb33cbcba2",
+      "slot": 5,
+      "device_id": 77,
+      "device": "sdad",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "M003D-3DL103  SM",
+      "vendor": "ST18000N",
+      "serial_number": "NFXONXTU",
+      "firmware": "4321",
+      "size": "16.371 TB",
+      "temperature_celsius": 35,
+      "max_link_rate_gbps": 6,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": false,
+      "media_errors": 0,
+      "other_errors": 0,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605be0193931a"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605be01939319"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "enclosure_id": "50050ccb33cbcba2",
+      "slot": 6,
+      "device_id": 13,
+      "device": "sdae",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "M000J-2TV103  SM",
+      "vendor": "ST18000N",
+      "serial_number": "BL23DPQ5",
+      "firmware": "4321",
+      "size": "16.371 TB",
+      "temperature_celsius": 36,
+      "max_link_rate_gbps": 6,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": false,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605b85da3de46"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605b85da3de45"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "enclosure_id": "50050ccb33cbcba2",
+      "slot": 7,
+      "device_id": 18,
+      "device": "sdaf",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "M000J-2TV103  SM",
+      "vendor": "ST18000N",
+      "serial_number": "XR26GDCF",
+      "firmware": "4321",
+      "size": "16.371 TB",
+      "temperature_celsius": 35,
+      "max_link_rate_gbps": 6,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": false,
+      "media_errors": 0,
+      "other_errors": 0,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605b35948a08a"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605b35948a089"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "enclosure_id": "50050ccb33cbcba2",
+      "slot": 8,
+      "device_id": 76,
+      "device": "sdag",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST20000NM002D",
+      "vendor": "SEAGATE",
+      "serial_number": "TIC3Y2N89918Z27657VL",
+      "wwn": "5000c50d2f161c44",
+      "firmware": "E003",
+      "size": "18.190 TB",
+      "temperature_celsius": 31,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [1, 0],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50d2f161c45"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50d2f161c46"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "enclosure_id": "50050ccb33cbcba2",
+      "slot": 10,
+      "device_id": 104,
+      "device": "sdah",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST18000NM004J",
+      "vendor": "SEAGATE",
+      "serial_number": "RT5QD8086080I035YT9M",
+      "wwn": "5000c50de270b138",
+      "firmware": "E004",
+      "size": "16.371 TB",
+      "temperature_celsius": 32,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50de270b13a"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50de270b139"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "enclosure_id": "50050ccb33cbcba2",
+      "slot": 11,
+      "device_id": 98,
+      "device": "sdai",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST24000NM007H",
+      "vendor": "SEAGATE",
+      "serial_number": "RIZ0CCN6",
+      "wwn": "5000c50999f2abf8",
+      "firmware": "EE05",
+      "size": "21.828 TB",
+      "temperature_celsius": 31,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50999f2abfa"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50999f2abf9"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "enclosure_id": "50050ccb33cbcba2",
+      "slot": 12,
+      "device_id": 85,
+      "device": "sdaj",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST24000NM007H",
+      "vendor": "SEAGATE",
+      "serial_number": "WUN86OI6",
+      "wwn": "5000c50e55434988",
+      "firmware": "EE05",
+      "size": "21.828 TB",
+      "temperature_celsius": 35,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 0,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [1, 0],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50e55434989"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50e5543498a"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "enclosure_id": "50050ccb33cbcba2",
+      "slot": 13,
+      "device_id": 90,
+      "device": "sdak",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST24000NM007H",
+      "vendor": "SEAGATE",
+      "serial_number": "NVL17YSQ",
+      "wwn": "5000c50e1565d618",
+      "firmware": "EE05",
+      "size": "21.828 TB",
+      "temperature_celsius": 37,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 0,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50e1565d61a"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50e1565d619"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "enclosure_id": "50050ccb33cbcba2",
+      "slot": 14,
+      "device_id": 87,
+      "device": "sdal",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST24000NM007H",
+      "vendor": "SEAGATE",
+      "serial_number": "CFL49ZQ5",
+      "wwn": "5000c50ce739b67c",
+      "firmware": "EE05",
+      "size": "21.828 TB",
+      "temperature_celsius": 38,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [1, 0],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50ce739b67d"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50ce739b67e"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "enclosure_id": "50050ccb33cbcba2",
+      "slot": 15,
+      "device_id": 91,
+      "device": "sdam",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST24000NM007H",
+      "vendor": "SEAGATE",
+      "serial_number": "HVV89HJD",
+      "wwn": "5000c5095893f84c",
+      "firmware": "EE05",
+      "size": "21.828 TB",
+      "temperature_celsius": 36,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c5095893f84e"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c5095893f84d"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "enclosure_id": "50050ccb33cbcba2",
+      "slot": 16,
+      "device_id": 6,
+      "device": "sdan",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "M000J-2TV103  SM",
+      "vendor": "ST18000N",
+      "serial_number": "XS03PX4E",
+      "firmware": "4321",
+      "size": "16.371 TB",
+      "temperature_celsius": 37,
+      "max_link_rate_gbps": 6,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": false,
+      "media_errors": 0,
+      "other_errors": 2,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [1, 0],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605bf576bc28d"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605bf576bc28e"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "enclosure_id": "50050ccb33cbcba2",
+      "slot": 17,
+      "device_id": 75,
+      "device": "sdao",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "M000J-2TV103  SM",
+      "vendor": "ST18000N",
+      "serial_number": "RG697LNI",
+      "firmware": "4321",
+      "size": "16.371 TB",
+      "temperature_celsius": 38,
+      "max_link_rate_gbps": 6,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": false,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605bd73064e1e"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605bd73064e1d"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "enclosure_id": "50050ccb33cbcba2",
+      "slot": 18,
+      "device_id": 100,
+      "device": "sdap",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST18000NM004J",
+      "vendor": "SEAGATE",
+      "serial_number": "HC1KMXS21514Z059C4EL",
+      "wwn": "5000c5090194fae8",
+      "firmware": "E004",
+      "size": "16.371 TB",
+      "temperature_celsius": 41,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c5090194faea"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c5090194fae9"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "enclosure_id": "50050ccb33cbcba2",
+      "slot": 19,
+      "device_id": 101,
+      "device": "sdaq",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST18000NM004J",
+      "vendor": "SEAGATE",
+      "serial_number": "MK7OKWK35779R9333PKX",
+      "wwn": "5000c503ec5b0d6c",
+      "firmware": "E004",
+      "size": "16.371 TB",
+      "temperature_celsius": 36,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 0,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c503ec5b0d6e"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c503ec5b0d6d"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "enclosure_id": "50050ccb33cbcba2",
+      "slot": 20,
+      "device_id": 21,
+      "device": "sdar",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "M000G-2KH103  SM",
+      "vendor": "ST16000N",
+      "serial_number": "VD6R6LEL",
+      "firmware": "4321",
+      "size": "14.552 TB",
+      "temperature_celsius": 37,
+      "max_link_rate_gbps": 6,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": false,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605b4d85cf8a6"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605b4d85cf8a5"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "enclosure_id": "50050ccb33cbcba2",
+      "slot": 21,
+      "device_id": 1,
+      "device": "sdas",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "M001G-2KK103  SM",
+      "vendor": "ST16000N",
+      "serial_number": "KW910D22",
+      "firmware": "4321",
+      "size": "14.552 TB",
+      "temperature_celsius": 39,
+      "max_link_rate_gbps": 6,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": false,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605b5bd513b0e"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605b5bd513b0d"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 242,
+      "enclosure_id": "50050ccb33cbcba2",
+      "slot": 22,
+      "device_id": 2,
+      "device": "sdat",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "M000G-2KH103  SM",
+      "vendor": "ST16000N",
+      "serial_number": "ZA0X3SI5",
+      "firmware": "4321",
+      "size": "14.552 TB",
+      "temperature_celsius": 38,
+      "max_link_rate_gbps": 6,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": false,
+      "media_errors": 0,
+      "other_errors": 0,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605bb463d83ce"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605bb463d83cd"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 245,
+      "enclosure_id": "500a098aa6236e71",
+      "slot": 0,
+      "device_id": 86,
+      "device": "sdd",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST24000NM007H",
+      "vendor": "SEAGATE",
+      "serial_number": "UHA2ZV4T",
+      "wwn": "5000c501e7470b80",
+      "firmware": "EE05",
+      "size": "21.828 TB",
+      "temperature_celsius": 37,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 0,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c501e7470b82"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c501e7470b81"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 245,
+      "enclosure_id": "500a098aa6236e71",
+      "slot": 1,
+      "device_id": 88,
+      "device": "sde",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST24000NM007H",
+      "vendor": "SEAGATE",
+      "serial_number": "CME6TIQ3",
+      "wwn": "5000c50fe8e22008",
+      "firmware": "EE05",
+      "size": "21.828 TB",
+      "temperature_celsius": 36,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50fe8e2200a"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50fe8e22009"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 245,
+      "enclosure_id": "500a098aa6236e71",
+      "slot": 2,
+      "device_id": 79,
+      "device": "sdf",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST24000NM007H",
+      "vendor": "SEAGATE",
+      "serial_number": "UDG58CT6",
+      "wwn": "5000c507021ef59c",
+      "firmware": "EE05",
+      "size": "21.828 TB",
+      "temperature_celsius": 36,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c507021ef59e"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c507021ef59d"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 245,
+      "enclosure_id": "500a098aa6236e71",
+      "slot": 3,
+      "device_id": 69,
+      "device": "sdg",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST24000NM007H",
+      "vendor": "SEAGATE",
+      "serial_number": "JQS67OFA",
+      "wwn": "5000c508e2339540",
+      "firmware": "EE05",
+      "size": "21.828 TB",
+      "temperature_celsius": 36,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 0,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c508e2339542"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c508e2339541"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 245,
+      "enclosure_id": "500a098aa6236e71",
+      "slot": 4,
+      "device_id": 15,
+      "device": "sdh",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "M000J-2TV103  SM",
+      "vendor": "ST18000N",
+      "serial_number": "QS771B0X",
+      "firmware": "4321",
+      "size": "16.371 TB",
+      "temperature_celsius": 35,
+      "max_link_rate_gbps": 6,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": false,
+      "media_errors": 0,
+      "other_errors": 0,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605b0411950be"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605b0411950bd"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 245,
+      "enclosure_id": "500a098aa6236e71",
+      "slot": 5,
+      "device_id": 4,
+      "device": "sdi",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "M000J-2TV103  SM",
+      "vendor": "ST18000N",
+      "serial_number": "OC580K4K",
+      "firmware": "4321",
+      "size": "16.371 TB",
+      "temperature_celsius": 34,
+      "max_link_rate_gbps": 6,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": false,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605b16ac86736"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605b16ac86735"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 245,
+      "enclosure_id": "500a098aa6236e71",
+      "slot": 6,
+      "device_id": 3,
+      "device": "sdj",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "M000J-2TV103  SM",
+      "vendor": "ST18000N",
+      "serial_number": "LF47U799",
+      "firmware": "4321",
+      "size": "16.371 TB",
+      "temperature_celsius": 36,
+      "max_link_rate_gbps": 6,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": false,
+      "media_errors": 0,
+      "other_errors": 0,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605b43ee1d712"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605b43ee1d711"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 245,
+      "enclosure_id": "500a098aa6236e71",
+      "slot": 7,
+      "device_id": 7,
+      "device": "sdk",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "M000J-2TV103  SM",
+      "vendor": "ST18000N",
+      "serial_number": "SC7FIA1Q",
+      "firmware": "4321",
+      "size": "16.371 TB",
+      "temperature_celsius": 35,
+      "max_link_rate_gbps": 6,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": false,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605b764e53e3a"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605b764e53e39"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 245,
+      "enclosure_id": "500a098aa6236e71",
+      "slot": 8,
+      "device_id": 74,
+      "device": "sdl",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST20000NM002D",
+      "vendor": "SEAGATE",
+      "serial_number": "DVF3K34K2430C9426FJX",
+      "wwn": "5000c50426a9cfe4",
+      "firmware": "E003",
+      "size": "18.190 TB",
+      "temperature_celsius": 30,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 0,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50426a9cfe6"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50426a9cfe5"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 245,
+      "enclosure_id": "500a098aa6236e71",
+      "slot": 10,
+      "device_id": 105,
+      "device": "sdm",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST18000NM004J",
+      "vendor": "SEAGATE",
+      "serial_number": "KB9ICSZ00835Z323QJNX",
+      "wwn": "5000c50a86eb5750",
+      "firmware": "E004",
+      "size": "16.371 TB",
+      "temperature_celsius": 31,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50a86eb5752"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50a86eb5751"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 245,
+      "enclosure_id": "500a098aa6236e71",
+      "slot": 11,
+      "device_id": 99,
+      "device": "sdn",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST24000NM007H",
+      "vendor": "SEAGATE",
+      "serial_number": "XVF0WBLF",
+      "wwn": "5000c50c6cb01134",
+      "firmware": "EE05",
+      "size": "21.828 TB",
+      "temperature_celsius": 31,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50c6cb01136"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50c6cb01135"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 245,
+      "enclosure_id": "500a098aa6236e71",
+      "slot": 12,
+      "device_id": 94,
+      "device": "sdo",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST24000NM007H",
+      "vendor": "SEAGATE",
+      "serial_number": "RDI51X6Q",
+      "wwn": "5000c5055b7dbb94",
+      "firmware": "EE05",
+      "size": "21.828 TB",
+      "temperature_celsius": 34,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c5055b7dbb96"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c5055b7dbb95"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 245,
+      "enclosure_id": "500a098aa6236e71",
+      "slot": 13,
+      "device_id": 89,
+      "device": "sdp",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST24000NM007H",
+      "vendor": "SEAGATE",
+      "serial_number": "YCR58CDG",
+      "wwn": "5000c5020bcde2a8",
+      "firmware": "EE05",
+      "size": "21.828 TB",
+      "temperature_celsius": 36,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 0,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [1, 0],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c5020bcde2a9"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c5020bcde2aa"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 245,
+      "enclosure_id": "500a098aa6236e71",
+      "slot": 14,
+      "device_id": 96,
+      "device": "sdq",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST24000NM007H",
+      "vendor": "SEAGATE",
+      "serial_number": "ZCJ06PAN",
+      "wwn": "5000c505994dc4a4",
+      "firmware": "EE05",
+      "size": "21.828 TB",
+      "temperature_celsius": 35,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 0,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [1, 0],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c505994dc4a5"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c505994dc4a6"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 245,
+      "enclosure_id": "500a098aa6236e71",
+      "slot": 15,
+      "device_id": 95,
+      "device": "sdr",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST24000NM007H",
+      "vendor": "SEAGATE",
+      "serial_number": "QOE29S31",
+      "wwn": "5000c50bccd7fd1c",
+      "firmware": "EE05",
+      "size": "21.828 TB",
+      "temperature_celsius": 34,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 0,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50bccd7fd1e"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50bccd7fd1d"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 245,
+      "enclosure_id": "500a098aa6236e71",
+      "slot": 16,
+      "device_id": 78,
+      "device": "sds",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "M003D-3DL103  SM",
+      "vendor": "ST18000N",
+      "serial_number": "NWUJPDIB",
+      "firmware": "4321",
+      "size": "16.371 TB",
+      "temperature_celsius": 37,
+      "max_link_rate_gbps": 6,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": false,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605b796ab92ce"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605b796ab92cd"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 245,
+      "enclosure_id": "500a098aa6236e71",
+      "slot": 17,
+      "device_id": 9,
+      "device": "sdt",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "M000J-2TV103  SM",
+      "vendor": "ST18000N",
+      "serial_number": "TC7V07ZH",
+      "firmware": "4321",
+      "size": "16.371 TB",
+      "temperature_celsius": 37,
+      "max_link_rate_gbps": 6,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": false,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605b0bd4bcdfe"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605b0bd4bcdfd"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 245,
+      "enclosure_id": "500a098aa6236e71",
+      "slot": 18,
+      "device_id": 102,
+      "device": "sdu",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST18000NM004J",
+      "vendor": "SEAGATE",
+      "serial_number": "CK8DEUM27359Z147B21C",
+      "wwn": "5000c50a1e169490",
+      "firmware": "E004",
+      "size": "16.371 TB",
+      "temperature_celsius": 35,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50a1e169492"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c50a1e169491"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 245,
+      "enclosure_id": "500a098aa6236e71",
+      "slot": 19,
+      "device_id": 103,
+      "device": "sdv",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "ST18000NM004J",
+      "vendor": "SEAGATE",
+      "serial_number": "JU9KJQ0K2459I9341U9R",
+      "wwn": "5000c502a7cb4444",
+      "firmware": "E004",
+      "size": "16.371 TB",
+      "temperature_celsius": 34,
+      "max_link_rate_gbps": 12,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": true,
+      "media_errors": 0,
+      "other_errors": 0,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c502a7cb4446"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x5000c502a7cb4445"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 245,
+      "enclosure_id": "500a098aa6236e71",
+      "slot": 20,
+      "device_id": 8,
+      "device": "sdw",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "M001G-2KK103  SM",
+      "vendor": "ST16000N",
+      "serial_number": "OO41UMNO",
+      "firmware": "4321",
+      "size": "14.552 TB",
+      "temperature_celsius": 37,
+      "max_link_rate_gbps": 6,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": false,
+      "media_errors": 0,
+      "other_errors": 1,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605bb43ca5b12"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605bb43ca5b11"
+        }
+      ],
+      "active_paths": 2
+    },
+    {
+      "controller_index": 0,
+      "enclosure_device_id": 245,
+      "enclosure_id": "500a098aa6236e71",
+      "slot": 21,
+      "device_id": 71,
+      "device": "sdx",
+      "state": "Onln",
+      "interface": "SAS",
+      "media": "HDD",
+      "model": "M001G-2KK103  SM",
+      "vendor": "ST16000N",
+      "serial_number": "TI06RJOA",
+      "firmware": "4321",
+      "size": "14.552 TB",
+      "temperature_celsius": 36,
+      "max_link_rate_gbps": 6,
+      "link_rate_gbps": 6,
+      "below_max_link_rate": false,
+      "media_errors": 0,
+      "other_errors": 0,
+      "predictive_failures": 0,
+      "unrecovered_medium_errors": 0,
+      "shield_counter": 0,
+      "smart_alert": false,
+      "multipath": true,
+      "controller_ports": [0, 1],
+      "ports": [
+        {
+          "port": 0,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605bbcae3c08e"
+        },
+        {
+          "port": 1,
+          "status": "Active",
+          "link_rate_gbps": 6,
+          "sas_address": "0x500605bbcae3c08d"
+        }
+      ],
+      "active_paths": 2
+    }
+  ],
+  "summary": {
+    "controllers": 1,
+    "enclosures": 3,
+    "drives": 43,
+    "drives_below_max_link_rate": 26,
+    "drives_with_media_errors": 0,
+    "drives_with_other_errors": 24,
+    "drives_with_predictive_failure": 0,
+    "single_path_drives": 0,
+    "enclosures_with_problems": 1
+  },
+  "collection_duration_ms": 7,
+  "timestamp": "2026-10-08T22:56:03.785913-04:00"
+}

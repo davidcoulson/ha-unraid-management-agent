@@ -147,7 +147,8 @@ rules:
     comment: >
       Remote share and unassigned device binary/switch entities, hwmon
       temperature sensors, system service running binary sensors, plugin
-      and container update entities, and agent alert rule binary sensors are added
+      and container update entities, agent alert rule binary sensors, and
+      storage controller and enclosure devices (storage.py) are added
       dynamically via coordinator listener when data arrives after initial setup;
       the alert event and firing alerts sensor are added once the agent first
       reports alert status
@@ -159,7 +160,12 @@ rules:
     comment: Proper device classes (temperature, power, battery, duration, etc.)
   entity-disabled-by-default:
     status: done
-    comment: User scripts, per-channel hwmon temperature sensors, per-pool ZFS error/fragmentation sensors and network/system service running binary sensors disabled by default with _attr_entity_registry_enabled_default
+    comment: >
+      User scripts, per-channel hwmon temperature sensors, per-pool ZFS
+      error/fragmentation sensors, network/system service running binary
+      sensors, and storage topology per-element readings (temperature,
+      fan, voltage, current) and per-slot link rate and error sensors
+      are disabled by default with _attr_entity_registry_enabled_default.
   entity-translations:
     status: done
     comment: Entity translations defined in strings.json entity section
@@ -187,7 +193,10 @@ rules:
       last_update_success prevent false removal during transient server outages.
       VM and container devices left without entities are removed, and
       async_remove_config_entry_device lets users delete a device whose VM or
-      container is gone.
+      container is gone. Storage controller and enclosure entities are deliberately
+      excluded from automatic removal (a powered-off shelf must show as unavailable,
+      not disappear); async_remove_config_entry_device lets users delete such a
+      device once the agent no longer reports it.
 
   # Platinum
   async-dependency:

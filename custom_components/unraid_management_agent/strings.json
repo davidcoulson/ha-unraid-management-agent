@@ -355,6 +355,54 @@
       "container_device_network_tx_rate": {
         "name": "Network TX"
       },
+      "storage_controller_temperature": {
+        "name": "Temperature"
+      },
+      "storage_firmware": {
+        "name": "Firmware"
+      },
+      "storage_pcie_link": {
+        "name": "PCIe Link"
+      },
+      "storage_port_link_rate": {
+        "name": "Port {index} Link Rate"
+      },
+      "storage_port_width": {
+        "name": "Port {index} Width"
+      },
+      "storage_highest_temperature": {
+        "name": "Highest Temperature"
+      },
+      "storage_lowest_fan_speed": {
+        "name": "Lowest Fan Speed"
+      },
+      "storage_drives_below_max_link_rate": {
+        "name": "Drives Below Maximum Link Rate"
+      },
+      "storage_drive_media_errors": {
+        "name": "Drive Media Errors"
+      },
+      "storage_drive_other_errors": {
+        "name": "Drive Other Errors"
+      },
+      "storage_temperature_sensor": {
+        "name": "Temperature Sensor {index}"
+      },
+      "storage_fan_speed": {
+        "name": "Fan {index} Speed"
+      },
+      "storage_voltage_sensor": {
+        "name": "Voltage Sensor {index}"
+      },
+      "storage_current_sensor": {
+        "name": "Current Sensor {index}"
+      },
+      "storage_slot_link_rate": {
+        "name": "Slot {index} Link Rate"
+      },
+      "storage_slot_errors": {
+        "name": "Slot {index} Errors"
+      },
       "alerts_firing": {
         "name": "Firing alerts"
       }
@@ -407,6 +455,30 @@
       },
       "container_updates_available": {
         "name": "Container Updates Available"
+      },
+      "storage_status": {
+        "name": "Status"
+      },
+      "storage_power_supply": {
+        "name": "Power Supply {index}"
+      },
+      "storage_iom": {
+        "name": "I/O Module {index}"
+      },
+      "storage_fans": {
+        "name": "Fans"
+      },
+      "storage_cabling": {
+        "name": "Cabling"
+      },
+      "storage_path_redundancy": {
+        "name": "Path Redundancy"
+      },
+      "storage_iom_firmware": {
+        "name": "I/O Module Firmware"
+      },
+      "storage_drive_health": {
+        "name": "Drive Health"
       },
       "alert_rule": {
         "name": "Alert {rule_name}",

@@ -61,6 +61,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   current and power readings that older agents list as temperatures are skipped.
 - **API token authentication** ([#143](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/143), contributed by @davidcoulson): An optional API token in the setup, Zeroconf and reconfigure forms is sent as a bearer token on REST requests and the websocket handshake, for agents with `API_TOKEN` set (v2026.08.02+). A rejected token shows "Invalid authentication", and a token rejected later starts Home Assistant's standard re-authentication flow. The token is redacted from diagnostics.
 - **Docker containers as separate devices (optional)** ([#142](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/142), closes [#147](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/147)): A new **Show Docker containers as separate devices** option (off by default) groups each container's run and autostart switches, restart button and metric sensors on a child device of the Unraid server, with short names (Running, Autostart, Restart, CPU, Memory, Memory usage, Restart count, Network RX/TX). Unique IDs are unchanged, so history is kept. When off, container entities stay on the server device exactly as before. Container devices left without entities are removed, and a device whose container is gone can be deleted from the UI. Requires Home Assistant 2026.9 or newer.
+- **SAS storage topology devices** ([#163](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/163), needs ruaan-deysel/unraid-management-agent#186, contributed by @davidcoulson):
+  With an agent that provides `GET /api/v1/storage/topology` (storcli and/or
+  sg_ses on the server), each RAID/HBA controller and each disk shelf or
+  backplane becomes a child device of the Unraid server. Enabled by default:
+  controller temperature, firmware, PCIe link, per-port link rate and width
+  and a status problem sensor; per enclosure a status sensor (with the agent's
+  problem list), one problem sensor per power supply and I/O module, fans,
+  cabling (with a cable map in the attributes), path redundancy, drive health
+  and an I/O module firmware mismatch sensor (diagnostic), plus highest
+  temperature, lowest fan speed, drive media/other error totals and drives
+  below their maximum link rate (attributes name the slots). Every individual
+  temperature, fan, voltage and current reading and per-slot link rate and
+  error counts are disabled by default. One controller with two 24-bay shelves
+  and 43 drives gives 42 enabled and 158 disabled entities. Agents without
+  the endpoint, or without storcli/SES devices, get no storage entities and
+  no errors. Storage entities are not removed automatically when hardware
+  disappears (they go unavailable); such a device can be deleted from the UI.
 - **Update entities for Unraid OS, plugins and containers** (closes [#156](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/156), contributed by @davidcoulson): A new `update` platform shows available updates on Home Assistant's Updates page, using data the integration already fetches (no extra polling). **Unraid OS** shows the installed and latest version and is display only (never installed from Home Assistant). Each **plugin** gets an entity with its installed and latest version; Install runs the agent's plugin update (not offered for the agent's own plugin, which restarts the agent mid-request). With **Enable container update checks** on, each **container** gets an entity whose versions are short image digests; Install pulls the new image and recreates the container through the agent, and the entity moves to the container's device when containers are shown as separate devices. New plugins and containers get entities without a reload, and stale ones are removed. In read-only mode the entities still show updates but do not offer Install. Installing updates for plugins whose `.plg` file name differs from their name (e.g. `disklocation`) needs agent fix [ruaan-deysel/unraid-management-agent#182](https://github.com/ruaan-deysel/unraid-management-agent/issues/182).
 - **Agent alert rules** ([#161](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/161), closes [#160](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/160), contributed by @davidcoulson):
   The agent's alerting engine (agent v2026.03.00+) is now visible in Home

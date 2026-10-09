@@ -79,6 +79,7 @@ from .models import (
     ServiceStatus,
     ShareConfig,
     ShareInfo,
+    StorageTopology,
     SystemInfo,
     SystemServiceList,
     SystemSettings,
@@ -2470,6 +2471,21 @@ class UnraidClient:
         return HealthCheckStatus.model_validate(data)
 
     # Fan control endpoints
+
+    async def get_storage_topology(self) -> StorageTopology:
+        """
+        Get the SAS storage topology (controllers, enclosures, drive paths).
+
+        Requires an agent with the storage_topology collector; older agents
+        answer 404 (UnraidNotFoundError).
+
+        Returns:
+            Storage topology; its state is "pending" until the agent's first
+            collection and "unsupported" without storcli or SES devices.
+
+        """
+        data = await self._request("GET", "/storage/topology")
+        return StorageTopology.model_validate(data)
 
     async def get_fan_status(self) -> FanControlStatus:
         """

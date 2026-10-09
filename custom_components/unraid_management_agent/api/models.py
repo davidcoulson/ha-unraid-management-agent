@@ -3153,3 +3153,249 @@ class FanControlStatus(BaseModel):
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
     model_config = ConfigDict(frozen=True, extra="allow")
+
+
+# =============================================================================
+# Storage topology (GET /storage/topology)
+# =============================================================================
+
+STORAGE_TOPOLOGY_STATE_OK = "ok"
+
+
+class StorageTopologySources(BaseModel):
+    """Data sources the agent used for the storage topology."""
+
+    storcli: bool = Field(False, description="storcli reported at least one controller")
+    storcli_path: str | None = Field(None, description="storcli binary used")
+    storcli_version: str | None = Field(None, description="storcli CLI version")
+    ses: bool = Field(False, description="sg_ses read at least one SES device")
+    ses_devices: CoercedInt = Field(None, description="Number of SES devices read")
+
+    model_config = {"frozen": True, "extra": "allow"}
+
+
+class StorageControllerPort(BaseModel):
+    """A connected SAS port (one or more phys) of a controller."""
+
+    port: int = Field(..., description="Port number")
+    phys: list[int] = Field(default_factory=list, description="Phys in the port")
+    width: CoercedInt = Field(None, description="Number of linked phys (lanes)")
+    link_rate_gbps: CoercedFloat = Field(None, description="Lowest lane link rate")
+    attached_sas_address: str | None = Field(None, description="Attached SAS address")
+    attached_device_type: str | None = Field(None, description="Attached device type")
+    attached_enclosure_id: str | None = Field(None, description="Attached enclosure")
+    attached_iom: CoercedInt = Field(None, description="Attached I/O module index")
+
+    model_config = {"frozen": True, "extra": "allow"}
+
+
+class StorageController(BaseModel):
+    """A storcli-managed RAID controller or HBA."""
+
+    id: str = Field(..., description="Stable controller ID (serial or c<index>)")
+    index: int = Field(0, description="storcli controller index")
+    model: str | None = Field(None, description="Controller model")
+    serial_number: str | None = Field(None, description="Serial number")
+    sas_address: str | None = Field(None, description="Controller SAS address")
+    firmware_version: str | None = Field(None, description="Firmware version")
+    firmware_package: str | None = Field(None, description="Firmware package build")
+    bios_version: str | None = Field(None, description="BIOS version")
+    driver_name: str | None = Field(None, description="Linux driver")
+    driver_version: str | None = Field(None, description="Linux driver version")
+    personality: str | None = Field(None, description="Controller personality")
+    status: str | None = Field(None, description="Controller status")
+    temperature_celsius: CoercedFloat = Field(None, description="ROC temperature")
+    pci_address: str | None = Field(None, description="PCI address")
+    pcie_link_speed: str | None = Field(None, description="PCIe link speed")
+    pcie_link_width: CoercedInt = Field(None, description="PCIe link width")
+    pcie_max_link_speed: str | None = Field(None, description="Max PCIe link speed")
+    pcie_max_link_width: CoercedInt = Field(None, description="Max PCIe link width")
+    memory_correctable_errors: CoercedInt = Field(None, description="Memory CEs")
+    memory_uncorrectable_errors: CoercedInt = Field(
+        None, description="Memory uncorrectable errors"
+    )
+    bbu_status: str | None = Field(None, description="Battery/CacheVault status")
+    physical_drives: CoercedInt = Field(None, description="Attached drives")
+    ports: list[StorageControllerPort] = Field(
+        default_factory=list, description="Connected ports"
+    )
+
+    model_config = {"frozen": True, "extra": "allow"}
+
+
+class StorageSESDevice(BaseModel):
+    """One SES access path (one I/O module) to an enclosure."""
+
+    device: str = Field(..., description="SCSI generic device name")
+    revision: str | None = Field(None, description="SES target revision")
+    reporting_iom: CoercedInt = Field(None, description="I/O module serving the path")
+    expander_sas_address: str | None = Field(None, description="Expander address")
+
+    model_config = {"frozen": True, "extra": "allow"}
+
+
+class EnclosureElement(BaseModel):
+    """Fields shared by all SES elements."""
+
+    index: int = Field(..., description="Element index")
+    status: str | None = Field(None, description="SES element status")
+    problem: bool = Field(False, description="Status or flags indicate a problem")
+    description: str | None = Field(None, description="Element descriptor text")
+
+    model_config = {"frozen": True, "extra": "allow"}
+
+
+class EnclosurePowerSupply(EnclosureElement):
+    """A SES power supply element."""
+
+    serial_number: str | None = Field(None, description="Serial number")
+    firmware: str | None = Field(None, description="Firmware version")
+    part_number: str | None = Field(None, description="Part number")
+    rated_watts: CoercedInt = Field(None, description="Rated output power")
+    fail: bool = False
+    ac_fail: bool = False
+    dc_fail: bool = False
+    over_temp_fail: bool = False
+    temp_warning: bool = False
+    dc_over_voltage: bool = False
+    dc_under_voltage: bool = False
+    dc_over_current: bool = False
+    off: bool = False
+    predicted_failure: bool = False
+
+
+class EnclosureFan(EnclosureElement):
+    """A SES cooling element."""
+
+    rpm: CoercedInt = Field(None, description="Actual fan speed")
+    speed: str | None = Field(None, description="Speed band")
+    fail: bool = False
+    off: bool = False
+
+
+class EnclosureSensor(EnclosureElement):
+    """A SES temperature, voltage or current sensor."""
+
+    value: CoercedFloat = Field(None, description="Reading (°C, V or A)")
+    fail: bool = False
+    warn_over: bool = False
+    warn_under: bool = False
+    crit_over: bool = False
+    crit_under: bool = False
+
+
+class EnclosureIOM(EnclosureElement):
+    """A SES enclosure services controller electronics element (I/O module)."""
+
+    serial_number: str | None = Field(None, description="Serial number")
+    firmware: str | None = Field(None, description="Firmware version")
+    part_number: str | None = Field(None, description="Part number")
+    expander_sas_address: str | None = Field(None, description="Expander address")
+    host_visible: bool = Field(False, description="Host reaches its SES service")
+    fail: bool = False
+
+
+class EnclosureConnector(EnclosureElement):
+    """A SES SAS connector element and what is plugged into it."""
+
+    type: str | None = Field(None, description="Connector type")
+    installed: bool = Field(False, description="Connector position is populated")
+    fail: bool = False
+    attached_sas_address: str | None = Field(None, description="Far-end SAS address")
+    attached_phy: CoercedInt = Field(None, description="Far-end phy")
+    attached_kind: str | None = Field(None, description="controller or enclosure")
+    attached_id: str | None = Field(None, description="Far-end controller/enclosure")
+    attached_port: CoercedInt = Field(None, description="Far-end controller port")
+    attached_iom: CoercedInt = Field(None, description="Far-end I/O module")
+    cable_vendor: str | None = Field(None, description="Cable vendor")
+    cable_part_number: str | None = Field(None, description="Cable part number")
+    cable_serial_number: str | None = Field(None, description="Cable serial number")
+
+
+class EnclosureRedundancy(BaseModel):
+    """Host path redundancy of an enclosure."""
+
+    expected_paths: int = Field(0, description="Installed I/O modules")
+    active_paths: int = Field(0, description="Distinct host paths in use")
+    single_path_drives: int = Field(0, description="Dual-ported drives on one path")
+    degraded: bool = Field(False, description="A redundant enclosure lost a path")
+    reasons: list[str] = Field(default_factory=list, description="Why degraded")
+
+    model_config = {"frozen": True, "extra": "allow"}
+
+
+class StorageEnclosure(BaseModel):
+    """A SES enclosure (disk shelf or backplane)."""
+
+    id: str = Field(..., description="Stable enclosure ID (logical identifier)")
+    logical_id: str | None = Field(None, description="SES enclosure logical ID")
+    vendor: str | None = Field(None, description="Vendor")
+    product: str | None = Field(None, description="Product identification")
+    serial_number: str | None = Field(None, description="Chassis serial number")
+    controller_index: CoercedInt = Field(None, description="storcli controller")
+    enclosure_device_id: CoercedInt = Field(None, description="storcli EID")
+    partner_device_id: CoercedInt = Field(None, description="storcli partner EID")
+    connector_name: str | None = Field(None, description="storcli connector name")
+    port_mode: str | None = Field(None, description="storcli port mode")
+    status: str | None = Field(None, description="Worst element status")
+    slots: CoercedInt = Field(None, description="Drive slots")
+    slots_populated: CoercedInt = Field(None, description="Occupied drive slots")
+    ses_devices: list[StorageSESDevice] = Field(default_factory=list)
+    power_supplies: list[EnclosurePowerSupply] = Field(default_factory=list)
+    fans: list[EnclosureFan] = Field(default_factory=list)
+    temperature_sensors: list[EnclosureSensor] = Field(default_factory=list)
+    voltage_sensors: list[EnclosureSensor] = Field(default_factory=list)
+    current_sensors: list[EnclosureSensor] = Field(default_factory=list)
+    ioms: list[EnclosureIOM] = Field(default_factory=list)
+    connectors: list[EnclosureConnector] = Field(default_factory=list)
+    iom_firmware_mismatch: bool = Field(False, description="IOMs differ in firmware")
+    iom_firmware_differs_from_peers: bool = Field(
+        False, description="Same-model enclosures run different IOM firmware"
+    )
+    redundancy: EnclosureRedundancy = Field(default_factory=EnclosureRedundancy)
+    problems: list[str] = Field(default_factory=list, description="Current problems")
+
+    model_config = {"frozen": True, "extra": "allow"}
+
+
+class StorageDrive(BaseModel):
+    """A physical drive reported by storcli."""
+
+    controller_index: int = Field(0, description="storcli controller")
+    enclosure_device_id: CoercedInt = Field(None, description="storcli EID")
+    enclosure_id: str | None = Field(None, description="Enclosure ID")
+    slot: int = Field(..., description="Slot number")
+    device: str | None = Field(None, description="Linux block device")
+    state: str | None = Field(None, description="storcli drive state")
+    interface: str | None = Field(None, description="Interface (SAS/SATA/NVMe)")
+    media: str | None = Field(None, description="Media type")
+    model: str | None = Field(None, description="Model")
+    serial_number: str | None = Field(None, description="Serial number")
+    firmware: str | None = Field(None, description="Firmware")
+    temperature_celsius: CoercedFloat = Field(None, description="Temperature")
+    max_link_rate_gbps: CoercedFloat = Field(None, description="Max link rate")
+    link_rate_gbps: CoercedFloat = Field(None, description="Negotiated link rate")
+    below_max_link_rate: bool = Field(False, description="Negotiated below max")
+    media_errors: CoercedInt = Field(None, description="Media error count")
+    other_errors: CoercedInt = Field(None, description="Other error count")
+    predictive_failures: CoercedInt = Field(None, description="Predictive failures")
+    smart_alert: bool = Field(False, description="S.M.A.R.T. alert flagged")
+    multipath: bool = Field(False, description="Seen through several paths")
+    controller_ports: list[int] = Field(default_factory=list)
+    active_paths: int = Field(0, description="Active drive ports")
+
+    model_config = {"frozen": True, "extra": "allow"}
+
+
+class StorageTopology(BaseModel):
+    """SAS storage topology (GET /storage/topology)."""
+
+    state: str | None = Field(None, description="pending, ok or unsupported")
+    sources: StorageTopologySources = Field(default_factory=StorageTopologySources)
+    controllers: list[StorageController] = Field(default_factory=list)
+    enclosures: list[StorageEnclosure] = Field(default_factory=list)
+    drives: list[StorageDrive] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list, description="Collection errors")
+    timestamp: str | None = Field(None, description="Collection time")
+
+    model_config = ConfigDict(frozen=True, extra="allow")

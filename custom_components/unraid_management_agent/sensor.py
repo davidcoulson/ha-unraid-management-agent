@@ -74,6 +74,13 @@ from .entity import (
     find_vm,
     vm_devices_enabled,
 )
+from .storage import (
+    StorageEntitySpec,
+    UnraidStorageEntity,
+    UnraidStorageSensorEntityDescription,
+    async_setup_storage_entities,
+    storage_sensor_specs,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -4193,6 +4200,25 @@ class UnraidVMSensor(UnraidBaseEntity, SensorEntity):
         }
 
 
+class UnraidStorageSensor(UnraidStorageEntity, SensorEntity):
+    """A measurement of a storage controller, enclosure or drive slot."""
+
+    entity_description: UnraidStorageSensorEntityDescription
+
+    def __init__(
+        self, coordinator: UnraidDataUpdateCoordinator, spec: StorageEntitySpec
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, spec)
+        self.entity_description = spec.description
+
+    @property
+    def native_value(self) -> Any:
+        """Return the sensor value."""
+        ctx = self._storage_context()
+        return self.entity_description.value_fn(ctx) if ctx else None
+
+
 def _vm_identity(vm: Any) -> tuple[str | None, str | None]:
     """Return the stable identifier and display name of a VM."""
     return getattr(vm, "id", None) or getattr(vm, "name", None), getattr(
@@ -4640,6 +4666,15 @@ async def async_setup_entry(
     )
     entry.async_on_unload(
         coordinator.async_add_listener(callback(_add_alerts_firing_sensor))
+    )
+
+    # Storage controllers and enclosures (each a child device of the server)
+    async_setup_storage_entities(
+        entry,
+        "sensor",
+        storage_sensor_specs,
+        UnraidStorageSensor,
+        async_add_entities,
     )
 
     _LOGGER.debug("Adding %d Unraid sensor entities", len(entities))

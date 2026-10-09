@@ -48,6 +48,7 @@ from .api.models import (
     RegistrationInfo,
     RemoteShare,
     ShareInfo,
+    StorageTopology,
     SystemInfo,
     SystemService,
     SystemServiceList,
@@ -119,6 +120,8 @@ class UnraidData:
     container_updates: ContainerUpdatesResult | None = None
     diagnostics_self_test: DiagnosticsSelfTestResponse | None = None
     docker_port_conflicts: list[DockerPortConflict] | None = None
+    # None when the agent has no /storage/topology endpoint or the fetch failed
+    storage_topology: StorageTopology | None = None
     # Alerting engine (agent /alerts/rules and /alerts/status). None when the
     # agent does not provide them (older agents: 404) or the fetch failed.
     alert_rules: list[AlertRule] | None = None
@@ -479,6 +482,11 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                 self._fetch(
                     "alert status", self.client.get_alerts_status, suppress_404=True
                 ),
+                self._fetch(
+                    "storage topology",
+                    self.client.get_storage_topology,
+                    suppress_404=True,
+                ),
             )
 
             # Unpack results with proper types (gather loses individual type info).
@@ -521,6 +529,7 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
             system_service_list: SystemServiceList | None = results[32]
             alert_rules: list[AlertRule] | None = results[33]
             alerts_status: AlertsStatusResponse | None = results[34]
+            storage_topology: StorageTopology | None = results[35]
 
             # If the core endpoints are all unreachable, treat the whole update
             # as failed instead of returning an empty snapshot. This flips
@@ -649,6 +658,7 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                 alert_statuses=list(alerts_status.statuses or [])
                 if alerts_status is not None
                 else None,
+                storage_topology=storage_topology,
             )
 
             # Check for issues and create repair flows

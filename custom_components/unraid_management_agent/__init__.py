@@ -45,6 +45,7 @@ from .coordinator import (
     UnraidRuntimeData,
 )
 from .frontend import async_register_frontend
+from .storage import CONTROLLER, ENCLOSURE, current_storage_ids, device_identifier
 
 # Service field constants
 ATTR_CONTAINER_ID: Final = "container_id"
@@ -413,17 +414,26 @@ async def async_remove_config_entry_device(
     device_entry: dr.DeviceEntry,
 ) -> bool:
     """
-    Allow removing a VM or container device once it no longer exists on Unraid.
+    Allow removing a VM, container or storage device once it no longer exists.
 
-    The server device itself, and VMs or containers that still exist, cannot be
-    removed.
+    The server device itself, and VMs, containers, storage controllers or
+    enclosures that the agent still reports, cannot be removed.
     """
     data = entry.runtime_data.coordinator.data
     vm_prefix = f"{entry.entry_id}_vm_"
     container_prefix = f"{entry.entry_id}_container_"
+    topology = data.storage_topology if data else None
     for domain, identifier in device_entry.identifiers:
         if domain != DOMAIN:
             continue
+        for kind in (CONTROLLER, ENCLOSURE):
+            prefix = device_identifier(entry.entry_id, kind, "")
+            if identifier.startswith(prefix):
+                if topology is None or topology.state != "ok":
+                    return False
+                return identifier[len(prefix) :] not in current_storage_ids(
+                    topology, kind
+                )
         if identifier.startswith(vm_prefix):
             current_vms = {
                 getattr(vm, "id", None) or getattr(vm, "name", None)
