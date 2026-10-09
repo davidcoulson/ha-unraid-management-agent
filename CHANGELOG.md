@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Entities for every NUT device** ([#181](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/181)):
+  Every NUT device other than the primary UPS (a second UPS, an ATS, ...) gets
+  `UPS <device> Battery/Load/Runtime/Power/Energy` sensors and a
+  `UPS <device> Connected` binary sensor, keyed by NUT device name
+  (`nut_<device>_*`) and on the server device like the existing UPS entities. A
+  sensor is only created once the device reports that reading, so an ATS only
+  gets the connected sensor. The existing `ups_*` entities keep their unique IDs
+  and entity IDs. Needs an agent that reports `/nut` `statuses`
+  ([ruaan-deysel/unraid-management-agent#206](https://github.com/ruaan-deysel/unraid-management-agent/issues/206));
+  older agents get no extra entities. NUT `raw_variables` are redacted in
+  diagnostics.
 - **Bundled Lovelace Dashboard Cards Suite** ([#150](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/150)):
   - Shipped a complete suite of custom Lovelace cards bundled directly with the integration under `custom_components/unraid_management_agent/frontend/unraid-cards.js` (no separate manual HACS card installation required).
   - Automatically registered via `async_register_frontend` during `async_setup` with cache-busting URLs (`?v={version}-{digest}`) in Lovelace resource storage and YAML mode fallback.

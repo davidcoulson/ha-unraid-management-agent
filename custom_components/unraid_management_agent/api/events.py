@@ -308,8 +308,9 @@ def identify_event_type(data: Any) -> EventType | None:
         if "hit_ratio_percent" in data and "size_bytes" in data:
             return EventType.ZFS_ARC_UPDATE
 
-        # NUT: has 'installed' and 'running' and 'config_mode'
-        if "installed" in data and "running" in data and "config_mode" in data:
+        # NUT: has 'installed' and 'running' (no other payload has both at the
+        # top level; the agent never sends 'config_mode')
+        if "installed" in data and "running" in data:
             return EventType.NUT_STATUS_UPDATE
 
         # Hardware: has 'bios' and 'baseboard' keys
