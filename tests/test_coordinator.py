@@ -622,6 +622,23 @@ class TestCoordinatorWebSocketManagement:
         assert "keepalive ping timeout" in warning_logs[0].message
         assert len(debug_logs) == 1
 
+    def test_handle_ws_connect_logs_reconnected_and_resets_state(
+        self, coordinator, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Test WebSocket connect logs reconnected and resets warning flag."""
+        coordinator._websocket_disconnect_logged = True
+        with caplog.at_level(logging.INFO):
+            coordinator._handle_ws_connect()
+
+        info_logs = [
+            record
+            for record in caplog.records
+            if record.levelno == logging.INFO
+            and "WebSocket reconnected" in record.message
+        ]
+        assert len(info_logs) == 1
+        assert coordinator._websocket_disconnect_logged is False
+
     @pytest.mark.asyncio
     async def test_async_start_websocket_failure(self, coordinator) -> None:
         """Test WebSocket start failure."""
