@@ -354,6 +354,9 @@
       },
       "container_device_network_tx_rate": {
         "name": "Network TX"
+      },
+      "alerts_firing": {
+        "name": "Firing alerts"
       }
     },
     "binary_sensor": {
@@ -404,6 +407,27 @@
       },
       "container_updates_available": {
         "name": "Container Updates Available"
+      },
+      "alert_rule": {
+        "name": "Alert {rule_name}",
+        "state_attributes": {
+          "alert_state": {
+            "name": "Alert state",
+            "state": {
+              "ok": "OK",
+              "pending": "Pending",
+              "firing": "Firing"
+            }
+          },
+          "severity": {
+            "name": "Severity",
+            "state": {
+              "info": "Info",
+              "warning": "Warning",
+              "critical": "Critical"
+            }
+          }
+        }
       }
     },
     "switch": {
@@ -446,6 +470,17 @@
               "info": "Info",
               "warning": "Warning",
               "alert": "Alert"
+            }
+          }
+        }
+      },
+      "alert_event": {
+        "name": "Alert",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "firing": "Firing",
+              "resolved": "Resolved"
             }
           }
         }

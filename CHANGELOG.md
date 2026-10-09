@@ -61,6 +61,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   current and power readings that older agents list as temperatures are skipped.
 - **API token authentication** ([#143](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/143), contributed by @davidcoulson): An optional API token in the setup, Zeroconf and reconfigure forms is sent as a bearer token on REST requests and the websocket handshake, for agents with `API_TOKEN` set (v2026.08.02+). A rejected token shows "Invalid authentication", and a token rejected later starts Home Assistant's standard re-authentication flow. The token is redacted from diagnostics.
 - **Docker containers as separate devices (optional)** ([#142](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/142), closes [#147](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/147)): A new **Show Docker containers as separate devices** option (off by default) groups each container's run and autostart switches, restart button and metric sensors on a child device of the Unraid server, with short names (Running, Autostart, Restart, CPU, Memory, Memory usage, Restart count, Network RX/TX). Unique IDs are unchanged, so history is kept. When off, container entities stay on the server device exactly as before. Container devices left without entities are removed, and a device whose container is gone can be deleted from the UI. Requires Home Assistant 2026.9 or newer.
+- **Agent alert rules** ([#161](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/161), closes [#160](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/160), contributed by @davidcoulson):
+  The agent's alerting engine (agent v2026.03.00+) is now visible in Home
+  Assistant. Each alert rule gets a problem binary sensor that is on while the
+  rule fires, with its severity, state (ok, pending or firing), since,
+  expression, duration and cooldown as attributes. Notification channels are
+  not exposed and are redacted from diagnostics, since they can hold webhook
+  URLs with credentials. A disabled rule's sensor is unavailable. An **Alert**
+  event entity fires `firing` and `resolved` events, and a **Firing alerts**
+  sensor counts the firing rules. Alert state is read on the 30-second poll
+  (the agent does not push it), so a rule that fires and resolves between two
+  polls is not seen. New rules are added without a reload and deleted rules
+  are cleaned up like other dynamic entities. Agents without the alerting
+  endpoints get no alert entities.
 - **ZFS pool scrub, error and problem entities** ([#162](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/162), contributed by @davidcoulson):
   Each ZFS pool gets a **Problem** binary sensor plus two diagnostic sensors:
   **Scrub Status** (Never run, Scrubbing, Scrub paused/finished/canceled,

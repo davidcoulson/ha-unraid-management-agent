@@ -21,6 +21,9 @@ from .api.constants import EventType
 from .api.events import WebSocketEvent, parse_event
 from .api.exceptions import UnraidAuthenticationError, UnraidTimeoutError
 from .api.models import (
+    AlertRule,
+    AlertsStatusResponse,
+    AlertStatus,
     ArrayStatus,
     CollectorDetails,
     CollectorStatus,
@@ -116,6 +119,10 @@ class UnraidData:
     container_updates: ContainerUpdatesResult | None = None
     diagnostics_self_test: DiagnosticsSelfTestResponse | None = None
     docker_port_conflicts: list[DockerPortConflict] | None = None
+    # Alerting engine (agent /alerts/rules and /alerts/status). None when the
+    # agent does not provide them (older agents: 404) or the fetch failed.
+    alert_rules: list[AlertRule] | None = None
+    alert_statuses: list[AlertStatus] | None = None
     # Running state of system services (docker, libvirt, nginx, ...) from
     # /services; None when the agent lacks the endpoint or the fetch failed
     system_services: list[SystemService] | None = None
@@ -466,6 +473,12 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                 self._fetch(
                     "system services", self.client.list_services, suppress_404=True
                 ),
+                self._fetch(
+                    "alert rules", self.client.list_alert_rules, suppress_404=True
+                ),
+                self._fetch(
+                    "alert status", self.client.get_alerts_status, suppress_404=True
+                ),
             )
 
             # Unpack results with proper types (gather loses individual type info).
@@ -506,6 +519,8 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
             diagnostics_self_test: DiagnosticsSelfTestResponse | None = results[30]
             docker_port_conflicts: list[DockerPortConflict] | None = results[31]
             system_service_list: SystemServiceList | None = results[32]
+            alert_rules: list[AlertRule] | None = results[33]
+            alerts_status: AlertsStatusResponse | None = results[34]
 
             # If the core endpoints are all unreachable, treat the whole update
             # as failed instead of returning an empty snapshot. This flips
@@ -628,6 +643,11 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                 # A null service list is treated like a failed fetch (None)
                 system_services=list(system_service_list.services)
                 if system_service_list and system_service_list.services is not None
+                else None,
+                alert_rules=alert_rules,
+                # The agent sends "statuses": null when no rule is enabled
+                alert_statuses=list(alerts_status.statuses or [])
+                if alerts_status is not None
                 else None,
             )
 

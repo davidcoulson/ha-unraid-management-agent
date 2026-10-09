@@ -30,6 +30,8 @@ TO_REDACT = {
     "api_key",
     "token",
     "secret",
+    # Alert rule notification targets: shoutrrr URLs can embed credentials
+    "channels",
 }
 
 
