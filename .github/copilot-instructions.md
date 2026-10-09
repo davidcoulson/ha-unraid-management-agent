@@ -63,6 +63,7 @@ Generate code that passes these checks on first run. As an AI agent, you should 
 4. **Large refactoring (>10 files or architectural changes):** propose plan first, get explicit confirmation
 5. **Validation:** run `script/lint` before considering task complete
 6. **File size:** keep files at ~200-400 lines. Split large modules into smaller ones when needed.
+7. **CHANGELOG:** always update `CHANGELOG.md` under `## [Unreleased]` with every feature, fix, or change. PR governance enforces this check.
 
 **Important: Do NOT write tests unless explicitly requested.** Focus on implementing functionality. The developer decides when and if tests are needed.
 
