@@ -32,6 +32,9 @@
         "description": "The Unraid Management Agent at {host} rejected the API token. Enter the token shown in the agent's settings (Settings > Unraid Management Agent > Authentication).",
         "data": {
           "api_token": "API token"
+        },
+        "data_description": {
+          "api_token": "The API token currently set in the agent's settings (Settings > Unraid Management Agent > Authentication). It is sent as a bearer token on every request."
         }
       }
     },

@@ -316,7 +316,7 @@ class UnraidClient:
                                 error_code = "UNKNOWN_ERROR"
 
                             # Raise specific exceptions based on status code
-                            if response.status in (401, 403):
+                            if response.status == 401:
                                 raise UnraidAuthenticationError(
                                     error_message,
                                     error_code=error_code,
@@ -389,7 +389,7 @@ class UnraidClient:
                     if response.status == 200:
                         text: str = await response.text()
                         return text
-                    if response.status in (401, 403):
+                    if response.status == 401:
                         msg = "API token rejected"
                         raise UnraidAuthenticationError(
                             msg, status_code=response.status
@@ -453,7 +453,7 @@ class UnraidClient:
                 if response.status == 200:
                     text: str = await response.text()
                     return text
-                if response.status in (401, 403):
+                if response.status == 401:
                     msg = "API token rejected"
                     raise UnraidAuthenticationError(msg, status_code=response.status)
 

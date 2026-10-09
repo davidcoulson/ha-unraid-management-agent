@@ -10,13 +10,22 @@ from typing import Any, Final
 import voluptuous as vol
 from homeassistant.const import CONF_API_TOKEN, CONF_HOST, CONF_PORT, Platform
 from homeassistant.core import HomeAssistant, ServiceCall, callback
-from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
+from homeassistant.exceptions import (
+    ConfigEntryAuthFailed,
+    ConfigEntryNotReady,
+    HomeAssistantError,
+)
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util import slugify
 
-from .api import UnraidClient, UnraidConnectionError, UnraidWebSocketClient
+from .api import (
+    UnraidAuthenticationError,
+    UnraidClient,
+    UnraidConnectionError,
+    UnraidWebSocketClient,
+)
 from .cleanup import async_cleanup_stale_entities
 from .const import (
     CONF_ENABLE_WEBSOCKET,
@@ -295,6 +304,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
         await client.health_check()
     except UnraidConnectionError as err:
         raise ConfigEntryNotReady(f"Failed to connect to Unraid server: {err}") from err
+    except UnraidAuthenticationError as err:
+        # Start reauth instead of retrying setup forever with a rejected token
+        raise ConfigEntryAuthFailed(
+            translation_domain=DOMAIN,
+            translation_key="auth_failed",
+        ) from err
     except Exception as err:
         raise ConfigEntryNotReady(
             f"Unexpected error connecting to Unraid server: {err}"
