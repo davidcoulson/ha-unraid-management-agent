@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Generator
+from typing import Any
 from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
@@ -16,6 +17,7 @@ from custom_components.unraid_management_agent import (
     async_remove_config_entry_device,
 )
 from custom_components.unraid_management_agent.api.models import VMInfo
+from custom_components.unraid_management_agent.button import UnraidVMForceStopButton
 from custom_components.unraid_management_agent.cleanup import (
     _async_remove_empty_devices,
     _build_valid_dynamic_entity_keys,
@@ -25,6 +27,7 @@ from custom_components.unraid_management_agent.const import (
     DOMAIN,
 )
 from custom_components.unraid_management_agent.coordinator import UnraidData
+from custom_components.unraid_management_agent.entity import build_vm_device_info
 
 from .const import MOCK_CONFIG, MOCK_OPTIONS
 
@@ -353,3 +356,91 @@ async def test_renamed_vm_is_not_confused_with_one_reusing_its_name(
         ],
     )
     assert hass.states.get("sensor.unraid_test_windows_10_state").state == "running"
+
+
+def _sensor_entity(hass: HomeAssistant, entity_id: str) -> Any:
+    """Return the live entity object behind an entity ID."""
+    return hass.data["entity_components"]["sensor"].get_entity(entity_id)
+
+
+@pytest.mark.usefixtures("vm_client", "mock_unraid_websocket_client_class")
+async def test_vm_sensor_values_when_vm_is_gone(
+    hass: HomeAssistant, mock_config_entry
+) -> None:
+    """A sensor whose VM disappeared reports no value and no attributes."""
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    state_sensor = _sensor_entity(hass, "sensor.unraid_test_ubuntu_state")
+    rate_sensor = _sensor_entity(hass, "sensor.unraid_test_ubuntu_network_receive_rate")
+
+    # No VMs at all: the sensor factory has nothing to add
+    await _push_vms(hass, mock_config_entry, [])
+
+    assert state_sensor.native_value is None
+    assert state_sensor.extra_state_attributes is None
+    assert rate_sensor.native_value is None
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_vm_rate_ignores_unparsable_timestamps(
+    hass: HomeAssistant, mock_config_entry, vm_client: MagicMock
+) -> None:
+    """Samples with an unparsable timestamp are skipped, so there is no rate yet."""
+    vm_client.list_vms.return_value = [
+        _vm().model_copy(update={"timestamp": "not-a-time"})
+    ]
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    rate_sensor = _sensor_entity(
+        hass, "sensor.unraid_test_windows_10_network_receive_rate"
+    )
+    assert rate_sensor.native_value is None
+
+
+@pytest.mark.usefixtures("vm_client", "mock_unraid_websocket_client_class")
+async def test_vm_button_finds_its_vm_by_identifier(
+    hass: HomeAssistant, mock_config_entry
+) -> None:
+    """VM buttons look their VM up by the stable identifier."""
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    coordinator = mock_config_entry.runtime_data.coordinator
+
+    button = UnraidVMForceStopButton(coordinator, WIN10_ID, "Windows 10")
+    assert button._find_vm().name == "Windows 10"
+    assert UnraidVMForceStopButton(coordinator, "missing", "Gone")._find_vm() is None
+
+
+async def test_vm_device_info_without_server_device(hass: HomeAssistant) -> None:
+    """If the server device is missing, VM entities stay on the server device."""
+    coordinator = MagicMock()
+    coordinator.hass = hass
+    coordinator.config_entry.entry_id = "no_such_entry"
+
+    info = build_vm_device_info(coordinator, WIN10_ID, "Windows 10")
+
+    assert info == {"identifiers": {(DOMAIN, "no_such_entry")}}
+
+
+@pytest.mark.usefixtures("vm_client", "mock_unraid_websocket_client_class")
+async def test_remove_device_checks_containers_and_skips_other_domains(
+    hass: HomeAssistant, mock_config_entry
+) -> None:
+    """Container devices are removable once the container is gone."""
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    coordinator = mock_config_entry.runtime_data.coordinator
+    current = coordinator.data.containers[0].name
+
+    def device(identifier: str) -> MagicMock:
+        return MagicMock(
+            identifiers={("other_domain", "x"), (DOMAIN, f"{ENTRY_ID}_{identifier}")}
+        )
+
+    assert not await async_remove_config_entry_device(
+        hass, mock_config_entry, device(f"container_{current}")
+    )
+    assert await async_remove_config_entry_device(
+        hass, mock_config_entry, device("container_long_gone")
+    )
