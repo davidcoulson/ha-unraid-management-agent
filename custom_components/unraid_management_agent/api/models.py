@@ -2530,7 +2530,12 @@ class NetworkServicesStatus(BaseModel):
         None, description="UPnP (Universal Plug and Play)"
     )
     ntp: NetworkServiceInfo | None = Field(None, description="NTP server")
-    syslog: NetworkServiceInfo | None = Field(None, description="Remote syslog server")
+    # The agent sends this service as "syslog_server"
+    syslog: NetworkServiceInfo | None = Field(
+        None,
+        validation_alias=AliasChoices("syslog", "syslog_server"),
+        description="Remote syslog server",
+    )
     services_enabled: int | None = Field(None, description="Number of enabled services")
     services_running: int | None = Field(None, description="Number of running services")
     timestamp: str | None = Field(None, description="Data collection timestamp")
