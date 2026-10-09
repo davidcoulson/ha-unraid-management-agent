@@ -5,6 +5,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import pytest
+from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -210,3 +211,75 @@ def test_cleanup_knows_temperature_keys() -> None:
     assert not any(k.startswith("temperature_octo_hid_3_3_in") for k in keys)
     assert "temperature_" in _unavailable_data_prefixes(UnraidData())
     assert "temperature_" not in _unavailable_data_prefixes(data)
+
+
+async def _setup_enabled_coolant(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+) -> tuple[MockConfigEntry, str]:
+    """Set up the entry with the coolant sensor enabled; return its entity ID."""
+    entry = _entry(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    entity_id = _temperature_entities(entity_registry)[
+        f"{PREFIX}octo_hid_3_3_temp1"
+    ].entity_id
+    entity_registry.async_update_entity(entity_id, disabled_by=None)
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    return entry, entity_id
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_unavailable_when_channel_disappears(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """A channel missing from the latest data makes its sensor unavailable."""
+    system = mock_async_unraid_client.get_system_info.return_value
+    system.temperatures = [COOLANT, NVME_2800]
+    entry, entity_id = await _setup_enabled_coolant(hass, entity_registry)
+    coordinator = entry.runtime_data.coordinator
+    state = hass.states.get(entity_id)
+    assert state is not None
+    assert float(state.state) == 27.8
+
+    system.temperatures = [NVME_2800]
+    await coordinator.async_refresh()
+    await hass.async_block_till_done()
+    state = hass.states.get(entity_id)
+    assert state is not None
+    assert state.state == STATE_UNAVAILABLE
+
+    system.temperatures = [COOLANT, NVME_2800]
+    await coordinator.async_refresh()
+    await hass.async_block_till_done()
+    state = hass.states.get(entity_id)
+    assert state is not None
+    assert float(state.state) == 27.8
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_reading_matched_by_channel_not_label(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """A relabelled channel (sensors.conf change) keeps feeding the same sensor."""
+    system = mock_async_unraid_client.get_system_info.return_value
+    system.temperatures = [COOLANT]
+    entry, entity_id = await _setup_enabled_coolant(hass, entity_registry)
+
+    relabelled = _reading("octo-hid-3-3_Loop_Inlet_temp1_input", 31.5, "octo-hid-3-3")
+    system.temperatures = [relabelled]
+    await entry.runtime_data.coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+    state = hass.states.get(entity_id)
+    assert state is not None
+    assert float(state.state) == 31.5
+    assert state.attributes["sensor"] == "octo-hid-3-3_Loop_Inlet_temp1_input"
+    assert set(_temperature_entities(entity_registry)) == {
+        f"{PREFIX}octo_hid_3_3_temp1"
+    }
