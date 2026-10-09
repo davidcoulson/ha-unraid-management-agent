@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **WebSocket keepalive ping timeouts** ([#138](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/138), fixes [#135](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/135)): Disabled client-initiated keepalive pings (`ping_interval=None`) to prevent spurious `1011` keepalive timeout disconnects every ~30 seconds; the Unraid agent server manages connection keepalive directly.
 - **WebSocket disconnect close metadata** ([#138](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/138), fixes [#135](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/135)): Extracted and surfaced close code and reason metadata from `ConnectionClosed` frames on disconnect instead of dropping close context.
+- **ZFS pool usage always Unknown** ([#139](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/139)):
+  The agent reports pool usage as `allocated_bytes` (zpool ALLOC), but the
+  integration only read `used_bytes`, so every "ZFS Pool … Usage" sensor was
+  Unknown. The ZFS pool model now accepts both.
 
 ### Changed
 
