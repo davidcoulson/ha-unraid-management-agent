@@ -147,7 +147,7 @@ rules:
     comment: Proper device classes (temperature, power, battery, duration, etc.)
   entity-disabled-by-default:
     status: done
-    comment: User scripts and per-channel hwmon temperature sensors disabled by default with _attr_entity_registry_enabled_default
+    comment: User scripts, per-channel hwmon temperature sensors and per-pool ZFS error/fragmentation sensors disabled by default with entity_registry_enabled_default
   entity-translations:
     status: done
     comment: Entity translations defined in strings.json entity section

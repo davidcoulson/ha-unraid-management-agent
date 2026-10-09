@@ -1825,6 +1825,25 @@ class ParityStatus(BaseModel):
     model_config = {"frozen": True, "extra": "allow"}
 
 
+class ZFSDevice(BaseModel):
+    """A device (or vdev) row from `zpool status`, with its error counters."""
+
+    name: str | None = Field(None, description="Device or vdev name")
+    state: str | None = Field(None, description="Device state")
+    read_errors: CoercedInt = Field(None, description="Read errors")
+    write_errors: CoercedInt = Field(None, description="Write errors")
+    checksum_errors: CoercedInt = Field(None, description="Checksum errors")
+
+    model_config = {"frozen": True, "extra": "allow"}
+
+
+class ZFSVdev(ZFSDevice):
+    """A ZFS virtual device (mirror, raidz, single disk, ...)."""
+
+    type: str | None = Field(None, description="Vdev type, e.g. raidz2 or mirror")
+    devices: list[ZFSDevice] | None = Field(None, description="Member devices")
+
+
 class ZFSPool(BaseModel):
     """ZFS pool information."""
 
@@ -1845,9 +1864,63 @@ class ZFSPool(BaseModel):
     is_boot_pool: bool | None = Field(
         None, description="Whether this pool is the Unraid boot pool"
     )
+    fragmentation_percent: CoercedFloat = Field(
+        None, description="Free space fragmentation percentage"
+    )
+    read_errors: CoercedInt = Field(None, description="Pool-level read errors")
+    write_errors: CoercedInt = Field(None, description="Pool-level write errors")
+    checksum_errors: CoercedInt = Field(None, description="Pool-level checksum errors")
+    vdevs: list[ZFSVdev] | None = Field(None, description="Pool vdevs")
+    scan_status: str | None = Field(
+        None, description="Last scan, e.g. 'scrub completed' or 'resilver in progress'"
+    )
+    scan_state: str | None = Field(
+        None, description="Scan state: scanning, paused, finished or canceled"
+    )
+    scan_errors: CoercedInt = Field(None, description="Errors found by the last scan")
+    scan_repaired_bytes: CoercedInt = Field(
+        None, description="Bytes repaired by the last scan"
+    )
+    scan_start_time: str | None = Field(None, description="When the scan started")
+    scan_end_time: str | None = Field(None, description="When the scan ended")
+    scan_progress_percent: CoercedFloat = Field(
+        None, description="Scan progress percentage"
+    )
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
     model_config = {"frozen": True, "extra": "allow"}
+
+    def error_total(self, counter: str) -> int | None:
+        """
+        Sum an error counter over the pool, its vdevs and their devices.
+
+        zpool status reports read/write/checksum errors per row and does not
+        roll device errors up into the pool row, so the pool row alone misses
+        errors that ZFS corrected from redundancy.
+
+        Args:
+            counter: "read_errors", "write_errors" or "checksum_errors".
+
+        Returns:
+            The summed count, or None if the agent did not report the counter.
+
+        Example:
+            >>> pool = ZFSPool.model_validate(
+            ...     {"checksum_errors": 0, "vdevs": [{"checksum_errors": 0,
+            ...      "devices": [{"name": "sdb1", "checksum_errors": 3}]}]}
+            ... )
+            >>> pool.error_total("checksum_errors")
+            3
+
+        """
+        rows: list[ZFSPool | ZFSDevice] = [self]
+        for vdev in self.vdevs or []:
+            rows.append(vdev)
+            rows.extend(vdev.devices or [])
+        values = [getattr(row, counter) for row in rows]
+        if all(value is None for value in values):
+            return None
+        return sum(value or 0 for value in values)
 
     @property
     def computed_used_percent(self) -> float | None:
