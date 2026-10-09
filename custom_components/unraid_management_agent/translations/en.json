@@ -68,7 +68,7 @@
           "enable_websocket": "WebSocket provides instant updates instead of polling. When disabled, data is polled every 30 seconds.",
           "enable_fan_control": "Create fan speed sensor and control entities. Disable if your system does not have controllable fans.",
           "enable_container_updates": "Periodically check Docker containers for available image updates. This may slow down polling and uses additional network requests.",
-          "enable_vm_devices": "Give each VM its own device, linked to the server, with its power switch, control buttons and metric sensors (CPU, memory, network and disk rates). When off, VM switches and buttons stay on the server device and no VM sensors are created.",
+          "enable_vm_devices": "Give each VM its own device under the server, holding its power switch, control buttons and metric sensors (CPU, memory, network and disk rates). When off, VM switches and buttons stay on the server device and no VM sensors are created.",
           "read_only": "Only create sensors. Switches, buttons and number controls are not created (existing ones are removed), and the integration's actions refuse to run, so Home Assistant cannot start, stop or reboot anything on the server."
         }
       }
