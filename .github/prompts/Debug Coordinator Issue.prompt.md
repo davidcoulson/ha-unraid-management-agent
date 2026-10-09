@@ -82,7 +82,7 @@ async def _async_update_data(self) -> UnraidData:
 **Handle Missing Data:**
 
 ```python
-value_fn=lambda data: data.system_info.cpu_usage if data.system_info else None,
+value_fn=lambda data: data.system_info.cpu_usage if data.system_info else None
 ```
 
 ## Related Files to Review

@@ -142,6 +142,7 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
         self.enable_websocket = enable_websocket
         self._ws_client: UnraidWebSocketClient | None = None
         self._ws_task: asyncio.Task[None] | None = None
+        self._websocket_disconnect_logged = False
         self._unavailable_logged = False
         self._consecutive_failed_updates = 0
         self._last_successful_update: datetime | None = None
@@ -729,7 +730,11 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
         the next poll cycle. Debounced to avoid hammering the API during rapid
         connect/disconnect cycles.
         """
-        _LOGGER.info("WebSocket connected")
+        if self._websocket_disconnect_logged:
+            _LOGGER.info("WebSocket reconnected")
+            self._websocket_disconnect_logged = False
+        else:
+            _LOGGER.info("WebSocket connected")
         now = dt_util.utcnow()
         if (
             self._last_reconnect_refresh is not None
@@ -739,6 +744,28 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
             return
         self._last_reconnect_refresh = now
         self.hass.async_create_task(self.async_request_refresh())
+
+    @callback
+    def _handle_ws_disconnect(
+        self,
+        close_code: int | None = None,
+        close_reason: str | None = None,
+    ) -> None:
+        """Handle WebSocket disconnection with detailed close metadata."""
+        details: list[str] = []
+        if close_code is not None:
+            details.append(f"code={close_code}")
+        if close_reason:
+            details.append(f"reason={close_reason!r}")
+        detail_suffix = f" ({', '.join(details)})" if details else ""
+
+        message = f"WebSocket disconnected{detail_suffix}"
+        if not self._websocket_disconnect_logged:
+            _LOGGER.warning(message)
+            self._websocket_disconnect_logged = True
+            return
+
+        _LOGGER.debug(message)
 
     async def async_start_websocket(self) -> None:
         """Start WebSocket connection for real-time updates."""
@@ -750,6 +777,8 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
             _LOGGER.debug("WebSocket already running")
             return
 
+        self._websocket_disconnect_logged = False
+
         try:
             # Create the vendored WebSocket client with auto-reconnect
             self._ws_client = UnraidWebSocketClient(
@@ -757,7 +786,7 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                 port=self.client.port,
                 on_message=self._handle_raw_message,
                 on_connect=self._handle_ws_connect,
-                on_disconnect=lambda: _LOGGER.warning("WebSocket disconnected"),
+                on_disconnect=self._handle_ws_disconnect,
                 auto_reconnect=True,
                 reconnect_delays=[1, 2, 5, 10, 30],
                 max_retries=10,

@@ -82,7 +82,7 @@ class UnraidWebSocketClient:
         on_error: Callable[[Exception], None] | None = None,
         on_close: Callable[[], None] | None = None,
         on_connect: Callable[[], None] | None = None,
-        on_disconnect: Callable[[], None] | None = None,
+        on_disconnect: Callable[..., Any] | None = None,
         on_reconnect_failed: Callable[[], None] | None = None,
         use_wss: bool = False,
         auto_reconnect: bool = True,
@@ -118,10 +118,38 @@ class UnraidWebSocketClient:
     ) -> None:
         """Call a callback, handling both sync and async callbacks."""
         if callback:
+            call_args = args
+            if args:
+                try:
+                    sig = inspect.signature(callback)
+                    has_var_args = any(
+                        p.kind
+                        in (
+                            inspect.Parameter.VAR_POSITIONAL,
+                            inspect.Parameter.VAR_KEYWORD,
+                        )
+                        for p in sig.parameters.values()
+                    )
+                    pos_params = [
+                        p
+                        for p in sig.parameters.values()
+                        if p.kind
+                        in (
+                            inspect.Parameter.POSITIONAL_ONLY,
+                            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                        )
+                    ]
+                    if not has_var_args and len(pos_params) == 0:
+                        call_args = ()
+                except ValueError:
+                    pass
+                except TypeError:
+                    pass
+
             if inspect.iscoroutinefunction(callback):
-                await callback(*args)
+                await callback(*call_args)
             else:
-                callback(*args)
+                callback(*call_args)
 
     def _get_reconnect_delay(self) -> int:
         """Get the delay for the current retry attempt."""
@@ -203,9 +231,17 @@ class UnraidWebSocketClient:
         while self._running:
             connection_error: Exception | None = None
             received_message = False
+            disconnect_code: int | None = None
+            disconnect_reason: str | None = None
 
             try:
-                async with websockets.connect(self.ws_url) as websocket:
+                # Disable client-initiated keepalive pings; the Unraid Management Agent
+                # server actively sends keepalive pings every 30s. Client-initiated pings
+                # can trigger spurious keepalive ping timeout (1011) closes (fixes #135).
+                async with websockets.connect(
+                    self.ws_url,
+                    ping_interval=None,
+                ) as websocket:
                     self._websocket = websocket
 
                     # Call on_connect callback
@@ -229,18 +265,26 @@ class UnraidWebSocketClient:
                         except json.JSONDecodeError:
                             error = ValueError(f"Failed to parse message: {message!r}")
                             await self._call_callback(self.on_error, error)
-                        except websockets.exceptions.ConnectionClosed:
+                        except websockets.exceptions.ConnectionClosed as err:
+                            close_frame = getattr(err, "rcvd", None)
+                            disconnect_code = getattr(close_frame, "code", None)
+                            disconnect_reason = getattr(close_frame, "reason", None)
                             break
 
             except Exception as e:
                 connection_error = e
+                if disconnect_reason is None:
+                    disconnect_reason = str(e)
                 await self._call_callback(self.on_error, e)
 
             finally:
                 self._websocket = None
 
             # Handle disconnection
-            await self._call_callback(self.on_disconnect)
+            if self._running:
+                await self._call_callback(
+                    self.on_disconnect, disconnect_code, disconnect_reason
+                )
 
             # If auto_reconnect is disabled, stop here
             if not self.auto_reconnect:
@@ -252,7 +296,7 @@ class UnraidWebSocketClient:
                 break
 
             # If manually stopped, exit without reconnection
-            if not self._running:
+            if not getattr(self, "_running", False):
                 await self._call_callback(self.on_close)
                 break
 

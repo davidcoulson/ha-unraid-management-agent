@@ -44,6 +44,8 @@ ignore = [
     "ANN201", # allow missing return type for tests/fixtures
     "PT011", # allow broad pytest.raises where sufficient
     "SIM105", # allow try/except pass patterns
+    "CPY", # per-file copyright headers not required
+    "PLR0917", # allow constructor parameter lists
 ]
 
 [lint.flake8-pytest-style]

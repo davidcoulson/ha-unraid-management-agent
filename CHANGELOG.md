@@ -12,10 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **PR governance workflow** — added automated GitHub Actions workflow enforcing PR template completeness, mandatory CHANGELOG.md updates, issue linking checks, and bot/draft exemptions.
 - **Pull request template** — added `.github/PULL_REQUEST_TEMPLATE.md` with structured sections for description, changes made, Home Assistant testing verification, and quality checklist.
 
+### Fixed
+
+- **WebSocket keepalive ping timeouts** ([#138](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/138), fixes [#135](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/135)): Disabled client-initiated keepalive pings (`ping_interval=None`) to prevent spurious `1011` keepalive timeout disconnects every ~30 seconds; the Unraid agent server manages connection keepalive directly.
+- **WebSocket disconnect close metadata** ([#138](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/138), fixes [#135](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/135)): Extracted and surfaced close code and reason metadata from `ConnectionClosed` frames on disconnect instead of dropping close context.
+
 ### Changed
 
 - **CI test & Codecov workflow** — updated `.github/workflows/test.yml` to target `custom_components/unraid_management_agent`, provision dependencies via `uv pip install -e ".[dev,test]"`, upload coverage reports to Codecov via `codecov/codecov-action@v5`, and added concurrency cancellation.
 - **Codecov configuration** — updated `.codecov.yml` with `auto` coverage targets and clean comment formatting.
+- **WebSocket disconnect log rate limiting** ([#138](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/138), fixes [#135](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/135)): Rate-limited disconnect logs to warn once per session with close metadata, demoting repeated disconnects to `DEBUG` until successfully reconnected.
 
 ## [2026.6.5] — 2026-06-17
 
