@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   added without a reload, removed channels are cleaned up like other dynamic
   entities, and the sensors do not depend on the fan control option. Voltage,
   current and power readings that older agents list as temperatures are skipped.
+- **Docker containers as separate devices (optional)** ([#142](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/142), closes [#147](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/147)): A new **Show Docker containers as separate devices** option (off by default) groups each container's run and autostart switches, restart button and metric sensors on a child device of the Unraid server, with short names (Running, Autostart, Restart, CPU, Memory, Memory usage, Restart count, Network RX/TX). Unique IDs are unchanged, so history is kept. When off, container entities stay on the server device exactly as before. Container devices left without entities are removed, and a device whose container is gone can be deleted from the UI. Requires Home Assistant 2026.9 or newer.
 
 ### Fixed
 
@@ -35,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The agent reports pool usage as `allocated_bytes` (zpool ALLOC), but the
   integration only read `used_bytes`, so every "ZFS Pool … Usage" sensor was
   Unknown. The ZFS pool model now accepts both.
+- **WebSocket events overwrote UPS, system and collector data** ([#152](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/152)): `nut_status_update` (NUTInfo) and `hardware_update` (HardwareFullInfo) events were stored in `data.ups` and `data.system`, and a `collector_state_change` (one collector) replaced the full collector status, until the next poll. The NUT and hardware events are now ignored (no entity uses them), and collector events update just that collector.
 
 ### Changed
 
