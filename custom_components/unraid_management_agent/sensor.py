@@ -3226,6 +3226,10 @@ class UnraidUPSEnergySensor(UnraidBaseEntity, RestoreEntity, SensorEntity):
 
     This sensor integrates power readings over time to calculate total energy
     consumption in kWh. It persists its state across restarts using RestoreEntity.
+
+    Many UPSes report no power reading, so the agent sends ``power_watts: null``.
+    While power is unknown the sensor is unknown too and adds no energy; the
+    accumulated total is kept and reported again once power is known.
     """
 
     _attr_device_class = SensorDeviceClass.ENERGY
@@ -3286,7 +3290,7 @@ class UnraidUPSEnergySensor(UnraidBaseEntity, RestoreEntity, SensorEntity):
     def extra_restore_state_data(self) -> UnraidEnergySensorExtraStoredData:
         """Return energy sensor state data that should survive restarts."""
         return UnraidEnergySensorExtraStoredData(
-            self.native_value,
+            self._total_kwh(),
             self.native_unit_of_measurement,
             self._last_power,
             self._energy_integrator.last_timestamp,
@@ -3299,14 +3303,24 @@ class UnraidUPSEnergySensor(UnraidBaseEntity, RestoreEntity, SensorEntity):
         self._update_energy()
         self.async_write_ha_state()
 
+    def _current_power(self) -> float | None:
+        """Return the UPS power reading, or None when it is unknown or invalid."""
+        if not self.coordinator.data or not self.coordinator.data.ups:
+            return None
+        power = self.coordinator.data.ups.power_watts
+        if power is None or power < 0:
+            return None
+        return power
+
     def _update_energy(self) -> None:
         """Calculate and update energy based on current power reading."""
-        if not self.coordinator.data or not self.coordinator.data.ups:
-            return
+        current_power = self._current_power()
 
-        current_power = self.coordinator.data.ups.power_watts
-
-        if current_power is None or current_power < 0:
+        if current_power is None:
+            # No energy is added while power is unknown, and the gap is not
+            # interpolated: integration restarts with the next known reading.
+            self._energy_integrator.break_series()
+            self._last_power = None
             return
 
         current_uptime_seconds = _get_system_uptime_seconds(self.coordinator.data)
@@ -3320,10 +3334,16 @@ class UnraidUPSEnergySensor(UnraidBaseEntity, RestoreEntity, SensorEntity):
         self._last_power = current_power
         self._last_uptime_seconds = current_uptime_seconds
 
-    @property
-    def native_value(self) -> float:
-        """Return the total energy consumed in kWh."""
+    def _total_kwh(self) -> float:
+        """Return the accumulated energy in kWh, including the current series."""
         return round(self._total_energy + self._energy_integrator.total_wh / 1000, 3)
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the total energy consumed in kWh, or None while power is unknown."""
+        if self._current_power() is None:
+            return None
+        return self._total_kwh()
 
     @property
     def available(self) -> bool:
