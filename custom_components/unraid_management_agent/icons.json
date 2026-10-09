@@ -316,6 +316,13 @@
           "off": "mdi:server-network-off"
         }
       },
+      "system_service": {
+        "default": "mdi:cog",
+        "state": {
+          "on": "mdi:cog",
+          "off": "mdi:cog-off"
+        }
+      },
       "zfs_available": {
         "default": "mdi:database",
         "state": {

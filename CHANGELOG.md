@@ -74,6 +74,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   only the last scan's statistics, so after a resilver these describe the
   resilver. Agents up to 2026.09.01 report zero scrub times, which show as
   unknown (fixed in [unraid-management-agent#185](https://github.com/ruaan-deysel/unraid-management-agent/issues/185)).
+- **System service running sensors** ([#166](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/166), contributed by @davidcoulson):
+  One "<name> Service" binary sensor (device class running, diagnostic,
+  disabled by default) per service in the agent's `/services` list that the
+  network service sensors do not already cover: today Docker, Libvirt and
+  Nginx. Docker and Libvirt carry an `enabled` attribute from Unraid's Docker
+  and VM Manager settings. Services the agent adds later get a sensor without a
+  reload, removed ones are cleaned up like other dynamic entities, and agents
+  without the endpoint (before v2026.02.02) simply get none. Read-only: no
+  start/stop controls.
 - **GPU VRAM sensors** ([#169](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/169), contributed by @davidcoulson):
   Each GPU that reports video memory gets **VRAM Used** (shown in MiB),
   **VRAM Total** (diagnostic, shown in GiB) and **VRAM Usage** (used / total, %)
@@ -98,6 +107,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   integration only read `used_bytes`, so every "ZFS Pool … Usage" sensor was
   Unknown. The ZFS pool model now accepts both.
 - **WebSocket events overwrote UPS, system and collector data** ([#152](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/152)): `nut_status_update` (NUTInfo) and `hardware_update` (HardwareFullInfo) events were stored in `data.ups` and `data.system`, and a `collector_state_change` (one collector) replaced the full collector status, until the next poll. The NUT and hardware events are now ignored (no entity uses them), and collector events update just that collector.
+- **Syslog network service sensor never created** ([#167](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/167), contributed by @davidcoulson):
+  The agent reports the syslog service as `syslog_server`, but the integration
+  only read `syslog`, so there was no "Syslog Service" binary sensor next to
+  the other network services. Both keys are now accepted.
 - **Container Updates Available sensor deleted by stale cleanup** ([#158](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/158), contributed by @davidcoulson): its key starts with the dynamic `container_` prefix, so cleanup removed it about 10 minutes after setup. It is now allowlisted, and a new test fails if any static entity key ever collides with a dynamic prefix again.
 - **ZFS pools unavailable once the agent reports corrupted files** ([#172](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/172), contributed by @davidcoulson):
   The agent sends `corrupted_files` as the list of paths from `zpool status -v`,
