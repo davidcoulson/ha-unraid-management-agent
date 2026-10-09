@@ -22,6 +22,7 @@ from .api.events import WebSocketEvent, parse_event
 from .api.exceptions import UnraidAuthenticationError, UnraidTimeoutError
 from .api.models import (
     ArrayStatus,
+    CollectorDetails,
     CollectorStatus,
     ContainerInfo,
     ContainerUpdatesResult,
@@ -126,6 +127,23 @@ class UnraidRuntimeData:
 
 
 type UnraidConfigEntry = ConfigEntry[UnraidRuntimeData]
+
+
+def _merge_collector_state(
+    status: CollectorStatus | None, details: CollectorDetails
+) -> CollectorStatus | None:
+    """
+    Return the collectors status with one collector's details replaced.
+
+    A collector_state_change event carries a single CollectorDetails, not the
+    full CollectorStatus. Without a full status yet (no successful poll),
+    keep None so collector checks fall back to their defaults.
+    """
+    if status is None or not isinstance(details, CollectorDetails):
+        return status
+    collectors = [c for c in status.collectors or [] if c.name != details.name]
+    collectors.append(details)
+    return status.model_copy(update={"collectors": collectors})
 
 
 class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
@@ -703,15 +721,20 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
             )
         elif event.event_type == EventType.ZFS_ARC_UPDATE:
             self.data.zfs_arc = event.data
-        elif event.event_type == EventType.NUT_STATUS_UPDATE:
-            # NUT (Network UPS Tools) status is stored as UPS data
-            self.data.ups = event.data
-        elif event.event_type == EventType.HARDWARE_UPDATE:
-            # Hardware updates contain system info (fans, temps, power)
-            self.data.system = event.data
+        elif event.event_type in (
+            EventType.NUT_STATUS_UPDATE,
+            EventType.HARDWARE_UPDATE,
+        ):
+            # These carry NUTInfo and HardwareFullInfo, which are different
+            # models from data.ups (UPSInfo) and data.system (SystemInfo) and
+            # are not used by any entity. Storing them there replaced UPS and
+            # system data until the next poll, so ignore them.
+            return
         elif event.event_type == EventType.COLLECTOR_STATE_CHANGE:
-            # Collector state changes update the collectors status
-            self.data.collectors = event.data
+            # One collector changed: update it within the full status
+            self.data.collectors = _merge_collector_state(
+                self.data.collectors, event.data
+            )
         elif event.event_type == EventType.FAN_CONTROL_UPDATE:
             self.data.fan_control = event.data
         elif event.event_type == EventType.SOURCE_STATUS_CHANGED:
