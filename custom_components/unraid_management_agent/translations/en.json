@@ -43,14 +43,16 @@
           "enable_fan_control": "Enable fan control entities",
           "enable_container_updates": "Enable container update checks",
           "read_only": "Read-only (sensors only)",
-          "enable_vm_devices": "Show virtual machines as separate devices"
+          "enable_vm_devices": "Show virtual machines as separate devices",
+          "enable_container_devices": "Show Docker containers as separate devices"
         },
         "data_description": {
           "enable_websocket": "WebSocket provides instant updates instead of polling. When disabled, data is polled every 30 seconds.",
           "enable_fan_control": "Create fan speed sensor and control entities. Disable if your system does not have controllable fans.",
           "enable_container_updates": "Periodically check Docker containers for available image updates. This may slow down polling and uses additional network requests.",
           "read_only": "Only create sensors. Switches, buttons and number controls are not created (existing ones are removed), and the integration's actions refuse to run, so Home Assistant cannot start, stop or reboot anything on the server.",
-          "enable_vm_devices": "Give each VM its own device under the server, holding its power switch, control buttons and metric sensors (CPU, memory, network and disk rates). When off, VM switches and buttons stay on the server device and no VM sensors are created."
+          "enable_vm_devices": "Give each VM its own device under the server, holding its power switch, control buttons and metric sensors (CPU, memory, network and disk rates). When off, VM switches and buttons stay on the server device and no VM sensors are created.",
+          "enable_container_devices": "Give each container its own device under the server, holding its switches, restart button and metric sensors with short names (Running, CPU, Memory). When off, container entities stay on the server device, named after the container."
         }
       }
     }
@@ -269,6 +271,24 @@
       },
       "vm_disk_size": {
         "name": "Disk size"
+      },
+      "container_device_cpu": {
+        "name": "CPU"
+      },
+      "container_device_memory": {
+        "name": "Memory"
+      },
+      "container_device_memory_percent": {
+        "name": "Memory usage"
+      },
+      "container_device_restart_count": {
+        "name": "Restart count"
+      },
+      "container_device_network_rx_rate": {
+        "name": "Network RX"
+      },
+      "container_device_network_tx_rate": {
+        "name": "Network TX"
       }
     },
     "binary_sensor": {
@@ -333,6 +353,12 @@
       },
       "vm_power": {
         "name": "Power"
+      },
+      "container_device_running": {
+        "name": "Running"
+      },
+      "container_device_autostart": {
+        "name": "Autostart"
       }
     },
     "number": {
@@ -420,6 +446,9 @@
       },
       "vm_device_reset": {
         "name": "Reset"
+      },
+      "container_device_restart": {
+        "name": "Restart"
       }
     }
   },
