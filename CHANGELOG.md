@@ -14,8 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Read-only option** ([#141](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/141), contributed by @davidcoulson):
   A new **Read-only (sensors only)** option loads only the sensor, binary sensor
   and event platforms, removes switch, button and number entities created
-  earlier, and makes every integration action raise a `read_only_mode` error.
-  Off by default.
+  earlier, and makes integration actions targeting a read-only entry refuse
+  with a `read_only_mode` validation error. Off by default.
 
 ### Fixed
 

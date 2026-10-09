@@ -8,9 +8,14 @@ from collections.abc import Callable, Coroutine
 from typing import Any, Final
 
 import voluptuous as vol
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_HOST, CONF_PORT, Platform
 from homeassistant.core import HomeAssistant, ServiceCall, callback
-from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
+from homeassistant.exceptions import (
+    ConfigEntryNotReady,
+    HomeAssistantError,
+    ServiceValidationError,
+)
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -400,11 +405,20 @@ async def async_setup_services(hass: HomeAssistant) -> None:
             )
         # Use the first entry's coordinator (services are domain-wide)
         entry: UnraidConfigEntry = entries[0]
-        # Every service changes the server, so none run in read-only mode
+        # Only a loaded entry has runtime data (and a coordinator) to act on
+        if entry.state is not ConfigEntryState.LOADED:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="entry_not_loaded",
+                translation_placeholders={"title": entry.title},
+            )
+        # Every service changes the server, so none run against an entry that
+        # is in read-only mode
         if _is_read_only(entry):
-            raise HomeAssistantError(
+            raise ServiceValidationError(
                 translation_domain=DOMAIN,
                 translation_key="read_only_mode",
+                translation_placeholders={"title": entry.title},
             )
         return entry.runtime_data.coordinator
 
