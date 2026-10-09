@@ -468,6 +468,14 @@ async def async_setup_entry(
                     UnraidNetworkInterfaceBinarySensor(coordinator, interface_name)
                 )
 
+    # ZFS pool problem binary sensors - only if zfs collector is enabled
+    if coordinator.is_collector_enabled("zfs"):
+        entities.extend(
+            UnraidZFSPoolProblemBinarySensor(coordinator, pool.name)
+            for pool in (data.zfs_pools if data else None) or []
+            if pool.name
+        )
+
     # Unassigned device mounted binary sensors - created dynamically as devices appear
     seen_unassigned: set[str] = set()
 
@@ -877,4 +885,59 @@ class UnraidRemoteShareBinarySensor(UnraidBaseEntity, BinarySensorEntity):
             attrs["server"] = share.server
         if getattr(share, "mount_point", None):
             attrs["mount_point"] = share.mount_point
+        return attrs
+
+
+class UnraidZFSPoolProblemBinarySensor(UnraidBaseEntity, BinarySensorEntity):
+    """On when a ZFS pool is not ONLINE or has read/write/checksum/scrub errors."""
+
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+
+    def __init__(
+        self,
+        coordinator: UnraidDataUpdateCoordinator,
+        pool_name: str,
+    ) -> None:
+        """Initialize the ZFS pool problem binary sensor."""
+        self._pool_name = pool_name
+        super().__init__(coordinator, f"zfs_{pool_name}_problem")
+        self._attr_translation_key = "zfs_pool_problem"
+        self._attr_translation_placeholders = {"pool_name": pool_name}
+
+    def _get_pool(self) -> Any | None:
+        """Return this pool from coordinator data."""
+        data = self.coordinator.data
+        if not data or not data.zfs_pools:
+            return None
+        return next((p for p in data.zfs_pools if p.name == self._pool_name), None)
+
+    @staticmethod
+    def _error_counts(pool: Any) -> dict[str, int | None]:
+        """Return the pool's error totals and last scrub error count."""
+        return {
+            "read_errors": pool.error_total("read_errors"),
+            "write_errors": pool.error_total("write_errors"),
+            "checksum_errors": pool.error_total("checksum_errors"),
+            "scrub_errors": pool.scan_errors,
+        }
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return True if the pool is unhealthy or has reported errors."""
+        pool = self._get_pool()
+        if pool is None:
+            return None
+        health = pool.health or pool.state
+        if health and health.upper() != "ONLINE":
+            return True
+        return any(count for count in self._error_counts(pool).values())
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return pool health and error counts."""
+        pool = self._get_pool()
+        if pool is None:
+            return {}
+        attrs: dict[str, Any] = {"health": pool.health or pool.state}
+        attrs.update(self._error_counts(pool))
         return attrs

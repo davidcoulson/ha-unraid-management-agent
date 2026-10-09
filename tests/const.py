@@ -6,6 +6,8 @@ from unittest.mock import MagicMock
 
 from homeassistant.const import CONF_HOST, CONF_PORT
 
+from custom_components.unraid_management_agent.api.models import ZFSPool
+
 # Mock configuration
 MOCK_CONFIG = {
     CONF_HOST: "192.168.1.100",
@@ -423,16 +425,41 @@ def mock_shares() -> list[MagicMock]:
     return [share]
 
 
-def mock_zfs_pools() -> list[MagicMock]:
-    """Create mock ZFSPool Pydantic models."""
-    pool = MagicMock()
-    pool.name = "zfs_pool"
-    pool.state = "ONLINE"
-    pool.health = "ONLINE"
-    pool.size_bytes = 2000000000000
-    pool.total_bytes = 2000000000000
-    pool.used_bytes = 800000000000
-    pool.free_bytes = 1200000000000
-    pool.computed_used_percent = 40.0
-    pool.fragmentation_percent = 5
+def mock_zfs_pools() -> list[ZFSPool]:
+    """Create ZFSPool Pydantic models shaped like the agent's /zfs/pools."""
+    pool = ZFSPool.model_validate(
+        {
+            "name": "zfs_pool",
+            "state": "ONLINE",
+            "health": "ONLINE",
+            "size_bytes": 2000000000000,
+            "allocated_bytes": 800000000000,
+            "free_bytes": 1200000000000,
+            "fragmentation_percent": 5,
+            "read_errors": 0,
+            "write_errors": 0,
+            "checksum_errors": 0,
+            "vdevs": [
+                {
+                    "name": "mirror-0",
+                    "type": "mirror",
+                    "state": "ONLINE",
+                    "read_errors": 0,
+                    "write_errors": 0,
+                    "checksum_errors": 0,
+                    "devices": [
+                        {"name": "sdb1", "state": "ONLINE", "checksum_errors": 0},
+                        {"name": "sdc1", "state": "ONLINE", "checksum_errors": 0},
+                    ],
+                }
+            ],
+            "scan_status": "scrub completed",
+            "scan_state": "finished",
+            "scan_errors": 0,
+            "scan_repaired_bytes": 0,
+            "scan_start_time": "2026-10-04T05:00:01-04:00",
+            "scan_end_time": "2026-10-04T05:00:03-04:00",
+            "scan_progress_percent": 100,
+        }
+    )
     return [pool]

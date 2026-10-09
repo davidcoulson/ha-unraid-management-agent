@@ -61,6 +61,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   current and power readings that older agents list as temperatures are skipped.
 - **API token authentication** ([#143](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/143), contributed by @davidcoulson): An optional API token in the setup, Zeroconf and reconfigure forms is sent as a bearer token on REST requests and the websocket handshake, for agents with `API_TOKEN` set (v2026.08.02+). A rejected token shows "Invalid authentication", and a token rejected later starts Home Assistant's standard re-authentication flow. The token is redacted from diagnostics.
 - **Docker containers as separate devices (optional)** ([#142](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/142), closes [#147](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/147)): A new **Show Docker containers as separate devices** option (off by default) groups each container's run and autostart switches, restart button and metric sensors on a child device of the Unraid server, with short names (Running, Autostart, Restart, CPU, Memory, Memory usage, Restart count, Network RX/TX). Unique IDs are unchanged, so history is kept. When off, container entities stay on the server device exactly as before. Container devices left without entities are removed, and a device whose container is gone can be deleted from the UI. Requires Home Assistant 2026.9 or newer.
+- **ZFS pool scrub, error and problem entities** ([#162](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/162), contributed by @davidcoulson):
+  Each ZFS pool gets a **Problem** binary sensor plus two diagnostic sensors:
+  **Scrub Status** (Never run, Scrubbing, Scrub paused/finished/canceled,
+  Resilvering, Resilver finished/canceled) and **Last Scrub** (timestamp).
+  The Problem sensor is on when the pool is not ONLINE or any read, write,
+  checksum or scrub error count is above zero. Disabled by default:
+  **Scrub Errors**, **Scrub Repaired**, **Read/Write/Checksum Errors** and
+  **Fragmentation**. The error counts are summed over the pool, its vdevs
+  and their devices, because `zpool status` does not roll device errors up
+  into the pool row, and the sensors list the devices with errors. ZFS keeps
+  only the last scan's statistics, so after a resilver these describe the
+  resilver. Agents up to 2026.09.01 report zero scrub times, which show as
+  unknown (fixed in [unraid-management-agent#185](https://github.com/ruaan-deysel/unraid-management-agent/issues/185)).
 - **System service running sensors** ([#166](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/166), contributed by @davidcoulson):
   One "<name> Service" binary sensor (device class running, diagnostic,
   disabled by default) per service in the agent's `/services` list that the

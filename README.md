@@ -23,7 +23,7 @@ This custom integration connects Home Assistant to the Unraid Management Agent r
 - Array and parity monitoring including array usage, parity progress, parity schedule, and parity history
 - Docker monitoring and control, including per-container CPU, memory, restart count, network throughput, update availability, and start or stop operations
 - VM monitoring and control, including state, restart and force-stop controls, and service actions
-- ZFS monitoring including pool health, corrupted files, ARC statistics, and configured ARC max
+- ZFS monitoring including pool health, a per-pool problem sensor, scrub status and last scrub time, scrub/read/write/checksum error counts, fragmentation, corrupted files, ARC statistics, and configured ARC max
 - UPS, GPU, mover, registration, notifications, network services, remote shares, and unassigned device data when available on the target server
 - Diagnostics-backed sensors such as degraded subsystem count and Docker port conflict count
 

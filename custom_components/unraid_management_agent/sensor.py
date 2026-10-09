@@ -2745,6 +2745,179 @@ class UnraidZFSPoolCorruptedFilesSensor(UnraidZFSPoolSensorBase):
         return {"files": pool.corrupted_file_paths[:ZFS_CORRUPTED_FILES_ATTR_LIMIT]}
 
 
+# ZFS scan state reported by the agent -> enum state. ZFS keeps only the last
+# scan's statistics, so after a resilver these describe the resilver.
+ZFS_SCAN_STATES: dict[tuple[str, str], str] = {
+    ("scrub", "scanning"): "scrubbing",
+    ("scrub", "paused"): "scrub_paused",
+    ("scrub", "finished"): "scrub_finished",
+    ("scrub", "canceled"): "scrub_canceled",
+    ("resilver", "scanning"): "resilvering",
+    ("resilver", "finished"): "resilver_finished",
+    ("resilver", "canceled"): "resilver_canceled",
+}
+ZFS_SCAN_STATE_OPTIONS: list[str] = ["none", *ZFS_SCAN_STATES.values()]
+
+
+def _zfs_scan_state(pool: Any) -> str | None:
+    """Return the enum state for a pool's last (or current) scrub/resilver."""
+    state = (pool.scan_state or "").lower()
+    if not state:
+        return "none"
+    function = (
+        "resilver"
+        if (pool.scan_status or "").lower().startswith("resilver")
+        else "scrub"
+    )
+    return ZFS_SCAN_STATES.get((function, state))
+
+
+def _zfs_scan_time(value: str | None) -> datetime | None:
+    """Parse an agent scan timestamp; the zero time (never scanned) is None."""
+    parsed = parse_timestamp(value) if value else None
+    if parsed is None or parsed.year <= 1:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=dt_util.UTC)
+    return parsed
+
+
+def _zfs_scan_attrs(pool: Any) -> dict[str, Any]:
+    """Return start time and progress for the scrub status sensor."""
+    attrs: dict[str, Any] = {}
+    started = _zfs_scan_time(pool.scan_start_time)
+    if started is not None:
+        attrs["scan_start_time"] = started.isoformat()
+    if pool.scan_state in ("scanning", "paused") and (
+        pool.scan_progress_percent is not None
+    ):
+        attrs["progress_percent"] = pool.scan_progress_percent
+    return attrs
+
+
+def _zfs_error_attrs(counter: str) -> Callable[[Any], dict[str, Any]]:
+    """Return a function listing the vdevs/devices with a non-zero counter."""
+
+    def _attrs(pool: Any) -> dict[str, Any]:
+        rows = []
+        for vdev in pool.vdevs or []:
+            rows.append(vdev)
+            rows.extend(vdev.devices or [])
+        failing = {
+            row.name: getattr(row, counter)
+            for row in rows
+            if row.name and getattr(row, counter)
+        }
+        return {"devices": failing} if failing else {}
+
+    return _attrs
+
+
+@dataclass(frozen=True, kw_only=True)
+class UnraidZFSPoolSensorEntityDescription(SensorEntityDescription):
+    """Description for a per-pool ZFS sensor."""
+
+    value_fn: Callable[[Any], Any]
+    extra_state_attributes_fn: Callable[[Any], dict[str, Any]] | None = None
+
+
+ZFS_POOL_SENSOR_DESCRIPTIONS: tuple[UnraidZFSPoolSensorEntityDescription, ...] = (
+    UnraidZFSPoolSensorEntityDescription(
+        key="scrub_status",
+        translation_key="zfs_pool_scrub_status",
+        device_class=SensorDeviceClass.ENUM,
+        options=ZFS_SCAN_STATE_OPTIONS,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=_zfs_scan_state,
+        extra_state_attributes_fn=_zfs_scan_attrs,
+    ),
+    UnraidZFSPoolSensorEntityDescription(
+        key="last_scrub",
+        translation_key="zfs_pool_last_scrub",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda pool: _zfs_scan_time(pool.scan_end_time),
+    ),
+    UnraidZFSPoolSensorEntityDescription(
+        key="scrub_errors",
+        translation_key="zfs_pool_scrub_errors",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=lambda pool: pool.scan_errors,
+    ),
+    UnraidZFSPoolSensorEntityDescription(
+        key="scrub_repaired",
+        translation_key="zfs_pool_scrub_repaired",
+        device_class=SensorDeviceClass.DATA_SIZE,
+        native_unit_of_measurement=UnitOfInformation.BYTES,
+        suggested_unit_of_measurement=UnitOfInformation.MEBIBYTES,
+        suggested_display_precision=1,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=lambda pool: pool.scan_repaired_bytes,
+    ),
+    *(
+        UnraidZFSPoolSensorEntityDescription(
+            key=counter,
+            translation_key=f"zfs_pool_{counter}",
+            state_class=SensorStateClass.TOTAL_INCREASING,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            entity_registry_enabled_default=False,
+            value_fn=lambda pool, counter=counter: pool.error_total(counter),
+            extra_state_attributes_fn=_zfs_error_attrs(counter),
+        )
+        for counter in ("read_errors", "write_errors", "checksum_errors")
+    ),
+    UnraidZFSPoolSensorEntityDescription(
+        key="fragmentation",
+        translation_key="zfs_pool_fragmentation",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=lambda pool: pool.fragmentation_percent,
+    ),
+)
+
+
+class UnraidZFSPoolSensor(UnraidZFSPoolSensorBase):
+    """A scrub, error or fragmentation sensor for one ZFS pool."""
+
+    entity_description: UnraidZFSPoolSensorEntityDescription
+
+    def __init__(
+        self,
+        coordinator: UnraidDataUpdateCoordinator,
+        entry: UnraidConfigEntry,
+        pool_name: str,
+        description: UnraidZFSPoolSensorEntityDescription,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, entry, pool_name, description.key)
+        self.entity_description = description
+        self._attr_translation_placeholders = {"pool_name": pool_name}
+
+    @property
+    def native_value(self) -> Any:
+        """Return the value for this pool."""
+        pool = self._get_pool()
+        if pool is None:
+            return None
+        return self.entity_description.value_fn(pool)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return extra attributes for this pool."""
+        pool = self._get_pool()
+        attrs_fn = self.entity_description.extra_state_attributes_fn
+        if pool is None or attrs_fn is None:
+            return None
+        return attrs_fn(pool)
+
+
 class UnraidZFSArcConfiguredMaxSensor(UnraidBaseEntity, SensorEntity):
     """Configured ARC max sensor."""
 
@@ -4189,6 +4362,10 @@ async def async_setup_entry(
                                 pool.name,
                             ),
                         ]
+                    )
+                    entities.extend(
+                        UnraidZFSPoolSensor(coordinator, entry, pool.name, description)
+                        for description in ZFS_POOL_SENSOR_DESCRIPTIONS
                     )
 
             # ZFS ARC sensors
