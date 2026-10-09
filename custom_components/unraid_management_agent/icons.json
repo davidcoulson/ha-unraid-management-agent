@@ -37,6 +37,9 @@
       "fan": {
         "default": "mdi:fan"
       },
+      "hwmon_temperature": {
+        "default": "mdi:thermometer"
+      },
       "array_usage": {
         "default": "mdi:harddisk"
       },
