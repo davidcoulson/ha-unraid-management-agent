@@ -8,10 +8,16 @@ from collections.abc import Callable, Coroutine
 from typing import Any, Final
 
 import voluptuous as vol
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_HOST, CONF_PORT, Platform
 from homeassistant.core import HomeAssistant, ServiceCall, callback
-from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
+from homeassistant.exceptions import (
+    ConfigEntryNotReady,
+    HomeAssistantError,
+    ServiceValidationError,
+)
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.typing import ConfigType
@@ -21,8 +27,11 @@ from .api import UnraidClient, UnraidConnectionError, UnraidWebSocketClient
 from .cleanup import async_cleanup_stale_entities
 from .const import (
     CONF_ENABLE_WEBSOCKET,
+    CONF_READ_ONLY,
     DEFAULT_ENABLE_WEBSOCKET,
+    DEFAULT_READ_ONLY,
     DOMAIN,
+    MANUFACTURER,
 )
 from .coordinator import (
     UnraidConfigEntry,
@@ -265,6 +274,33 @@ PLATFORMS: list[Platform] = [
     Platform.EVENT,
 ]
 
+# Platforms that only report state. In read-only mode nothing that can change
+# the server (switches, buttons, numbers) is created.
+READ_ONLY_PLATFORMS: list[Platform] = [
+    Platform.SENSOR,
+    Platform.BINARY_SENSOR,
+    Platform.EVENT,
+]
+CONTROL_DOMAINS: frozenset[str] = frozenset(
+    str(platform) for platform in PLATFORMS if platform not in READ_ONLY_PLATFORMS
+)
+
+
+def _is_read_only(entry: UnraidConfigEntry) -> bool:
+    """Return True when the entry is configured to only create sensors."""
+    return bool(entry.options.get(CONF_READ_ONLY, DEFAULT_READ_ONLY))
+
+
+@callback
+def _async_remove_control_entities(
+    hass: HomeAssistant, entry: UnraidConfigEntry
+) -> None:
+    """Remove switch/button/number entities left from before read-only was enabled."""
+    registry = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if entity.domain in CONTROL_DOMAINS:
+            registry.async_remove(entity.entity_id)
+
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up Unraid Management Agent integration."""
@@ -312,10 +348,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
     await _async_migrate_legacy_entity_unique_ids(hass, entry, coordinator)
 
     # Store runtime data using the new pattern
-    entry.runtime_data = UnraidRuntimeData(coordinator=coordinator, client=client)
+    read_only = _is_read_only(entry)
+    platforms = READ_ONLY_PLATFORMS if read_only else PLATFORMS
+    entry.runtime_data = UnraidRuntimeData(
+        coordinator=coordinator, client=client, platforms=platforms
+    )
+    if read_only:
+        _async_remove_control_entities(hass, entry)
+
+    # Register the server device up front: VM and container child devices
+    # reference it by registry id, so it must exist before any platform loads.
+    system = coordinator.data.system if coordinator.data else None
+    dr.async_get(hass).async_get_or_create(
+        config_entry_id=entry.entry_id,
+        identifiers={(DOMAIN, entry.entry_id)},
+        name=(system.hostname if system else None) or "Unraid",
+        manufacturer=MANUFACTURER,
+    )
 
     # Set up platforms
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(entry, platforms)
 
     # Start WebSocket for real-time updates
     if enable_websocket:
@@ -332,9 +384,43 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
     return True
 
 
+async def async_remove_config_entry_device(
+    hass: HomeAssistant,
+    entry: UnraidConfigEntry,
+    device_entry: dr.DeviceEntry,
+) -> bool:
+    """
+    Allow removing a VM or container device once it no longer exists on Unraid.
+
+    The server device itself, and VMs or containers that still exist, cannot be
+    removed.
+    """
+    data = entry.runtime_data.coordinator.data
+    vm_prefix = f"{entry.entry_id}_vm_"
+    container_prefix = f"{entry.entry_id}_container_"
+    for domain, identifier in device_entry.identifiers:
+        if domain != DOMAIN:
+            continue
+        if identifier.startswith(vm_prefix):
+            current_vms = {
+                getattr(vm, "id", None) or getattr(vm, "name", None)
+                for vm in ((data.vms if data else None) or [])
+            }
+            return identifier[len(vm_prefix) :] not in current_vms
+        if identifier.startswith(container_prefix):
+            current_containers = {
+                getattr(container, "name", None)
+                for container in ((data.containers if data else None) or [])
+            }
+            return identifier[len(container_prefix) :] not in current_containers
+    return False
+
+
 async def async_unload_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bool:
     """Unload a config entry."""
-    if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
+    if unload_ok := await hass.config_entries.async_unload_platforms(
+        entry, entry.runtime_data.platforms
+    ):
         # Stop WebSocket if running
         await entry.runtime_data.coordinator.async_stop_websocket()
         # Close the client session
@@ -364,6 +450,21 @@ async def async_setup_services(hass: HomeAssistant) -> None:
             )
         # Use the first entry's coordinator (services are domain-wide)
         entry: UnraidConfigEntry = entries[0]
+        # Only a loaded entry has runtime data (and a coordinator) to act on
+        if entry.state is not ConfigEntryState.LOADED:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="entry_not_loaded",
+                translation_placeholders={"title": entry.title},
+            )
+        # Every service changes the server, so none run against an entry that
+        # is in read-only mode
+        if _is_read_only(entry):
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="read_only_mode",
+                translation_placeholders={"title": entry.title},
+            )
         return entry.runtime_data.coordinator
 
     async def _async_service_call(

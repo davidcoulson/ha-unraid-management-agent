@@ -432,5 +432,4 @@ def parse_event(data: Any) -> WebSocketEvent:
         case EventType.SOURCE_STATUS_CHANGED:
             return SourceStatusChangedEvent(data=data)
 
-        case _:
-            return UnknownEvent(data=data)
+    return UnknownEvent(data=data)

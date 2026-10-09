@@ -64,7 +64,14 @@ from .const import (
     DEFAULT_ENABLE_FAN_CONTROL,
 )
 from .coordinator import UnraidData
-from .entity import UnraidBaseEntity
+from .entity import (
+    UnraidBaseEntity,
+    build_container_device_info,
+    build_vm_device_info,
+    container_devices_enabled,
+    find_vm,
+    vm_devices_enabled,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -3084,6 +3091,10 @@ class UnraidContainerSensorBase(UnraidBaseEntity, SensorEntity):
         """Initialize the sensor."""
         safe_name = re.sub(r"[^a-z0-9_]", "_", container_name.lower())
         super().__init__(coordinator, f"container_{safe_name}_{sensor_type}")
+        if container_devices_enabled(coordinator):
+            self._attr_device_info = build_container_device_info(
+                coordinator, container_name
+            )
         self._container_name = container_name
 
     def _find_container(self) -> Any | None:
@@ -3117,8 +3128,11 @@ class UnraidContainerCPUSensor(UnraidContainerSensorBase):
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, container_name, "cpu")
-        self._attr_translation_key = "container_cpu"
-        self._attr_translation_placeholders = {"container_name": container_name}
+        if container_devices_enabled(coordinator):
+            self._attr_translation_key = "container_device_cpu"
+        else:
+            self._attr_translation_key = "container_cpu"
+            self._attr_translation_placeholders = {"container_name": container_name}
 
     @property
     def native_value(self) -> float | None:
@@ -3147,8 +3161,11 @@ class UnraidContainerMemorySensor(UnraidContainerSensorBase):
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, container_name, "memory")
-        self._attr_translation_key = "container_memory"
-        self._attr_translation_placeholders = {"container_name": container_name}
+        if container_devices_enabled(coordinator):
+            self._attr_translation_key = "container_device_memory"
+        else:
+            self._attr_translation_key = "container_memory"
+            self._attr_translation_placeholders = {"container_name": container_name}
 
     @property
     def native_value(self) -> float | None:
@@ -3193,8 +3210,11 @@ class UnraidContainerMemoryPercentSensor(UnraidContainerSensorBase):
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, container_name, "memory_percent")
-        self._attr_translation_key = "container_memory_percent"
-        self._attr_translation_placeholders = {"container_name": container_name}
+        if container_devices_enabled(coordinator):
+            self._attr_translation_key = "container_device_memory_percent"
+        else:
+            self._attr_translation_key = "container_memory_percent"
+            self._attr_translation_placeholders = {"container_name": container_name}
 
     @property
     def native_value(self) -> float | None:
@@ -3225,7 +3245,10 @@ class UnraidContainerRestartCountSensor(UnraidContainerSensorBase):
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, container_name, "restart_count")
-        self._attr_name = f"{container_name} Restart Count"
+        if container_devices_enabled(coordinator):
+            self._attr_translation_key = "container_device_restart_count"
+        else:
+            self._attr_name = f"{container_name} Restart Count"
 
     @property
     def native_value(self) -> int | None:
@@ -3255,7 +3278,9 @@ class UnraidContainerNetworkRateSensor(UnraidContainerSensorBase):
         """Initialize the sensor."""
         self._direction = direction
         super().__init__(coordinator, container_name, f"network_{direction}_rate")
-        if direction == "rx":
+        if container_devices_enabled(coordinator):
+            self._attr_translation_key = f"container_device_network_{direction}_rate"
+        elif direction == "rx":
             self._attr_name = f"{container_name} Network RX"
             self._attr_icon = "mdi:download-network"
         else:
@@ -3484,6 +3509,280 @@ class UnraidDockerPortConflictsSensor(UnraidBaseEntity, SensorEntity):
             item.model_dump(exclude_none=True) for item in data.docker_port_conflicts
         ]
         return {"conflicts": conflicts} if conflicts else {}
+
+
+# =============================================================================
+# Virtual Machine Sensors (one device per VM)
+# =============================================================================
+
+# A VM counter older than this is not used for a rate (agent stopped reporting).
+VM_RATE_STALE_SECONDS = 600.0
+
+
+@dataclass(frozen=True, kw_only=True)
+class UnraidVMSensorEntityDescription(SensorEntityDescription):
+    """Description for a per-VM sensor."""
+
+    value_fn: Callable[[Any], Any] = lambda _: None
+    # Name of a cumulative byte counter on the VM; when set, the sensor
+    # reports its rate of change instead of value_fn.
+    rate_of: str | None = None
+
+
+def _vm_bytes(field: str) -> Callable[[Any], int | None]:
+    """Return a getter for a byte field on a VM."""
+    return lambda vm: getattr(vm, field, None)
+
+
+VM_SENSOR_DESCRIPTIONS: tuple[UnraidVMSensorEntityDescription, ...] = (
+    UnraidVMSensorEntityDescription(
+        key="state",
+        translation_key="vm_state",
+        value_fn=lambda vm: getattr(vm, "state", None),
+    ),
+    UnraidVMSensorEntityDescription(
+        key="cpu_usage",
+        translation_key="vm_cpu_usage",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        value_fn=lambda vm: getattr(vm, "guest_cpu_percent", None),
+    ),
+    UnraidVMSensorEntityDescription(
+        key="vcpus",
+        translation_key="vm_vcpus",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda vm: getattr(vm, "cpu_count", None),
+    ),
+    UnraidVMSensorEntityDescription(
+        key="memory_allocated",
+        translation_key="vm_memory_allocated",
+        device_class=SensorDeviceClass.DATA_SIZE,
+        native_unit_of_measurement=UnitOfInformation.BYTES,
+        suggested_unit_of_measurement=UnitOfInformation.GIBIBYTES,
+        suggested_display_precision=1,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=_vm_bytes("memory_allocated_bytes"),
+    ),
+    # Without a balloon driver libvirt reports used == allocated, so this
+    # is only meaningful for some guests; disabled by default.
+    UnraidVMSensorEntityDescription(
+        key="memory_used",
+        translation_key="vm_memory_used",
+        device_class=SensorDeviceClass.DATA_SIZE,
+        native_unit_of_measurement=UnitOfInformation.BYTES,
+        suggested_unit_of_measurement=UnitOfInformation.GIBIBYTES,
+        suggested_display_precision=1,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=False,
+        value_fn=_vm_bytes("memory_used_bytes"),
+    ),
+    UnraidVMSensorEntityDescription(
+        key="network_rx_rate",
+        translation_key="vm_network_rx_rate",
+        device_class=SensorDeviceClass.DATA_RATE,
+        native_unit_of_measurement=UnitOfDataRate.KILOBITS_PER_SECOND,
+        suggested_unit_of_measurement=UnitOfDataRate.MEGABITS_PER_SECOND,
+        suggested_display_precision=2,
+        state_class=SensorStateClass.MEASUREMENT,
+        rate_of="network_rx_bytes",
+    ),
+    UnraidVMSensorEntityDescription(
+        key="network_tx_rate",
+        translation_key="vm_network_tx_rate",
+        device_class=SensorDeviceClass.DATA_RATE,
+        native_unit_of_measurement=UnitOfDataRate.KILOBITS_PER_SECOND,
+        suggested_unit_of_measurement=UnitOfDataRate.MEGABITS_PER_SECOND,
+        suggested_display_precision=2,
+        state_class=SensorStateClass.MEASUREMENT,
+        rate_of="network_tx_bytes",
+    ),
+    UnraidVMSensorEntityDescription(
+        key="network_rx",
+        translation_key="vm_network_rx",
+        device_class=SensorDeviceClass.DATA_SIZE,
+        native_unit_of_measurement=UnitOfInformation.BYTES,
+        suggested_unit_of_measurement=UnitOfInformation.GIBIBYTES,
+        suggested_display_precision=2,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_registry_enabled_default=False,
+        value_fn=_vm_bytes("network_rx_bytes"),
+    ),
+    UnraidVMSensorEntityDescription(
+        key="network_tx",
+        translation_key="vm_network_tx",
+        device_class=SensorDeviceClass.DATA_SIZE,
+        native_unit_of_measurement=UnitOfInformation.BYTES,
+        suggested_unit_of_measurement=UnitOfInformation.GIBIBYTES,
+        suggested_display_precision=2,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        entity_registry_enabled_default=False,
+        value_fn=_vm_bytes("network_tx_bytes"),
+    ),
+    # Disk counters are only populated when libvirt can report block stats for
+    # the VM's disks (not for passthrough controllers), so disabled by default.
+    UnraidVMSensorEntityDescription(
+        key="disk_read_rate",
+        translation_key="vm_disk_read_rate",
+        device_class=SensorDeviceClass.DATA_RATE,
+        native_unit_of_measurement=UnitOfDataRate.KILOBITS_PER_SECOND,
+        suggested_unit_of_measurement=UnitOfDataRate.MEGABYTES_PER_SECOND,
+        suggested_display_precision=2,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=False,
+        rate_of="disk_read_bytes",
+    ),
+    UnraidVMSensorEntityDescription(
+        key="disk_write_rate",
+        translation_key="vm_disk_write_rate",
+        device_class=SensorDeviceClass.DATA_RATE,
+        native_unit_of_measurement=UnitOfDataRate.KILOBITS_PER_SECOND,
+        suggested_unit_of_measurement=UnitOfDataRate.MEGABYTES_PER_SECOND,
+        suggested_display_precision=2,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=False,
+        rate_of="disk_write_bytes",
+    ),
+    UnraidVMSensorEntityDescription(
+        key="disk_size",
+        translation_key="vm_disk_size",
+        device_class=SensorDeviceClass.DATA_SIZE,
+        native_unit_of_measurement=UnitOfInformation.BYTES,
+        suggested_unit_of_measurement=UnitOfInformation.GIBIBYTES,
+        suggested_display_precision=1,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=_vm_bytes("disk_size_bytes"),
+    ),
+)
+
+
+class UnraidVMSensor(UnraidBaseEntity, SensorEntity):
+    """A metric of one virtual machine, attached to that VM's device."""
+
+    entity_description: UnraidVMSensorEntityDescription
+
+    def __init__(
+        self,
+        coordinator: UnraidDataUpdateCoordinator,
+        vm_identifier: str,
+        vm_name: str,
+        description: UnraidVMSensorEntityDescription,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(
+            coordinator, f"vm_{ha_slugify(vm_identifier)}_{description.key}"
+        )
+        self.entity_description = description
+        self._vm_identifier = vm_identifier
+        self._vm_name = vm_name
+        self._attr_device_info = build_vm_device_info(
+            coordinator, vm_identifier, vm_name
+        )
+        self._rate_calculator: RateCalculator | None = (
+            RateCalculator(stale_threshold_seconds=VM_RATE_STALE_SECONDS)
+            if description.rate_of
+            else None
+        )
+        self._last_sample_timestamp: str | None = None
+        self._update_rate()
+
+    def _find_vm(self) -> Any | None:
+        """Find this VM in the coordinator data."""
+        return find_vm(self.coordinator, self._vm_identifier, self._vm_name)
+
+    def _update_rate(self) -> None:
+        """Feed the VM's cumulative counter into the rate calculator."""
+        if self._rate_calculator is None or not self.entity_description.rate_of:
+            return
+        vm = self._find_vm()
+        if vm is None:
+            return
+        if (getattr(vm, "state", "") or "").lower() != "running":
+            # Counters reset when the VM starts again; begin a fresh baseline.
+            self._rate_calculator = RateCalculator(
+                stale_threshold_seconds=VM_RATE_STALE_SECONDS
+            )
+            self._last_sample_timestamp = None
+            return
+        counter = getattr(vm, self.entity_description.rate_of, None)
+        timestamp = getattr(vm, "timestamp", None)
+        # Only sample when the agent has collected new VM data; websocket
+        # pushes for other collectors re-deliver the same VM snapshot.
+        if (
+            counter is None
+            or timestamp is None
+            or timestamp == self._last_sample_timestamp
+        ):
+            return
+        parsed = parse_timestamp(timestamp)
+        if parsed is None:
+            return
+        last = self._rate_calculator.last_bytes
+        if last is not None and counter < last:
+            # The VM was restarted between samples: the counter starts from zero.
+            self._rate_calculator = RateCalculator(
+                stale_threshold_seconds=VM_RATE_STALE_SECONDS
+            )
+        elif last is not None and counter == last:
+            # A fresh VM sample with no traffic is a real 0, not a repeated
+            # read (those are filtered by timestamp above), so don't hold the
+            # previous rate the way RateCalculator does for shared counters.
+            self._rate_calculator.restore_state(
+                last_bytes=int(counter),
+                last_timestamp=parsed.timestamp(),
+                rate_kbps=0.0,
+            )
+            self._last_sample_timestamp = timestamp
+            return
+        self._rate_calculator.add_sample(int(counter), parsed.timestamp())
+        self._last_sample_timestamp = timestamp
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Update the rate before writing the new state."""
+        self._update_rate()
+        super()._handle_coordinator_update()
+
+    @property
+    def available(self) -> bool:
+        """Return True while the VM is known to the agent."""
+        return super().available and self._find_vm() is not None
+
+    @property
+    def native_value(self) -> Any:
+        """Return the sensor value."""
+        vm = self._find_vm()
+        if vm is None:
+            return None
+        if self._rate_calculator is not None:
+            if (getattr(vm, "state", "") or "").lower() != "running":
+                return 0.0
+            if self._rate_calculator.last_timestamp is None:
+                return None
+            return round(self._rate_calculator.rate_kbps, 3)
+        return self.entity_description.value_fn(vm)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return VM configuration details on the state sensor."""
+        if self.entity_description.key != "state":
+            return None
+        vm = self._find_vm()
+        if vm is None:
+            return None
+        return {
+            "autostart": getattr(vm, "autostart", None),
+            "persistent": getattr(vm, "persistent", None),
+            "disk_path": getattr(vm, "disk_path", None),
+        }
+
+
+def _vm_identity(vm: Any) -> tuple[str | None, str | None]:
+    """Return the stable identifier and display name of a VM."""
+    return getattr(vm, "id", None) or getattr(vm, "name", None), getattr(
+        vm, "name", None
+    )
 
 
 # =============================================================================
@@ -3806,6 +4105,45 @@ async def async_setup_entry(
 
     _add_remote_share_sensors()
 
+    # Per-VM sensors, each VM on its own device - created as VMs appear.
+    # Only when the "VMs as separate devices" option is on.
+    seen_vms: set[str] = set()
+
+    def _add_vm_sensors() -> None:
+        if not (
+            vm_devices_enabled(coordinator)
+            and coordinator.is_collector_enabled("vm")
+            and coordinator.is_vm_enabled()
+        ):
+            return
+        current_data = coordinator.data
+        if not current_data or not current_data.vms:
+            return
+        # Allow re-creation of entities removed from the registry (see #83);
+        # every VM gets the same set of sensors, so the first key stands for all.
+        first_key = VM_SENSOR_DESCRIPTIONS[0].key
+        async_prune_seen_names(
+            hass,
+            "sensor",
+            seen_vms,
+            lambda vm_id: f"{entry.entry_id}_vm_{ha_slugify(vm_id)}_{first_key}",
+        )
+        new_entities: list[SensorEntity] = []
+        for vm in current_data.vms:
+            vm_identifier, vm_name = _vm_identity(vm)
+            if not vm_identifier or not vm_name or vm_identifier in seen_vms:
+                continue
+            seen_vms.add(vm_identifier)
+            new_entities.extend(
+                UnraidVMSensor(coordinator, vm_identifier, vm_name, description)
+                for description in VM_SENSOR_DESCRIPTIONS
+            )
+        if new_entities:
+            async_add_entities(new_entities)
+
+    _add_vm_sensors()
+
+    entry.async_on_unload(coordinator.async_add_listener(callback(_add_vm_sensors)))
     entry.async_on_unload(
         coordinator.async_add_listener(callback(_add_unassigned_device_sensors))
     )

@@ -174,7 +174,9 @@ rules:
       ZFS pools, remote shares, unassigned devices, user scripts) on every
       successful coordinator update via an async_add_listener callback registered
       in async_setup_entry. Guards on last_update_success prevent false removal
-      during transient server outages.
+      during transient server outages. VM and container devices left without
+      entities are removed, and async_remove_config_entry_device lets users
+      delete a device whose VM or container is gone.
 
   # Platinum
   async-dependency:

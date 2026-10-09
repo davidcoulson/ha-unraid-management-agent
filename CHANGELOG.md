@@ -23,11 +23,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added comprehensive tests for container and VM buttons, autostart switches, disk spin switches, and remote share switches, achieving 98% coverage on `button.py` and `switch.py`, and 95% on `binary_sensor.py`.
 - **PR governance workflow & HA standards enforcement** — added automated GitHub Actions workflow enforcing PR template completeness, Home Assistant Quality Scale compliance, static scanning for deprecated patterns (e.g., hass.data[DOMAIN], unit_of_measurement), mandatory CHANGELOG.md updates, issue linking checks, and bot/draft exemptions.
 - **Pull request template** — added `.github/PULL_REQUEST_TEMPLATE.md` with structured sections for description, changes made, Home Assistant Quality Scale verification, and quality checklist.
+- **Read-only option** ([#141](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/141), contributed by @davidcoulson):
+  A new **Read-only (sensors only)** option loads only the sensor, binary sensor
+  and event platforms, removes switch, button and number entities created
+  earlier, and makes integration actions targeting a read-only entry refuse
+  with a `read_only_mode` validation error. Off by default.
+- **VMs as separate devices (optional)** ([#140](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/140), closes [#145](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/145)): A new **Show virtual machines as separate devices** option (off by default) gives each VM a child device of the Unraid server, keyed by its libvirt UUID. The device holds the VM's power switch and control buttons plus numeric sensors: state, CPU usage, vCPUs, memory allocated and network receive/send rates. Memory used, network totals, disk read/write rates and disk size are disabled by default. Rates are computed from the agent's cumulative counters, and new VMs get their device without a reload. When off, VM entities stay on the server device exactly as before. VM devices left without entities (VM deleted or option turned off) are removed, and a device whose VM is gone can be deleted from the UI. Requires Home Assistant 2026.9 or newer.
+- **Docker containers as separate devices (optional)** ([#142](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/142), closes [#147](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/147)): A new **Show Docker containers as separate devices** option (off by default) groups each container's run and autostart switches, restart button and metric sensors on a child device of the Unraid server, with short names (Running, Autostart, Restart, CPU, Memory, Memory usage, Restart count, Network RX/TX). Unique IDs are unchanged, so history is kept. When off, container entities stay on the server device exactly as before. Container devices left without entities are removed, and a device whose container is gone can be deleted from the UI. Requires Home Assistant 2026.9 or newer.
 
 ### Fixed
 
 - **WebSocket keepalive ping timeouts** ([#138](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/138), fixes [#135](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/135)): Disabled client-initiated keepalive pings (`ping_interval=None`) to prevent spurious `1011` keepalive timeout disconnects every ~30 seconds; the Unraid agent server manages connection keepalive directly.
 - **WebSocket disconnect close metadata** ([#138](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/138), fixes [#135](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/135)): Extracted and surfaced close code and reason metadata from `ConnectionClosed` frames on disconnect instead of dropping close context.
+- **ZFS pool usage always Unknown** ([#139](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/139)):
+  The agent reports pool usage as `allocated_bytes` (zpool ALLOC), but the
+  integration only read `used_bytes`, so every "ZFS Pool … Usage" sensor was
+  Unknown. The ZFS pool model now accepts both.
 
 ### Changed
 

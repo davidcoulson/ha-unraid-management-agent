@@ -6,6 +6,7 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 
@@ -113,7 +114,7 @@ async def test_number_fan_properties_and_actions(
     client = MagicMock()
     client.set_fan_speed = AsyncMock()
     mock_config_entry.runtime_data = UnraidRuntimeData(
-        coordinator=coordinator, client=client
+        coordinator=coordinator, client=client, platforms=[Platform.NUMBER]
     )
 
     entity = UnraidFanSpeedNumber(coordinator, mock_config_entry, "fan1", "CPU Fan")
