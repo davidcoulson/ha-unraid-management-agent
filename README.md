@@ -139,7 +139,7 @@ When the agent's `storage_topology` collector is active (`storcli` or `sg3_utils
 
 - **Status & Control**: Running binary sensor, power switch (`switch`), restart button, pause/resume button, force-stop button, and hibernate action.
 - **Telemetry**: vCPU count, memory allocation, and network RX/TX transfer rates.
-- **Device Grouping**: Optional toggle to group each VM into a child device in Home Assistant.
+- **Device Grouping**: Optional toggle to group each VM into a child device in Home Assistant, named `VM · <name>` so VMs stand out from container devices.
 
 ### ZFS Pools & Datasets
 
