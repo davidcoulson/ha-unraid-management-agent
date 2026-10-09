@@ -88,8 +88,15 @@ class UnraidWebSocketClient:
         auto_reconnect: bool = True,
         reconnect_delays: list[int] | None = None,
         max_retries: int = 10,
+        *,
+        api_token: str | None = None,
     ):
         self.host = host
+        self._headers: dict[str, str] = (
+            {"Authorization": f"Bearer {api_token.strip()}"}
+            if api_token and api_token.strip()
+            else {}
+        )
         self.port = port
         protocol = "wss" if use_wss else "ws"
         self.ws_url = f"{protocol}://{host}:{port}/api/v1/ws"
@@ -173,7 +180,9 @@ class UnraidWebSocketClient:
         """
         self._running = True
         try:
-            async with websockets.connect(self.ws_url) as websocket:
+            async with websockets.connect(
+                self.ws_url, additional_headers=self._headers
+            ) as websocket:
                 self._websocket = websocket
                 self._reset_retry_count()
 
@@ -241,6 +250,7 @@ class UnraidWebSocketClient:
                 async with websockets.connect(
                     self.ws_url,
                     ping_interval=None,
+                    additional_headers=self._headers,
                 ) as websocket:
                     self._websocket = websocket
 

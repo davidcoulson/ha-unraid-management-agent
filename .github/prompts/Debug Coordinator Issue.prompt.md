@@ -24,7 +24,7 @@ Your goal is to diagnose and fix issues with the data update coordinator.
 - Check if coordinator is raising `UpdateFailed` exception
 - Verify entity's `available` property logic in `entity.py`
 - Look for missing keys in `UnraidData`
-- Check API connection (no auth required, just network reachability)
+- Check API connection: network reachability, and if the agent has an API token set, that the entry's token is current (401 starts reauth)
 - Verify error handling in `_async_update_data()`
 
 **WebSocket Issues:**

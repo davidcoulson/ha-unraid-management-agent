@@ -5,12 +5,13 @@ from __future__ import annotations
 from typing import Any
 
 from homeassistant.components.diagnostics import async_redact_data
-from homeassistant.const import CONF_HOST, CONF_PORT
+from homeassistant.const import CONF_API_TOKEN, CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
 
 from . import UnraidConfigEntry
 
 TO_REDACT = {
+    CONF_API_TOKEN,
     CONF_HOST,
     CONF_PORT,
     "ip",
