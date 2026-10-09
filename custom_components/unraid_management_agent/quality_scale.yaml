@@ -144,7 +144,13 @@ rules:
     comment: README includes concrete monitoring, automation, orchestration, and energy dashboard use cases
   dynamic-devices:
     status: done
-    comment: Remote share and unassigned device binary/switch entities, hwmon temperature sensors, system service running binary sensors, and agent alert rule binary sensors added dynamically via coordinator listener when data arrives after initial setup; the alert event and firing alerts sensor are added once the agent first reports alert status
+    comment: >
+      Remote share and unassigned device binary/switch entities, hwmon
+      temperature sensors, system service running binary sensors, plugin
+      and container update entities, and agent alert rule binary sensors are added
+      dynamically via coordinator listener when data arrives after initial setup;
+      the alert event and firing alerts sensor are added once the agent first
+      reports alert status
   entity-category:
     status: done
     comment: EntityCategory.DIAGNOSTIC used for appropriate sensors
@@ -175,8 +181,8 @@ rules:
       cleanup.py removes stale entity registry entries for all dynamic entity
       types (containers, VMs, disks, fans, GPUs, network interfaces, shares,
       ZFS pools, remote shares, unassigned devices, user scripts, hwmon
-      temperature channels, system services, agent alert rules) on every successful coordinator
-      update via an
+      temperature channels, system services, plugin and container update
+      entities, agent alert rules) on every successful coordinator update via an
       async_add_listener callback registered in async_setup_entry. Guards on
       last_update_success prevent false removal during transient server outages.
       VM and container devices left without entities are removed, and

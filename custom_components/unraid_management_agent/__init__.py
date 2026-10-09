@@ -279,14 +279,17 @@ PLATFORMS: list[Platform] = [
     Platform.BUTTON,
     Platform.NUMBER,
     Platform.EVENT,
+    Platform.UPDATE,
 ]
 
 # Platforms that only report state. In read-only mode nothing that can change
-# the server (switches, buttons, numbers) is created.
+# the server (switches, buttons, numbers) is created. Update entities are kept:
+# they still report available updates, but do not offer to install them.
 READ_ONLY_PLATFORMS: list[Platform] = [
     Platform.SENSOR,
     Platform.BINARY_SENSOR,
     Platform.EVENT,
+    Platform.UPDATE,
 ]
 CONTROL_DOMAINS: frozenset[str] = frozenset(
     str(platform) for platform in PLATFORMS if platform not in READ_ONLY_PLATFORMS
