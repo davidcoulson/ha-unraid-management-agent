@@ -101,6 +101,13 @@ def test_readings_without_source_stay_distinct() -> None:
     }
 
 
+def test_duplicate_channel_creates_one_sensor() -> None:
+    """A channel the agent lists twice yields a single sensor, not a key clash."""
+    duplicate = _reading("octo-hid-3-3_Coolant_Temp_temp1_input", 28.1, "octo-hid-3-3")
+    channels = _hwmon_temperature_channels(_system([COOLANT, duplicate]))
+    assert [key for key, _, _ in channels] == ["octo_hid_3_3_temp1"]
+
+
 def _entry(hass: HomeAssistant, **options: object) -> MockConfigEntry:
     entry = MockConfigEntry(
         domain=DOMAIN,
