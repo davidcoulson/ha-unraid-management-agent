@@ -25,9 +25,9 @@ Fixes #
 
 <!-- List the main changes in this PR -->
 
-- 
-- 
-- 
+-
+-
+-
 
 ## Home Assistant Quality Scale & Standards
 

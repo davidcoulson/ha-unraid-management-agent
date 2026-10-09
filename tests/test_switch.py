@@ -1248,3 +1248,339 @@ class TestVMSwitchOptimisticClearing:
 
         switch._handle_coordinator_update()
         assert switch._optimistic_state is None
+
+
+class TestContainerAutostartSwitch:
+    """Tests for container autostart switch."""
+
+    def test_container_autostart_switch_helpers(self) -> None:
+        """Test finding container, container_id property, and availability."""
+        from custom_components.unraid_management_agent.switch import (
+            UnraidContainerAutostartSwitch,
+        )
+
+        coordinator = MagicMock()
+        coordinator.config_entry.entry_id = "test_entry"
+        coordinator.last_update_success = True
+
+        # No data
+        coordinator.data = None
+        switch = UnraidContainerAutostartSwitch(coordinator, "plex")
+        assert switch._find_container() is None
+        assert switch._container_id is None
+        assert switch.available is False
+        assert switch.is_on is False
+
+        # Container found with autostart enabled
+        container = MagicMock()
+        container.name = "plex"
+        container.id = "c1"
+        container.autostart = True
+        coordinator.data = MagicMock()
+        coordinator.data.containers = [container]
+
+        assert switch._find_container() == container
+        assert switch._container_id == "c1"
+        assert switch.available is True
+        assert switch.is_on is True
+
+        # Optimistic state takes precedence
+        switch._optimistic_state = False
+        assert switch.is_on is False
+
+        # Optimistic state cleared on update if match
+        switch.async_write_ha_state = MagicMock()
+        switch._handle_coordinator_update()
+        # container.autostart is True, optimistic is False -> not cleared yet
+        assert switch._optimistic_state is False
+        container.autostart = False
+        switch._handle_coordinator_update()
+        assert switch._optimistic_state is None
+
+    async def test_container_autostart_turn_on_and_off(self) -> None:
+        """Test turning container autostart on and off."""
+        from custom_components.unraid_management_agent.switch import (
+            UnraidContainerAutostartSwitch,
+        )
+
+        coordinator = MagicMock()
+        coordinator.config_entry.entry_id = "test_entry"
+        coordinator.last_update_success = True
+        coordinator.client = MagicMock()
+        coordinator.client.set_container_autostart = AsyncMock()
+        coordinator.async_request_refresh = AsyncMock()
+
+        container = MagicMock()
+        container.name = "plex"
+        container.id = "c1"
+        container.autostart = False
+        coordinator.data = MagicMock()
+        coordinator.data.containers = [container]
+
+        switch = UnraidContainerAutostartSwitch(coordinator, "plex")
+        switch.async_write_ha_state = MagicMock()
+
+        # Turn on
+        await switch.async_turn_on()
+        coordinator.client.set_container_autostart.assert_called_once_with(
+            "c1", enabled=True
+        )
+        coordinator.async_request_refresh.assert_called_once()
+        assert switch._optimistic_state is True
+
+        # Turn off
+        coordinator.async_request_refresh.reset_mock()
+        coordinator.client.set_container_autostart.reset_mock()
+        await switch.async_turn_off()
+        coordinator.client.set_container_autostart.assert_called_once_with(
+            "c1", enabled=False
+        )
+        coordinator.async_request_refresh.assert_called_once()
+        assert switch._optimistic_state is False
+
+    async def test_container_autostart_errors(self) -> None:
+        """Test container autostart errors."""
+        from homeassistant.exceptions import HomeAssistantError
+
+        from custom_components.unraid_management_agent.switch import (
+            UnraidContainerAutostartSwitch,
+        )
+
+        coordinator = MagicMock()
+        coordinator.config_entry.entry_id = "test_entry"
+        coordinator.last_update_success = True
+        coordinator.data = None
+        coordinator.client = MagicMock()
+
+        switch = UnraidContainerAutostartSwitch(coordinator, "plex")
+        switch.async_write_ha_state = MagicMock()
+
+        # Error when container not found
+        with pytest.raises(HomeAssistantError):
+            await switch.async_turn_on()
+
+        with pytest.raises(HomeAssistantError):
+            await switch.async_turn_off()
+
+        # Error on API call
+        container = MagicMock()
+        container.name = "plex"
+        container.id = "c1"
+        coordinator.data = MagicMock()
+        coordinator.data.containers = [container]
+        coordinator.client.set_container_autostart = AsyncMock(
+            side_effect=Exception("API Error")
+        )
+
+        with pytest.raises(HomeAssistantError):
+            await switch.async_turn_on()
+        assert switch._optimistic_state is None
+
+        with pytest.raises(HomeAssistantError):
+            await switch.async_turn_off()
+        assert switch._optimistic_state is None
+
+
+class TestDiskSpinSwitch:
+    """Tests for disk spin switch."""
+
+    def test_disk_spin_switch_helpers(self) -> None:
+        """Test disk finding, availability, and state."""
+        from custom_components.unraid_management_agent.switch import (
+            UnraidDiskSpinSwitch,
+        )
+
+        coordinator = MagicMock()
+        coordinator.config_entry.entry_id = "test_entry"
+        coordinator.last_update_success = True
+
+        # No data
+        coordinator.data = None
+        switch = UnraidDiskSpinSwitch(coordinator, "disk1", "Disk 1")
+        assert switch._find_disk() is None
+        assert switch.available is False
+        assert switch.is_on is False
+
+        # Disk found
+        disk = MagicMock()
+        disk.id = "disk1"
+        disk.spin_state = "active"
+        coordinator.data = MagicMock()
+        coordinator.data.disks = [disk]
+
+        assert switch._find_disk() == disk
+        assert switch.available is True
+        assert switch.is_on is True
+
+        # Optimistic clearing
+        switch._optimistic_state = True
+        switch.async_write_ha_state = MagicMock()
+        switch._handle_coordinator_update()
+        assert switch._optimistic_state is None
+
+    async def test_disk_spin_switch_turn_on_and_off(self) -> None:
+        """Test spinning disk up and down."""
+        from custom_components.unraid_management_agent.switch import (
+            UnraidDiskSpinSwitch,
+        )
+
+        coordinator = MagicMock()
+        coordinator.config_entry.entry_id = "test_entry"
+        coordinator.last_update_success = True
+        coordinator.client = MagicMock()
+        coordinator.client.spin_up_disk = AsyncMock()
+        coordinator.client.spin_down_disk = AsyncMock()
+        coordinator.async_request_refresh = AsyncMock()
+
+        switch = UnraidDiskSpinSwitch(coordinator, "disk1", "Disk 1")
+        switch.async_write_ha_state = MagicMock()
+
+        # Spin up
+        await switch.async_turn_on()
+        coordinator.client.spin_up_disk.assert_called_once_with("disk1")
+        coordinator.async_request_refresh.assert_called_once()
+        assert switch._optimistic_state is True
+
+        # Spin down
+        coordinator.async_request_refresh.reset_mock()
+        await switch.async_turn_off()
+        coordinator.client.spin_down_disk.assert_called_once_with("disk1")
+        coordinator.async_request_refresh.assert_called_once()
+        assert switch._optimistic_state is False
+
+    async def test_disk_spin_switch_errors(self) -> None:
+        """Test disk spin switch API errors."""
+        from homeassistant.exceptions import HomeAssistantError
+
+        from custom_components.unraid_management_agent.switch import (
+            UnraidDiskSpinSwitch,
+        )
+
+        coordinator = MagicMock()
+        coordinator.config_entry.entry_id = "test_entry"
+        coordinator.last_update_success = True
+        coordinator.client = MagicMock()
+        coordinator.client.spin_up_disk = AsyncMock(
+            side_effect=Exception("Spin up error")
+        )
+        coordinator.client.spin_down_disk = AsyncMock(
+            side_effect=Exception("Spin down error")
+        )
+
+        switch = UnraidDiskSpinSwitch(coordinator, "disk1", "Disk 1")
+        switch.async_write_ha_state = MagicMock()
+
+        with pytest.raises(HomeAssistantError):
+            await switch.async_turn_on()
+        assert switch._optimistic_state is None
+
+        with pytest.raises(HomeAssistantError):
+            await switch.async_turn_off()
+        assert switch._optimistic_state is None
+
+
+class TestRemoteShareSwitch:
+    """Tests for remote share switch."""
+
+    def test_remote_share_switch_helpers(self) -> None:
+        """Test remote share finding, attributes, availability and state."""
+        from custom_components.unraid_management_agent.switch import (
+            UnraidRemoteShareSwitch,
+        )
+
+        coordinator = MagicMock()
+        coordinator.config_entry.entry_id = "test_entry"
+        coordinator.last_update_success = True
+
+        # No data
+        coordinator.data = None
+        switch = UnraidRemoteShareSwitch(coordinator, "backup_share")
+        assert switch._find_share() is None
+        assert switch.available is False
+        assert switch.is_on is False
+        assert switch.extra_state_attributes == {}
+
+        # Share found
+        share = MagicMock()
+        share.name = "backup_share"
+        share.mounted = True
+        share.protocol = "smb"
+        share.server = "192.168.1.50"
+        share.mount_point = "/mnt/remotes/backup_share"
+        coordinator.data = MagicMock()
+        coordinator.data.remote_shares = [share]
+
+        assert switch._find_share() == share
+        assert switch.available is True
+        assert switch.is_on is True
+        assert switch.extra_state_attributes == {
+            "protocol": "smb",
+            "server": "192.168.1.50",
+            "mount_point": "/mnt/remotes/backup_share",
+        }
+
+        # Optimistic clearing
+        switch._optimistic_state = True
+        switch.async_write_ha_state = MagicMock()
+        switch._handle_coordinator_update()
+        assert switch._optimistic_state is None
+
+    async def test_remote_share_turn_on_and_off(self) -> None:
+        """Test mounting and unmounting remote share."""
+        from custom_components.unraid_management_agent.switch import (
+            UnraidRemoteShareSwitch,
+        )
+
+        coordinator = MagicMock()
+        coordinator.config_entry.entry_id = "test_entry"
+        coordinator.last_update_success = True
+        coordinator.client = MagicMock()
+        coordinator.client.mount_remote_share = AsyncMock()
+        coordinator.client.unmount_remote_share = AsyncMock()
+        coordinator.async_request_refresh = AsyncMock()
+
+        switch = UnraidRemoteShareSwitch(coordinator, "backup_share")
+        switch.async_write_ha_state = MagicMock()
+
+        # Mount
+        await switch.async_turn_on()
+        coordinator.client.mount_remote_share.assert_called_once_with("backup_share")
+        coordinator.async_request_refresh.assert_called_once()
+        assert switch._optimistic_state is True
+
+        # Unmount
+        coordinator.async_request_refresh.reset_mock()
+        await switch.async_turn_off()
+        coordinator.client.unmount_remote_share.assert_called_once_with("backup_share")
+        coordinator.async_request_refresh.assert_called_once()
+        assert switch._optimistic_state is False
+
+    async def test_remote_share_errors(self) -> None:
+        """Test remote share switch errors."""
+        from homeassistant.exceptions import HomeAssistantError
+
+        from custom_components.unraid_management_agent.switch import (
+            UnraidRemoteShareSwitch,
+        )
+
+        coordinator = MagicMock()
+        coordinator.config_entry.entry_id = "test_entry"
+        coordinator.last_update_success = True
+        coordinator.client = MagicMock()
+        coordinator.client.mount_remote_share = AsyncMock(
+            side_effect=Exception("Mount failed")
+        )
+        coordinator.client.unmount_remote_share = AsyncMock(
+            side_effect=Exception("Unmount failed")
+        )
+
+        switch = UnraidRemoteShareSwitch(coordinator, "backup_share")
+        switch.async_write_ha_state = MagicMock()
+
+        with pytest.raises(HomeAssistantError):
+            await switch.async_turn_on()
+        assert switch._optimistic_state is None
+
+        with pytest.raises(HomeAssistantError):
+            await switch.async_turn_off()
+        assert switch._optimistic_state is None

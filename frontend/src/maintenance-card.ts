@@ -1,0 +1,239 @@
+import { html, nothing, type TemplateResult } from "lit";
+import {
+  MAINTENANCE_CARD_TAG,
+  MAINTENANCE_EDITOR_TAG,
+} from "./config";
+import { BaseUnraidCard, formatFriendlyDateTime } from "./dashboard-cards-base";
+import { UnraidMaintenanceCardEditor } from "./dashboard-cards-editor";
+import {
+  iconTemplate,
+  mdiClockOutline,
+  mdiDownload,
+  mdiShieldCheck,
+  mdiWrench,
+} from "./icons";
+import { registerDashboardCard } from "./register-dashboard-card";
+
+export class UnraidMaintenanceCard extends BaseUnraidCard {
+  static override editorTag = MAINTENANCE_EDITOR_TAG;
+
+  protected override render(): TemplateResult {
+    const device = this.getActiveDevice();
+    const serverName = this.config.title || device?.name_by_user || device?.name || "Unraid Server";
+
+    const lastParity = this.getEntity("last_parity_check");
+    const nextParity = this.getEntity("next_parity_check");
+    const parityRunning = this.getEntity("parity_check_running", "binary_sensor");
+    const parityValid = this.getEntity("parity_valid", "binary_sensor");
+    const flashUsage = this.getEntity("flash_usage");
+    const flashFree = this.getEntity("flash_free_space");
+    const pluginUpdates = this.getEntity("plugins_with_updates") || this.getEntity("plugin_updates");
+    const containerUpdates = this.getEntity("container_updates_available");
+
+    const isCheckRunning = parityRunning?.state === "on";
+    const isParityInvalid = parityValid?.state === "on"; // parity_valid is Problem sensor: on means problem/invalid
+
+    const flashPct = Math.round(Number(flashUsage?.state) || 0);
+    const numPluginUpdates = Number(pluginUpdates?.state) || 0;
+    const numContainerUpdates = Number(containerUpdates?.state) || 0;
+    const totalUpdates = numPluginUpdates + numContainerUpdates;
+
+    const lastDuration = lastParity?.attributes?.duration || lastParity?.attributes?.last_duration;
+    const lastResult = lastParity?.attributes?.result || lastParity?.state;
+    const lastErrors = lastParity?.attributes?.errors;
+
+    return html`
+      <ha-card>
+        ${this.renderHeader(
+          serverName,
+          "Maintenance & Operations",
+          mdiWrench,
+          html`
+            <span class="badge ${totalUpdates > 0 ? "badge-warning" : "badge-online"}">
+              <span class="pulse-dot"></span>
+              <span>${totalUpdates > 0 ? `${totalUpdates} Updates` : "Up to Date"}</span>
+            </span>
+          `
+        )}
+
+        <div class="rings-grid">
+          <div
+            class="ring-card"
+            role="${flashUsage ? "button" : "none"}"
+            tabindex="${flashUsage ? "0" : "-1"}"
+            @click=${() => flashUsage && this.openMoreInfo(flashUsage.entity_id)}
+            @keydown=${(e: KeyboardEvent) =>
+              (e.key === "Enter" || e.key === " ") &&
+              flashUsage &&
+              (e.preventDefault(), this.openMoreInfo(flashUsage.entity_id))}
+            style="${flashUsage ? "cursor: pointer;" : ""}"
+            title="Click for Flash USB details"
+          >
+            <div
+              class="ring-gauge"
+              style="--pct: ${flashPct}; --ring-color: ${flashPct > 80 ? "var(--unraid-error)" : flashPct > 60 ? "var(--unraid-warning)" : "var(--unraid-online)"}"
+            >
+              <span class="ring-content">${flashPct}%</span>
+            </div>
+            <span class="ring-label">Flash Boot Drive</span>
+            <span class="ring-subtext">${flashFree?.state ? `${flashFree.state} Free` : "USB Boot Drive"}</span>
+          </div>
+
+          <div
+            class="ring-card"
+            role="${lastParity ? "button" : "none"}"
+            tabindex="${lastParity ? "0" : "-1"}"
+            @click=${() => lastParity && this.openMoreInfo(lastParity.entity_id)}
+            @keydown=${(e: KeyboardEvent) =>
+              (e.key === "Enter" || e.key === " ") &&
+              lastParity &&
+              (e.preventDefault(), this.openMoreInfo(lastParity.entity_id))}
+            style="${lastParity ? "cursor: pointer;" : ""}"
+            title="Click for Parity status"
+          >
+            <div
+              class="ring-gauge"
+              style="--pct: ${isCheckRunning ? 50 : 100}; --ring-color: ${isParityInvalid ? "var(--unraid-error)" : "var(--unraid-online)"}"
+            >
+              <span class="ring-content">${isCheckRunning ? "SYNC" : isParityInvalid ? "FAIL" : "OK"}</span>
+            </div>
+            <span class="ring-label">Parity Health</span>
+            <span class="ring-subtext">${lastErrors !== undefined ? `${lastErrors} Sync Errors` : "Parity Protected"}</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="disk-list">
+          <div
+            class="disk-row"
+            role="${lastParity ? "button" : "none"}"
+            tabindex="${lastParity ? "0" : "-1"}"
+            @click=${() => lastParity && this.openMoreInfo(lastParity.entity_id)}
+            @keydown=${(e: KeyboardEvent) =>
+              (e.key === "Enter" || e.key === " ") &&
+              lastParity &&
+              (e.preventDefault(), this.openMoreInfo(lastParity.entity_id))}
+            style="${lastParity ? "cursor: pointer;" : ""}"
+          >
+            <div class="disk-main">
+              <span class="disk-icon ${lastErrors ? "disk-warning" : "disk-online"}">
+                ${iconTemplate(mdiShieldCheck, 18)}
+              </span>
+              <div class="disk-info">
+                <span class="disk-name">Last Parity Check</span>
+                <span class="disk-subtext">
+                  ${lastResult && lastResult !== lastParity?.state ? lastResult : "Completed"}
+                  ${lastDuration ? ` • Duration: ${lastDuration}` : ""}
+                  ${lastErrors !== undefined ? (lastErrors === 0 ? " • 0 sync errors" : ` • ${lastErrors} errors`) : ""}
+                </span>
+              </div>
+            </div>
+            <div class="disk-meta">
+              <span class="disk-temp">${formatFriendlyDateTime(lastParity?.state)}</span>
+            </div>
+          </div>
+
+          ${nextParity?.state && nextParity.state !== "unavailable" && nextParity.state !== "unknown"
+            ? html`
+                <div
+                  class="disk-row"
+                  role="button"
+                  tabindex="0"
+                  @click=${() => this.openMoreInfo(nextParity.entity_id)}
+                  @keydown=${(e: KeyboardEvent) =>
+                    (e.key === "Enter" || e.key === " ") &&
+                    (e.preventDefault(), this.openMoreInfo(nextParity.entity_id))}
+                  style="cursor: pointer;"
+                >
+                  <div class="disk-main">
+                    <span class="disk-icon disk-online">
+                      ${iconTemplate(mdiClockOutline, 18)}
+                    </span>
+                    <div class="disk-info">
+                      <span class="disk-name">Next Scheduled Parity</span>
+                      <span class="disk-subtext">
+                        Automated Parity Verification${nextParity.attributes?.mode ? ` (${typeof nextParity.attributes.mode === "string" ? nextParity.attributes.mode.charAt(0).toUpperCase() + nextParity.attributes.mode.slice(1) : nextParity.attributes.mode})` : ""}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="disk-meta">
+                    <span class="disk-temp">${formatFriendlyDateTime(nextParity.state)}</span>
+                  </div>
+                </div>
+              `
+            : nothing}
+
+          ${pluginUpdates
+            ? html`
+                <div
+                  class="disk-row"
+                  role="button"
+                  tabindex="0"
+                  @click=${() => this.openMoreInfo(pluginUpdates.entity_id)}
+                  @keydown=${(e: KeyboardEvent) =>
+                    (e.key === "Enter" || e.key === " ") &&
+                    (e.preventDefault(), this.openMoreInfo(pluginUpdates.entity_id))}
+                  style="cursor: pointer;"
+                >
+                  <div class="disk-main">
+                    <span class="disk-icon ${numPluginUpdates > 0 ? "disk-warning" : "disk-online"}">
+                      ${iconTemplate(mdiDownload, 18)}
+                    </span>
+                    <div class="disk-info">
+                      <span class="disk-name">Plugin Updates</span>
+                      <span class="disk-subtext">${numPluginUpdates > 0 ? `${numPluginUpdates} plugin updates pending` : "All plugins are up to date"}</span>
+                    </div>
+                  </div>
+                  <div class="disk-meta">
+                    <span class="badge ${numPluginUpdates > 0 ? "badge-warning" : "badge-online"}">
+                      ${numPluginUpdates > 0 ? `${numPluginUpdates} NEW` : "CURRENT"}
+                    </span>
+                  </div>
+                </div>
+              `
+            : nothing}
+
+          ${containerUpdates
+            ? html`
+                <div
+                  class="disk-row"
+                  role="button"
+                  tabindex="0"
+                  @click=${() => this.openMoreInfo(containerUpdates.entity_id)}
+                  @keydown=${(e: KeyboardEvent) =>
+                    (e.key === "Enter" || e.key === " ") &&
+                    (e.preventDefault(), this.openMoreInfo(containerUpdates.entity_id))}
+                  style="cursor: pointer;"
+                >
+                  <div class="disk-main">
+                    <span class="disk-icon ${numContainerUpdates > 0 ? "disk-warning" : "disk-online"}">
+                      ${iconTemplate(mdiDownload, 18)}
+                    </span>
+                    <div class="disk-info">
+                      <span class="disk-name">Docker Image Updates</span>
+                      <span class="disk-subtext">${numContainerUpdates > 0 ? `${numContainerUpdates} container image updates available` : "All container images are current"}</span>
+                    </div>
+                  </div>
+                  <div class="disk-meta">
+                    <span class="badge ${numContainerUpdates > 0 ? "badge-warning" : "badge-online"}">
+                      ${numContainerUpdates > 0 ? `${numContainerUpdates} NEW` : "CURRENT"}
+                    </span>
+                  </div>
+                </div>
+              `
+            : nothing}
+        </div>
+      </ha-card>
+    `;
+  }
+}
+
+registerDashboardCard({
+  tag: MAINTENANCE_CARD_TAG,
+  editorTag: MAINTENANCE_EDITOR_TAG,
+  card: UnraidMaintenanceCard,
+  editor: UnraidMaintenanceCardEditor,
+  name: "Unraid Maintenance Card",
+  description: "Parity verification history, flash drive health, and plugin/container update status",
+});

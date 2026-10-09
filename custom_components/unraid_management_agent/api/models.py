@@ -6,7 +6,14 @@ import re
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any, Literal
 
-from pydantic import AliasChoices, BaseModel, BeforeValidator, Field, model_validator
+from pydantic import (
+    AliasChoices,
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    model_validator,
+)
 
 
 def _coerce_float(v: Any) -> Any:
@@ -45,8 +52,28 @@ def _coerce_int(v: Any) -> Any:
     return v
 
 
+def _coerce_corrupted_files(v: Any) -> list[str] | int | None:
+    """
+    Normalise a ZFS pool's ``corrupted_files`` value.
+
+    The agent sends the paths listed by ``zpool status -v`` under "Permanent
+    errors have been detected in the following files" (and omits the field when
+    there are none). A bare number is kept as a count. Anything else becomes
+    None so one unexpected value cannot fail validation of the whole pool list.
+    """
+    if isinstance(v, list | tuple):
+        return [str(path) for path in v if path is not None]
+    count = _coerce_int(v)
+    if isinstance(count, int) and not isinstance(count, bool):
+        return count
+    return None
+
+
 CoercedFloat = Annotated[float | None, BeforeValidator(_coerce_float)]
 CoercedInt = Annotated[int | None, BeforeValidator(_coerce_int)]
+CorruptedFiles = Annotated[
+    list[str] | int | None, BeforeValidator(_coerce_corrupted_files)
+]
 
 
 class FanInfo(BaseModel):
@@ -55,7 +82,7 @@ class FanInfo(BaseModel):
     name: str | None = Field(None, description="Fan name", examples=["CPU Fan"])
     rpm: int | None = Field(None, description="Fan speed in RPM", examples=[1200])
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
     @property
     def normalized_name(self) -> str | None:
@@ -101,7 +128,7 @@ class TemperatureInfo(BaseModel):
     )
     source: str | None = Field(None, description="Sensor source")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
     @property
     def hwmon_feature(self) -> str | None:
@@ -183,7 +210,7 @@ class CpuPowerState(BaseModel):
         None, description="Current CPU frequency in MHz"
     )
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class SystemInfo(BaseModel):
@@ -272,7 +299,7 @@ class SystemInfo(BaseModel):
 
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
     @model_validator(mode="before")
     @classmethod
@@ -410,7 +437,7 @@ class ArrayStatus(BaseModel):
 
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
     @property
     def computed_used_percent(self) -> float | None:
@@ -530,7 +557,7 @@ class SMARTAttribute(BaseModel):
     raw_value: str | None = Field(None, description="Raw value")
     when_failed: str | None = Field(None, description="When the attribute failed")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class DiskInfo(BaseModel):
@@ -596,7 +623,7 @@ class DiskInfo(BaseModel):
 
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
     @property
     def computed_used_percent(self) -> float | None:
@@ -825,7 +852,7 @@ class PortMapping(BaseModel):
     private_port: int | None = Field(None, description="Private (container) port")
     type: str | None = Field(None, description="Protocol type (tcp, udp)")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class VolumeMapping(BaseModel):
@@ -835,7 +862,7 @@ class VolumeMapping(BaseModel):
     container_path: str | None = Field(None, description="Container path")
     mode: str | None = Field(None, description="Mount mode (rw, ro)")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class ContainerInfo(BaseModel):
@@ -898,7 +925,7 @@ class ContainerInfo(BaseModel):
 
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 VMState = Literal["running", "stopped", "paused", "shut off", "crashed", "suspended"]
@@ -944,7 +971,7 @@ class VMInfo(BaseModel):
 
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class ShareInfo(BaseModel):
@@ -990,7 +1017,7 @@ class ShareInfo(BaseModel):
 
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
     @property
     def computed_used_percent(self) -> float | None:
@@ -1080,7 +1107,7 @@ class NetworkInterface(BaseModel):
 
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
     @property
     def is_physical(self) -> bool:
@@ -1119,7 +1146,7 @@ class HardwareInfo(BaseModel):
     bios_date: str | None = Field(None, description="BIOS date")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class GPUInfo(BaseModel):
@@ -1156,7 +1183,7 @@ class GPUInfo(BaseModel):
     fan_max_rpm: CoercedInt = Field(None, description="Maximum fan RPM")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
     @property
     def gpu_temperature(self) -> float | None:
@@ -1217,7 +1244,7 @@ class UPSInfo(BaseModel):
 
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow", "populate_by_name": True}
+    model_config = ConfigDict(frozen=True, extra="allow", populate_by_name=True)
 
     @property
     def runtime_minutes(self) -> float | None:
@@ -1243,7 +1270,7 @@ class HealthStatus(BaseModel):
 
     status: str = Field(..., description="Health status")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class ActionResponse(BaseModel):
@@ -1253,7 +1280,7 @@ class ActionResponse(BaseModel):
     message: str | None = Field(None, description="Response message")
     timestamp: str | None = Field(None, description="Action timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class APIError(BaseModel):
@@ -1265,7 +1292,7 @@ class APIError(BaseModel):
     details: dict[str, Any] | None = Field(None, description="Additional error details")
     timestamp: str | None = Field(None, description="Error timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class RegistrationInfo(BaseModel):
@@ -1277,7 +1304,7 @@ class RegistrationInfo(BaseModel):
     guid: str | None = Field(None, description="Server GUID")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class LogFile(BaseModel):
@@ -1288,7 +1315,7 @@ class LogFile(BaseModel):
     size_bytes: int | None = Field(None, description="File size in bytes")
     modified_at: str | None = Field(None, description="Last modified timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class LogList(BaseModel):
@@ -1297,7 +1324,7 @@ class LogList(BaseModel):
     logs: list[LogFile] | None = Field(None, description="Available log files")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class LogContent(BaseModel):
@@ -1312,7 +1339,7 @@ class LogContent(BaseModel):
     end_line: int | None = Field(None, description="End line number")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class Notification(BaseModel):
@@ -1324,7 +1351,7 @@ class Notification(BaseModel):
     importance: str | None = Field(None, description="Importance level")
     timestamp: str | None = Field(None, description="Notification timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class NotificationCounts(BaseModel):
@@ -1335,7 +1362,7 @@ class NotificationCounts(BaseModel):
     alert: int | None = Field(None, description="Alert notifications")
     total: int | None = Field(None, description="Total notifications")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class NotificationOverview(BaseModel):
@@ -1345,7 +1372,7 @@ class NotificationOverview(BaseModel):
     archive: NotificationCounts | None = Field(None, description="Archive counts")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
     @property
     def unread_count(self) -> int:
@@ -1377,7 +1404,7 @@ class NotificationsResponse(BaseModel):
     )
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
     @property
     def unread_count(self) -> int:
@@ -1412,7 +1439,7 @@ class UnassignedDevice(BaseModel):
     filesystem: str | None = Field(None, description="Filesystem type")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class RemoteShare(BaseModel):
@@ -1444,7 +1471,7 @@ class RemoteShare(BaseModel):
     )
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
     @model_validator(mode="before")
     @classmethod
@@ -1476,7 +1503,7 @@ class UnassignedDevicesResponse(BaseModel):
     )
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class RemoteSharesResponse(BaseModel):
@@ -1485,7 +1512,7 @@ class RemoteSharesResponse(BaseModel):
     remote_shares: list[RemoteShare] | None = Field(None, description="Remote shares")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class UnassignedInfo(BaseModel):
@@ -1497,7 +1524,7 @@ class UnassignedInfo(BaseModel):
     remote_shares: list[RemoteShare] | None = Field(None, description="Remote shares")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class HardwareFullInfo(BaseModel):
@@ -1511,7 +1538,7 @@ class HardwareFullInfo(BaseModel):
     memory: dict[str, Any] | None = Field(None, description="Memory information")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class BIOSInfo(BaseModel):
@@ -1527,7 +1554,7 @@ class BIOSInfo(BaseModel):
     characteristics: list[str] | None = Field(None, description="BIOS characteristics")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class BaseboardInfo(BaseModel):
@@ -1541,7 +1568,7 @@ class BaseboardInfo(BaseModel):
     features: list[str] | None = Field(None, description="Board features")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class CPUHardwareInfo(BaseModel):
@@ -1560,7 +1587,7 @@ class CPUHardwareInfo(BaseModel):
     thread_count: int | None = Field(None, description="Number of threads")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class MemoryArrayInfo(BaseModel):
@@ -1573,7 +1600,7 @@ class MemoryArrayInfo(BaseModel):
     number_of_devices: int | None = Field(None, description="Number of memory devices")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class MemoryDeviceInfo(BaseModel):
@@ -1589,7 +1616,7 @@ class MemoryDeviceInfo(BaseModel):
     part_number: str | None = Field(None, description="Memory part number")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class CPUCacheInfo(BaseModel):
@@ -1603,7 +1630,7 @@ class CPUCacheInfo(BaseModel):
     maximum_size: str | None = Field(None, description="Maximum cache size")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class AccessUrl(BaseModel):
@@ -1614,7 +1641,7 @@ class AccessUrl(BaseModel):
     ipv4: str | None = Field(None, description="IPv4 URL")
     ipv6: str | None = Field(None, description="IPv6 URL")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class NetworkAccessUrls(BaseModel):
@@ -1623,7 +1650,7 @@ class NetworkAccessUrls(BaseModel):
     urls: list[AccessUrl] | None = Field(None, description="Access URLs")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class SystemSettings(BaseModel):
@@ -1634,7 +1661,7 @@ class SystemSettings(BaseModel):
     use_ssl: bool | None = Field(None, description="SSL enabled")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class DockerSettings(BaseModel):
@@ -1645,7 +1672,7 @@ class DockerSettings(BaseModel):
     auto_start: bool | None = Field(None, description="Auto start enabled")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class VMSettings(BaseModel):
@@ -1655,7 +1682,7 @@ class VMSettings(BaseModel):
     default_path: str | None = Field(None, description="Default VM path")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class DiskSettings(BaseModel):
@@ -1693,7 +1720,7 @@ class DiskSettings(BaseModel):
     )
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class ShareConfig(BaseModel):
@@ -1711,7 +1738,7 @@ class ShareConfig(BaseModel):
     security: str | None = Field(None, description="Security setting")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class NetworkConfig(BaseModel):
@@ -1728,7 +1755,7 @@ class NetworkConfig(BaseModel):
     mtu: int | None = Field(None, description="MTU size")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class UserScript(BaseModel):
@@ -1741,7 +1768,7 @@ class UserScript(BaseModel):
     running: bool | None = Field(None, description="Currently running")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class UserScriptExecuteResponse(BaseModel):
@@ -1753,7 +1780,7 @@ class UserScriptExecuteResponse(BaseModel):
     exit_code: int | None = Field(None, description="Script exit code")
     timestamp: str | None = Field(None, description="Execution timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class ParityCheckRecord(BaseModel):
@@ -1769,7 +1796,7 @@ class ParityCheckRecord(BaseModel):
     errors: int | None = Field(None, description="Errors found")
     size_bytes: int | None = Field(None, description="Size checked in bytes")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class ParityHistory(BaseModel):
@@ -1778,7 +1805,7 @@ class ParityHistory(BaseModel):
     records: list[ParityCheckRecord] | None = Field(None, description="History records")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
     @property
     def most_recent(self) -> ParityCheckRecord | None:
@@ -1822,7 +1849,7 @@ class ParityStatus(BaseModel):
     )
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class ZFSPool(BaseModel):
@@ -1839,15 +1866,19 @@ class ZFSPool(BaseModel):
     )
     free_bytes: CoercedInt = Field(None, description="Free space in bytes")
     health: str | None = Field(None, description="Pool health")
-    corrupted_files: CoercedInt = Field(
-        None, description="Number of corrupted files reported by zpool status"
+    corrupted_files: CorruptedFiles = Field(
+        None,
+        description=(
+            "Files with permanent errors listed by `zpool status -v` "
+            "(a bare count is also accepted)"
+        ),
     )
     is_boot_pool: bool | None = Field(
         None, description="Whether this pool is the Unraid boot pool"
     )
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
     @property
     def computed_used_percent(self) -> float | None:
@@ -1867,6 +1898,38 @@ class ZFSPool(BaseModel):
             return round((self.used_bytes / self.size_bytes) * 100, 1)
         return None
 
+    @property
+    def corrupted_file_count(self) -> int | None:
+        """
+        Return the number of files with permanent errors.
+
+        Returns:
+            The length of the reported path list, a bare count as-is, or None
+            when the agent did not report the field.
+
+        Example:
+            >>> ZFSPool(corrupted_files=["<metadata>:<0x1a>"]).corrupted_file_count
+            1
+
+        """
+        if isinstance(self.corrupted_files, list):
+            return len(self.corrupted_files)
+        return self.corrupted_files
+
+    @property
+    def corrupted_file_paths(self) -> list[str]:
+        """
+        Return the reported paths of files with permanent errors.
+
+        Returns:
+            The path list, or an empty list when only a count (or nothing)
+            was reported.
+
+        """
+        if isinstance(self.corrupted_files, list):
+            return self.corrupted_files
+        return []
+
 
 class ZFSDataset(BaseModel):
     """ZFS dataset information."""
@@ -1879,7 +1942,7 @@ class ZFSDataset(BaseModel):
     compression: str | None = Field(None, description="Compression type")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class ZFSSnapshot(BaseModel):
@@ -1892,7 +1955,7 @@ class ZFSSnapshot(BaseModel):
     referenced_bytes: int | None = Field(None, description="Referenced space in bytes")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class ZFSArcStats(BaseModel):
@@ -1910,7 +1973,7 @@ class ZFSArcStats(BaseModel):
     misses: int | None = Field(None, description="ARC misses")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class NUTInfo(BaseModel):
@@ -1921,7 +1984,7 @@ class NUTInfo(BaseModel):
     config_mode: str | None = Field(None, description="Configuration mode")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class CollectorDetails(BaseModel):
@@ -1941,7 +2004,7 @@ class CollectorDetails(BaseModel):
     )
     error_count: int | None = Field(None, description="Error count")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class CollectorInfo(BaseModel):
@@ -1956,7 +2019,7 @@ class CollectorInfo(BaseModel):
     collector: CollectorDetails | None = Field(None, description="Collector details")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class CollectorStatus(BaseModel):
@@ -1970,7 +2033,7 @@ class CollectorStatus(BaseModel):
     )
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
     def get_collector_by_name(self, name: str) -> CollectorDetails | None:
         """
@@ -2064,7 +2127,7 @@ class ParitySchedule(BaseModel):
     pause_hour: CoercedInt = Field(None, description="Hour to pause check (0-23)")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow", "populate_by_name": True}
+    model_config = ConfigDict(frozen=True, extra="allow", populate_by_name=True)
 
     @property
     def is_enabled(self) -> bool:
@@ -2248,7 +2311,7 @@ class MoverSettings(BaseModel):
     )
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 # Issue #29: Docker/VM service status
@@ -2261,7 +2324,7 @@ class ServiceStatus(BaseModel):
     vm_autostart: bool | None = Field(None, description="VM autostart enabled")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 # Issue #30: Update status
@@ -2286,7 +2349,7 @@ class UpdateStatus(BaseModel):
     )
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 # Issue #31: Flash drive info
@@ -2304,7 +2367,7 @@ class FlashDriveInfo(BaseModel):
     smart_available: bool | None = Field(None, description="SMART data available")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
     @property
     def computed_used_percent(self) -> float | None:
@@ -2361,7 +2424,7 @@ class SubsystemSelfTestStatus(BaseModel):
         None, description="Optional source status when subsystem is degraded"
     )
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class DiagnosticsSelfTestResponse(BaseModel):
@@ -2374,7 +2437,7 @@ class DiagnosticsSelfTestResponse(BaseModel):
     )
     timestamp: str | None = Field(None, description="Self-test timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
     @property
     def degraded_subsystem_count(self) -> int:
@@ -2396,7 +2459,7 @@ class DockerPortConflict(BaseModel):
     container_port: CoercedInt = Field(None, description="Container port")
     protocol: str | None = Field(None, description="Protocol (tcp/udp)")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 # Issue #32: Plugin list
@@ -2409,7 +2472,7 @@ class PluginInfo(BaseModel):
         None, description="Update available for this plugin"
     )
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class PluginList(BaseModel):
@@ -2424,7 +2487,7 @@ class PluginList(BaseModel):
     )
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 # Issue #34: Network services status
@@ -2437,7 +2500,7 @@ class NetworkServiceInfo(BaseModel):
     port: int | None = Field(None, description="Service port number")
     description: str | None = Field(None, description="Service description")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class NetworkServicesStatus(BaseModel):
@@ -2477,7 +2540,7 @@ class NetworkServicesStatus(BaseModel):
     services_running: int | None = Field(None, description="Number of running services")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 # Issue #39: Docker container logs, size, and update management
@@ -2490,7 +2553,7 @@ class ContainerLogs(BaseModel):
     line_count: int | None = Field(None, description="Number of log lines")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class ContainerSizeInfo(BaseModel):
@@ -2508,7 +2571,7 @@ class ContainerSizeInfo(BaseModel):
     size_display: str | None = Field(None, description="Human-readable size string")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class ContainerUpdateInfo(BaseModel):
@@ -2524,7 +2587,7 @@ class ContainerUpdateInfo(BaseModel):
     )
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class ContainerUpdateResult(BaseModel):
@@ -2542,7 +2605,7 @@ class ContainerUpdateResult(BaseModel):
     message: str | None = Field(None, description="Result message")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class ContainerUpdatesResult(BaseModel):
@@ -2557,7 +2620,7 @@ class ContainerUpdatesResult(BaseModel):
     )
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class ContainerBulkUpdateResult(BaseModel):
@@ -2571,7 +2634,7 @@ class ContainerBulkUpdateResult(BaseModel):
     skipped: int | None = Field(None, description="Number of skipped containers")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 # Issue #40: VM snapshot management
@@ -2588,7 +2651,7 @@ class VMSnapshot(BaseModel):
         None, description="Whether this is the current snapshot"
     )
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class VMSnapshotList(BaseModel):
@@ -2599,7 +2662,7 @@ class VMSnapshotList(BaseModel):
     count: int | None = Field(None, description="Number of snapshots")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 # Issue #41: Process monitoring
@@ -2618,7 +2681,7 @@ class ProcessInfo(BaseModel):
     time: str | None = Field(None, description="Cumulative CPU time")
     command: str | None = Field(None, description="Command line")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class ProcessList(BaseModel):
@@ -2628,7 +2691,7 @@ class ProcessList(BaseModel):
     total_count: int | None = Field(None, description="Total number of processes")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 # Issue #42: System service management
@@ -2638,7 +2701,7 @@ class SystemService(BaseModel):
     name: str | None = Field(None, description="Service name")
     running: bool | None = Field(None, description="Whether service is running")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class SystemServiceList(BaseModel):
@@ -2648,7 +2711,7 @@ class SystemServiceList(BaseModel):
     services: list[SystemService] | None = Field(None, description="List of services")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 # Issue #43: Plugin update management
@@ -2662,7 +2725,7 @@ class PluginUpdateInfo(BaseModel):
     )
     new_version: str | None = Field(None, description="New version available")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class PluginUpdatesResult(BaseModel):
@@ -2674,7 +2737,7 @@ class PluginUpdatesResult(BaseModel):
     )
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
     @property
     def update_count(self) -> int:
@@ -2709,7 +2772,7 @@ class PluginUpdateResult(BaseModel):
     new_version: str | None = Field(None, description="New version installed")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class PluginBulkUpdateResult(BaseModel):
@@ -2722,7 +2785,7 @@ class PluginBulkUpdateResult(BaseModel):
     failed: int | None = Field(None, description="Number of failed updates")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 # Issue #44: MQTT support
@@ -2743,7 +2806,7 @@ class MQTTStatus(BaseModel):
     )
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class MQTTTestResponse(BaseModel):
@@ -2757,7 +2820,7 @@ class MQTTTestResponse(BaseModel):
     )
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class MQTTPublishResponse(BaseModel):
@@ -2768,7 +2831,7 @@ class MQTTPublishResponse(BaseModel):
     topic: str | None = Field(None, description="Topic published to")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 # Issue #45: Alerting engine
@@ -2788,7 +2851,7 @@ class AlertRule(BaseModel):
     enabled: bool | None = Field(None, description="Whether the rule is enabled")
     cooldown_minutes: int | None = Field(None, description="Minutes between re-fires")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class AlertStatus(BaseModel):
@@ -2802,7 +2865,7 @@ class AlertStatus(BaseModel):
     eval_count: int | None = Field(None, description="Evaluation count")
     message: str | None = Field(None, description="Alert message")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class AlertEvent(BaseModel):
@@ -2816,7 +2879,7 @@ class AlertEvent(BaseModel):
     fired_at: str | None = Field(None, description="Firing timestamp")
     resolved_at: str | None = Field(None, description="Resolution timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class AlertsStatusResponse(BaseModel):
@@ -2824,7 +2887,7 @@ class AlertsStatusResponse(BaseModel):
 
     statuses: list[AlertStatus] | None = Field(None, description="Alert statuses")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class AlertHistoryResponse(BaseModel):
@@ -2833,7 +2896,7 @@ class AlertHistoryResponse(BaseModel):
     events: list[AlertEvent] | None = Field(None, description="Alert events")
     total: int | None = Field(None, description="Total number of events")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 # Issue #46: Health checks (watchdog)
@@ -2852,7 +2915,7 @@ class HealthCheck(BaseModel):
     on_fail: str | None = Field(None, description="Remediation action on failure")
     enabled: bool | None = Field(None, description="Whether the check is enabled")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class HealthCheckStatus(BaseModel):
@@ -2871,7 +2934,7 @@ class HealthCheckStatus(BaseModel):
         None, description="Remediation action configured"
     )
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class HealthCheckEvent(BaseModel):
@@ -2884,7 +2947,7 @@ class HealthCheckEvent(BaseModel):
     timestamp: str | None = Field(None, description="Event timestamp")
     remediation_taken: str | None = Field(None, description="Remediation action taken")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class HealthChecksStatusResponse(BaseModel):
@@ -2894,7 +2957,7 @@ class HealthChecksStatusResponse(BaseModel):
         None, description="Health check statuses"
     )
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class HealthCheckHistoryResponse(BaseModel):
@@ -2904,7 +2967,7 @@ class HealthCheckHistoryResponse(BaseModel):
         None, description="Health check events"
     )
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 # ── Fan control models ──────────────────────────────────────────────────
@@ -2927,7 +2990,7 @@ class FanDevice(BaseModel):
     hwmon_path: str | None = Field(None, description="sysfs hwmon path")
     hwmon_index: CoercedInt = Field(None, description="hwmon fan index")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class FanCurvePoint(BaseModel):
@@ -2938,7 +3001,7 @@ class FanCurvePoint(BaseModel):
         None, description="Fan speed percentage (0-100)"
     )
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class FanProfile(BaseModel):
@@ -2953,7 +3016,7 @@ class FanProfile(BaseModel):
         None, description="Whether this is a built-in profile"
     )
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class FanSafetyConfig(BaseModel):
@@ -2969,7 +3032,7 @@ class FanSafetyConfig(BaseModel):
         None, description="RPM below which a fan is considered failed"
     )
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class FanControlConfig(BaseModel):
@@ -2985,7 +3048,7 @@ class FanControlConfig(BaseModel):
     )
     safety: FanSafetyConfig | None = Field(None, description="Safety configuration")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class FanControlSummary(BaseModel):
@@ -2997,7 +3060,7 @@ class FanControlSummary(BaseModel):
     )
     failed_fans: list[str] | None = Field(None, description="List of failed fan IDs")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")
 
 
 class FanControlStatus(BaseModel):
@@ -3013,4 +3076,4 @@ class FanControlStatus(BaseModel):
     summary: FanControlSummary | None = Field(None, description="Fan status summary")
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
-    model_config = {"frozen": True, "extra": "allow"}
+    model_config = ConfigDict(frozen=True, extra="allow")

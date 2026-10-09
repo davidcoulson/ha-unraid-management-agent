@@ -1,0 +1,3996 @@
+{
+  "device": {
+    "device_id": "9ea58bac337a54169c3d2181f36be095",
+    "name": "Cube",
+    "manufacturer": "Lime Technology",
+    "model": "Unraid 7.3.2",
+    "sw_version": "7.3.2",
+    "area_id": null,
+    "integration_type": "unraid_management_agent",
+    "integration_sources": ["unraid_management_agent"],
+    "via_device_id": null,
+    "entities": [
+      {
+        "entity_id": "sensor.cube_cpu_usage",
+        "name": "CPU Usage",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_ram_usage",
+        "name": "RAM Usage",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_cpu_temperature",
+        "name": "CPU Temperature",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_motherboard_temperature",
+        "name": "Motherboard Temperature",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_cpu_power",
+        "name": "CPU Power",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_dram_power",
+        "name": "DRAM Power",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_uptime",
+        "name": "Uptime",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_chipset_temperature",
+        "name": "Chipset Temperature",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_cpu_governor",
+        "name": "CPU Governor",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_cpu_frequency",
+        "name": "CPU Frequency",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_swappiness",
+        "name": "Swappiness",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_system_status",
+        "name": "System Status",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_array_usage",
+        "name": "Array Usage",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_parity_check_progress",
+        "name": "Parity Check Progress",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_fan_nct6793_fan2",
+        "name": "Fan nct6793_fan2",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_fan_nct6793_fan3",
+        "name": "Fan nct6793_fan3",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_fan_nct6793_fan4",
+        "name": "Fan nct6793_fan4",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_fan_nct6793_fan5",
+        "name": "Fan nct6793_fan5",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_fan_nct6793_fan1",
+        "name": "Fan nct6793_fan1",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_gpu_intel_uhd_graphics_630_utilization",
+        "name": "GPU Intel UHD Graphics 630 Utilization",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_gpu_intel_uhd_graphics_630_temperature",
+        "name": "GPU Intel UHD Graphics 630 Temperature",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_gpu_intel_uhd_graphics_630_power",
+        "name": "GPU Intel UHD Graphics 630 Power",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_gpu_intel_uhd_graphics_630_energy",
+        "name": "GPU Intel UHD Graphics 630 Energy",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_ups_battery",
+        "name": "UPS Battery",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_ups_load",
+        "name": "UPS Load",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_ups_runtime",
+        "name": "UPS Runtime",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_ups_power",
+        "name": "UPS Power",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_ups_energy",
+        "name": "UPS Energy",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_parity_health",
+        "name": "Disk parity Health",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_parity_temperature",
+        "name": "Disk parity Temperature",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_parity_smart_errors",
+        "name": "Disk parity SMART Errors",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_parity_read",
+        "name": "Disk parity Read",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_parity_write",
+        "name": "Disk parity Write",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk1_health",
+        "name": "Disk disk1 Health",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk1_temperature",
+        "name": "Disk disk1 Temperature",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk1_smart_errors",
+        "name": "Disk disk1 SMART Errors",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk1_read",
+        "name": "Disk disk1 Read",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk1_write",
+        "name": "Disk disk1 Write",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk1_usage",
+        "name": "Disk disk1 Usage",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk2_health",
+        "name": "Disk disk2 Health",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk2_temperature",
+        "name": "Disk disk2 Temperature",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk2_smart_errors",
+        "name": "Disk disk2 SMART Errors",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk2_read",
+        "name": "Disk disk2 Read",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk2_write",
+        "name": "Disk disk2 Write",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk2_usage",
+        "name": "Disk disk2 Usage",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk3_health",
+        "name": "Disk disk3 Health",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk3_temperature",
+        "name": "Disk disk3 Temperature",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk3_smart_errors",
+        "name": "Disk disk3 SMART Errors",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk3_read",
+        "name": "Disk disk3 Read",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk3_write",
+        "name": "Disk disk3 Write",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk3_usage",
+        "name": "Disk disk3 Usage",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk4_health",
+        "name": "Disk disk4 Health",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk4_temperature",
+        "name": "Disk disk4 Temperature",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk4_smart_errors",
+        "name": "Disk disk4 SMART Errors",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk4_read",
+        "name": "Disk disk4 Read",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk4_write",
+        "name": "Disk disk4 Write",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_disk4_usage",
+        "name": "Disk disk4 Usage",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_parity2_health",
+        "name": "Disk parity2 Health",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_parity2_temperature",
+        "name": "Disk parity2 Temperature",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_parity2_smart_errors",
+        "name": "Disk parity2 SMART Errors",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_parity2_read",
+        "name": "Disk parity2 Read",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_parity2_write",
+        "name": "Disk parity2 Write",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_cache_health",
+        "name": "Disk cache Health",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_cache_temperature",
+        "name": "Disk cache Temperature",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_cache_smart_errors",
+        "name": "Disk cache SMART Errors",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_cache_read",
+        "name": "Disk cache Read",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_cache_write",
+        "name": "Disk cache Write",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_disk_cache_usage",
+        "name": "Disk cache Usage",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_docker_vdisk_usage",
+        "name": "Docker vDisk Usage",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_log_filesystem_usage",
+        "name": "Log Filesystem Usage",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_network_eth0_rx",
+        "name": "Network ETH0 RX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_network_eth0_tx",
+        "name": "Network ETH0 TX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_network_br0_rx",
+        "name": "Network BR0 RX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_network_br0_tx",
+        "name": "Network BR0 TX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_share_appdata_usage",
+        "name": "Share appdata Usage",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_share_backups_usage",
+        "name": "Share backups Usage",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_share_dedupbackups_usage",
+        "name": "Share dedupbackups Usage",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_share_domains_usage",
+        "name": "Share domains Usage",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_share_downloads_usage",
+        "name": "Share downloads Usage",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_share_isos_usage",
+        "name": "Share isos Usage",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_share_media_usage",
+        "name": "Share media Usage",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_share_system_usage",
+        "name": "Share system Usage",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_flash_usage",
+        "name": "Flash Usage",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_flash_free_space",
+        "name": "Flash Free Space",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_installed_plugins",
+        "name": "Installed Plugins",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_unraid_version",
+        "name": "Unraid Version",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_plugins_with_updates",
+        "name": "Plugins With Updates",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_diagnostics_degraded_subsystems",
+        "name": "Diagnostics Degraded Subsystems",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_docker_port_conflicts",
+        "name": "Docker Port Conflicts",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_next_parity_check",
+        "name": "Next Parity Check",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_last_parity_check",
+        "name": "Last Parity Check",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_notifications",
+        "name": "Notifications",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_notifications_unread_info",
+        "name": "Notifications Unread Info",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_notifications_unread_warning",
+        "name": "Notifications Unread Warning",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_notifications_unread_alert",
+        "name": "Notifications Unread Alert",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_docker_cpu_usage",
+        "name": "Docker CPU Usage",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_docker_memory_usage",
+        "name": "Docker Memory Usage",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_homeassistant_cpu",
+        "name": "homeassistant CPU",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_homeassistant_memory",
+        "name": "homeassistant Memory",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_homeassistant_memory_2",
+        "name": "homeassistant Memory %",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_homeassistant_restart_count",
+        "name": "homeassistant Restart Count",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_homeassistant_network_rx",
+        "name": "homeassistant Network RX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_homeassistant_network_tx",
+        "name": "homeassistant Network TX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_sabnzbd_cpu",
+        "name": "sabnzbd CPU",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_sabnzbd_memory",
+        "name": "sabnzbd Memory",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_sabnzbd_memory_2",
+        "name": "sabnzbd Memory %",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_sabnzbd_restart_count",
+        "name": "sabnzbd Restart Count",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_sabnzbd_network_rx",
+        "name": "sabnzbd Network RX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_sabnzbd_network_tx",
+        "name": "sabnzbd Network TX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_plex_cpu",
+        "name": "plex CPU",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_plex_memory",
+        "name": "plex Memory",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_plex_memory_2",
+        "name": "plex Memory %",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_plex_restart_count",
+        "name": "plex Restart Count",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_plex_network_rx",
+        "name": "plex Network RX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_plex_network_tx",
+        "name": "plex Network TX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_influxdb_cpu",
+        "name": "Influxdb CPU",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_influxdb_memory",
+        "name": "Influxdb Memory",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_influxdb_memory_2",
+        "name": "Influxdb Memory %",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_influxdb_restart_count",
+        "name": "Influxdb Restart Count",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_influxdb_network_rx",
+        "name": "Influxdb Network RX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_influxdb_network_tx",
+        "name": "Influxdb Network TX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_telegraf_cpu",
+        "name": "telegraf CPU",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_telegraf_memory",
+        "name": "telegraf Memory",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_telegraf_memory_2",
+        "name": "telegraf Memory %",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_telegraf_restart_count",
+        "name": "telegraf Restart Count",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_telegraf_network_rx",
+        "name": "telegraf Network RX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_telegraf_network_tx",
+        "name": "telegraf Network TX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_recyclarr_cpu",
+        "name": "recyclarr CPU",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_recyclarr_memory",
+        "name": "recyclarr Memory",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_recyclarr_memory_2",
+        "name": "recyclarr Memory %",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_recyclarr_restart_count",
+        "name": "recyclarr Restart Count",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_recyclarr_network_rx",
+        "name": "recyclarr Network RX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_recyclarr_network_tx",
+        "name": "recyclarr Network TX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_radarr_cpu",
+        "name": "radarr CPU",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_radarr_memory",
+        "name": "radarr Memory",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_radarr_memory_2",
+        "name": "radarr Memory %",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_radarr_restart_count",
+        "name": "radarr Restart Count",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_radarr_network_rx",
+        "name": "radarr Network RX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_radarr_network_tx",
+        "name": "radarr Network TX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_mariadb_cpu",
+        "name": "MariaDB CPU",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_mariadb_memory",
+        "name": "MariaDB Memory",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_mariadb_memory_2",
+        "name": "MariaDB Memory %",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_mariadb_restart_count",
+        "name": "MariaDB Restart Count",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_mariadb_network_rx",
+        "name": "MariaDB Network RX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_mariadb_network_tx",
+        "name": "MariaDB Network TX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_mysql_cpu",
+        "name": "MySQL CPU",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_mysql_memory",
+        "name": "MySQL Memory",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_mysql_memory_2",
+        "name": "MySQL Memory %",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_mysql_restart_count",
+        "name": "MySQL Restart Count",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_mysql_network_rx",
+        "name": "MySQL Network RX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_mysql_network_tx",
+        "name": "MySQL Network TX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_grafana_cpu",
+        "name": "Grafana CPU",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_grafana_memory",
+        "name": "Grafana Memory",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_grafana_memory_2",
+        "name": "Grafana Memory %",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_grafana_restart_count",
+        "name": "Grafana Restart Count",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_grafana_network_rx",
+        "name": "Grafana Network RX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_grafana_network_tx",
+        "name": "Grafana Network TX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_seerr_cpu",
+        "name": "seerr CPU",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_seerr_memory",
+        "name": "seerr Memory",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_seerr_memory_2",
+        "name": "seerr Memory %",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_seerr_restart_count",
+        "name": "seerr Restart Count",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_seerr_network_rx",
+        "name": "seerr Network RX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_seerr_network_tx",
+        "name": "seerr Network TX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_glances_cpu",
+        "name": "Glances CPU",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_glances_memory",
+        "name": "Glances Memory",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_glances_memory_2",
+        "name": "Glances Memory %",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_glances_restart_count",
+        "name": "Glances Restart Count",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_glances_network_rx",
+        "name": "Glances Network RX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_glances_network_tx",
+        "name": "Glances Network TX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_prometheus_cpu",
+        "name": "prometheus CPU",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_prometheus_memory",
+        "name": "prometheus Memory",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_prometheus_memory_2",
+        "name": "prometheus Memory %",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_prometheus_restart_count",
+        "name": "prometheus Restart Count",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_prometheus_network_rx",
+        "name": "prometheus Network RX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_prometheus_network_tx",
+        "name": "prometheus Network TX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_sonarr_cpu",
+        "name": "sonarr CPU",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_sonarr_memory",
+        "name": "sonarr Memory",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_sonarr_memory_2",
+        "name": "sonarr Memory %",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_sonarr_restart_count",
+        "name": "sonarr Restart Count",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_sonarr_network_rx",
+        "name": "sonarr Network RX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_sonarr_network_tx",
+        "name": "sonarr Network TX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_homebridge_cpu",
+        "name": "homebridge CPU",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_homebridge_memory",
+        "name": "homebridge Memory",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_homebridge_memory_2",
+        "name": "homebridge Memory %",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_homebridge_restart_count",
+        "name": "homebridge Restart Count",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_homebridge_network_rx",
+        "name": "homebridge Network RX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_homebridge_network_tx",
+        "name": "homebridge Network TX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_postgresql_cpu",
+        "name": "PostgreSQL CPU",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_postgresql_memory",
+        "name": "PostgreSQL Memory",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_postgresql_memory_2",
+        "name": "PostgreSQL Memory %",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_postgresql_restart_count",
+        "name": "PostgreSQL Restart Count",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_postgresql_network_rx",
+        "name": "PostgreSQL Network RX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_postgresql_network_tx",
+        "name": "PostgreSQL Network TX",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_registration_type",
+        "name": "Registration Type",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_registration_state",
+        "name": "Registration State",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_array_started",
+        "name": "Array Started",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_parity_check_running",
+        "name": "Parity Check Running",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_parity_valid",
+        "name": "Parity Valid",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_ups_connected",
+        "name": "UPS Connected",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_update_available",
+        "name": "Update Available",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_flash_healthy",
+        "name": "Flash Healthy",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_mover_running",
+        "name": "Mover Running",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_parity_check_scheduled",
+        "name": "Parity Check Scheduled",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_network_wlan0",
+        "name": "Network wlan0",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_network_eth0",
+        "name": "Network eth0",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_network_br0",
+        "name": "Network br0",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_network_eth1",
+        "name": "Network eth1",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_smb_service",
+        "name": "SMB Service",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_nfs_service",
+        "name": "NFS Service",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_afp_service",
+        "name": "AFP Service",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_ftp_service",
+        "name": "FTP Service",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_ssh_service",
+        "name": "SSH Service",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_telnet_service",
+        "name": "Telnet Service",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_avahi_service",
+        "name": "Avahi Service",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_netbios_service",
+        "name": "NetBIOS Service",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_wsd_service",
+        "name": "WSD Service",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_wireguard_service",
+        "name": "WireGuard Service",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_upnp_service",
+        "name": "UPnP Service",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "binary_sensor.cube_ntp_service",
+        "name": "NTP Service",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_homeassistant",
+        "name": "Container homeassistant",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_homeassistant_autostart",
+        "name": "Container homeassistant Autostart",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_sabnzbd",
+        "name": "Container sabnzbd",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_sabnzbd_autostart",
+        "name": "Container sabnzbd Autostart",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_plex",
+        "name": "Container plex",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_plex_autostart",
+        "name": "Container plex Autostart",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_influxdb",
+        "name": "Container Influxdb",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_influxdb_autostart",
+        "name": "Container Influxdb Autostart",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_telegraf",
+        "name": "Container telegraf",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_telegraf_autostart",
+        "name": "Container telegraf Autostart",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_recyclarr",
+        "name": "Container recyclarr",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_recyclarr_autostart",
+        "name": "Container recyclarr Autostart",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_radarr",
+        "name": "Container radarr",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_radarr_autostart",
+        "name": "Container radarr Autostart",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_mariadb",
+        "name": "Container MariaDB",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_mariadb_autostart",
+        "name": "Container MariaDB Autostart",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_mysql",
+        "name": "Container MySQL",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_mysql_autostart",
+        "name": "Container MySQL Autostart",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_grafana",
+        "name": "Container Grafana",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_grafana_autostart",
+        "name": "Container Grafana Autostart",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_seerr",
+        "name": "Container seerr",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_seerr_autostart",
+        "name": "Container seerr Autostart",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_glances",
+        "name": "Container Glances",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_glances_autostart",
+        "name": "Container Glances Autostart",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_prometheus",
+        "name": "Container prometheus",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_prometheus_autostart",
+        "name": "Container prometheus Autostart",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_sonarr",
+        "name": "Container sonarr",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_sonarr_autostart",
+        "name": "Container sonarr Autostart",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_homebridge",
+        "name": "Container homebridge",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_homebridge_autostart",
+        "name": "Container homebridge Autostart",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_postgresql",
+        "name": "Container PostgreSQL",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_container_postgresql_autostart",
+        "name": "Container PostgreSQL Autostart",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_vm_home_assistant",
+        "name": "VM Home Assistant",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_disk_parity_spin",
+        "name": "Disk parity Spin",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_disk_disk1_spin",
+        "name": "Disk disk1 Spin",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_disk_disk2_spin",
+        "name": "Disk disk2 Spin",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_disk_disk3_spin",
+        "name": "Disk disk3 Spin",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_disk_disk4_spin",
+        "name": "Disk disk4 Spin",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_disk_parity2_spin",
+        "name": "Disk parity2 Spin",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "switch.cube_disk_cache_spin",
+        "name": "Disk cache Spin",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_start_array",
+        "name": "Start Array",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_stop_array",
+        "name": "Stop Array",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_clear_array_disk_stats",
+        "name": "Clear Array Disk Stats",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_start_parity_check",
+        "name": "Start Parity Check",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_stop_parity_check",
+        "name": "Stop Parity Check",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_pause_parity_check",
+        "name": "Pause Parity Check",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_resume_parity_check",
+        "name": "Resume Parity Check",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_archive_all_notifications",
+        "name": "Archive All Notifications",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_shutdown_system",
+        "name": "Shutdown System",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_reboot_system",
+        "name": "Reboot System",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_user_script_delete_ds_store",
+        "name": "User Script delete.ds_store",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_user_script_delete_dangling_images",
+        "name": "User Script delete_dangling_images",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_user_script_startdockercontainers",
+        "name": "User Script startDockerContainers",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_user_script_stopdockercontainers",
+        "name": "User Script stopDockerContainers",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_user_script_viewdockerlogsize",
+        "name": "User Script viewDockerLogSize",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_restart_homeassistant",
+        "name": "Restart homeassistant",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_restart_sabnzbd",
+        "name": "Restart sabnzbd",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_restart_plex",
+        "name": "Restart plex",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_restart_influxdb",
+        "name": "Restart Influxdb",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_restart_telegraf",
+        "name": "Restart telegraf",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_restart_recyclarr",
+        "name": "Restart recyclarr",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_restart_radarr",
+        "name": "Restart radarr",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_restart_mariadb",
+        "name": "Restart MariaDB",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_restart_mysql",
+        "name": "Restart MySQL",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_restart_grafana",
+        "name": "Restart Grafana",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_restart_seerr",
+        "name": "Restart seerr",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_restart_glances",
+        "name": "Restart Glances",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_restart_prometheus",
+        "name": "Restart prometheus",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_restart_sonarr",
+        "name": "Restart sonarr",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_restart_homebridge",
+        "name": "Restart homebridge",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_restart_postgresql",
+        "name": "Restart PostgreSQL",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_force_stop_home_assistant",
+        "name": "Force Stop Home Assistant",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_restart_home_assistant",
+        "name": "Restart Home Assistant",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_pause_home_assistant",
+        "name": "Pause Home Assistant",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_resume_home_assistant",
+        "name": "Resume Home Assistant",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "button.cube_reset_home_assistant",
+        "name": "Reset Home Assistant",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "number.cube_fan_fan_1_speed",
+        "name": "Fan Fan 1 Speed",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "number.cube_fan_fan_2_speed",
+        "name": "Fan Fan 2 Speed",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "number.cube_fan_fan_3_speed",
+        "name": "Fan Fan 3 Speed",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "number.cube_fan_fan_4_speed",
+        "name": "Fan Fan 4 Speed",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "number.cube_fan_fan_5_speed",
+        "name": "Fan Fan 5 Speed",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "event.cube_notification",
+        "name": "Notification",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_temperature_coretemp_core_0",
+        "name": "Temperature coretemp Core 0",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_temperature_coretemp_core_1",
+        "name": "Temperature coretemp Core 1",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_temperature_coretemp_core_2",
+        "name": "Temperature coretemp Core 2",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_temperature_coretemp_core_3",
+        "name": "Temperature coretemp Core 3",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_temperature_coretemp_core_4",
+        "name": "Temperature coretemp Core 4",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_temperature_coretemp_core_5",
+        "name": "Temperature coretemp Core 5",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_temperature_coretemp_package_id_0",
+        "name": "Temperature coretemp Package id 0",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_temperature_nct6793_auxtin0",
+        "name": "Temperature nct6793 AUXTIN0",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_temperature_nct6793_auxtin1",
+        "name": "Temperature nct6793 AUXTIN1",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_temperature_nct6793_auxtin2",
+        "name": "Temperature nct6793 AUXTIN2",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_temperature_nct6793_auxtin3",
+        "name": "Temperature nct6793 AUXTIN3",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_temperature_nct6793_agent0_dimm0",
+        "name": "Temperature nct6793 Agent0 Dimm0",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_temperature_nct6793_cputin",
+        "name": "Temperature nct6793 CPUTIN",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_temperature_nct6793_peci_agent_0",
+        "name": "Temperature nct6793 PECI Agent 0",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_temperature_nct6793_peci_agent_0_2",
+        "name": "Temperature nct6793 PECI Agent 0",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_temperature_nct6793_peci_agent_0_3",
+        "name": "Temperature nct6793 PECI Agent 0",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_temperature_nct6793_peci_agent_0_4",
+        "name": "Temperature nct6793 PECI Agent 0",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_temperature_nct6793_peci_agent_0_5",
+        "name": "Temperature nct6793 PECI Agent 0",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_temperature_nct6793_systin",
+        "name": "Temperature nct6793 SYSTIN",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_temperature_nvme_composite",
+        "name": "Temperature nvme Composite",
+        "platform": "unraid_management_agent"
+      },
+      {
+        "entity_id": "sensor.cube_temperature_pch_cannonlake_virtual_0_temp1",
+        "name": "Temperature pch cannonlake-virtual-0 temp1",
+        "platform": "unraid_management_agent"
+      }
+    ],
+    "name_by_user": null,
+    "default_name": "Cube",
+    "hw_version": "2026.09.01",
+    "serial_number": null,
+    "disabled_by": null,
+    "labels": [],
+    "config_entries": ["01M4ETRWD2PBR5ZTSJ9XQ23J55"],
+    "connections": [],
+    "identifiers": [["unraid_management_agent", "01M4ETRWD2PBR5ZTSJ9XQ23J55"]]
+  },
+  "states": {
+    "sensor.cube_cpu_usage": {
+      "entity_id": "sensor.cube_cpu_usage",
+      "state": "1.7",
+      "attributes": {
+        "state_class": "measurement",
+        "cpu_cores": 12,
+        "cpu_threads": 12,
+        "cpu_model": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+        "cpu_frequency": "800 MHz",
+        "unit_of_measurement": "%",
+        "icon": "mdi:cpu-64-bit",
+        "friendly_name": "Cube CPU Usage"
+      },
+      "last_changed": "2026-10-09T15:38:02.721693+10:00",
+      "last_reported": "2026-10-09T15:38:04.523614+10:00",
+      "last_updated": "2026-10-09T15:38:02.721693+10:00",
+      "context": {
+        "id": "01M4FJP8B1Z10PRA683EZWR99J",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_ram_usage": {
+      "entity_id": "sensor.cube_ram_usage",
+      "state": "27.9",
+      "attributes": {
+        "state_class": "measurement",
+        "ram_total": "31.0 GB",
+        "server_model": "To Be Filled By O.E.M.",
+        "ram_used": "8.7 GB",
+        "ram_free": "22.4 GB",
+        "ram_cached": "22.1 GB",
+        "ram_buffers": "1.0 MB",
+        "ram_available": "44.4 GB",
+        "unit_of_measurement": "%",
+        "icon": "mdi:memory",
+        "friendly_name": "Cube RAM Usage"
+      },
+      "last_changed": "2026-10-09T15:38:02.721773+10:00",
+      "last_reported": "2026-10-09T15:38:04.523753+10:00",
+      "last_updated": "2026-10-09T15:38:02.721773+10:00",
+      "context": {
+        "id": "01M4FJP8B19RKKS5F5YB51EP9F",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_cpu_temperature": {
+      "entity_id": "sensor.cube_cpu_temperature",
+      "state": "34.0",
+      "attributes": {
+        "state_class": "measurement",
+        "unit_of_measurement": "\u00b0C",
+        "device_class": "temperature",
+        "friendly_name": "Cube CPU Temperature"
+      },
+      "last_changed": "2026-10-09T15:38:02.721815+10:00",
+      "last_reported": "2026-10-09T15:38:04.523824+10:00",
+      "last_updated": "2026-10-09T15:38:02.721815+10:00",
+      "context": {
+        "id": "01M4FJP8B1ZMQX3RV2YQP0HB61",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_motherboard_temperature": {
+      "entity_id": "sensor.cube_motherboard_temperature",
+      "state": "0.0",
+      "attributes": {
+        "state_class": "measurement",
+        "unit_of_measurement": "\u00b0C",
+        "device_class": "temperature",
+        "friendly_name": "Cube Motherboard Temperature"
+      },
+      "last_changed": "2026-10-09T15:04:33.081674+10:00",
+      "last_reported": "2026-10-09T15:38:04.523876+10:00",
+      "last_updated": "2026-10-09T15:04:33.081674+10:00",
+      "context": {
+        "id": "01M4FGRXSSK540XMYNVFA8DKMW",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_cpu_power": {
+      "entity_id": "sensor.cube_cpu_power",
+      "state": "2.5",
+      "attributes": {
+        "state_class": "measurement",
+        "unit_of_measurement": "W",
+        "device_class": "power",
+        "friendly_name": "Cube CPU Power"
+      },
+      "last_changed": "2026-10-09T15:38:02.721861+10:00",
+      "last_reported": "2026-10-09T15:38:04.523928+10:00",
+      "last_updated": "2026-10-09T15:38:02.721861+10:00",
+      "context": {
+        "id": "01M4FJP8B12671NCTXNN6AP1SH",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_dram_power": {
+      "entity_id": "sensor.cube_dram_power",
+      "state": "0.8",
+      "attributes": {
+        "state_class": "measurement",
+        "unit_of_measurement": "W",
+        "device_class": "power",
+        "friendly_name": "Cube DRAM Power"
+      },
+      "last_changed": "2026-10-09T15:35:02.678115+10:00",
+      "last_reported": "2026-10-09T15:38:04.523977+10:00",
+      "last_updated": "2026-10-09T15:35:02.678115+10:00",
+      "context": {
+        "id": "01M4FJGRGP5JKGAC980ZP7T4XW",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_uptime": {
+      "entity_id": "sensor.cube_uptime",
+      "state": "2026-07-21T06:16:19+00:00",
+      "attributes": {
+        "hostname": "Cube",
+        "version": "7.3.2",
+        "uptime_days": 79,
+        "uptime_hours": 23,
+        "uptime_minutes": 21,
+        "uptime_total_seconds": 6909704,
+        "device_class": "timestamp",
+        "friendly_name": "Cube Uptime"
+      },
+      "last_changed": "2026-10-09T15:04:33.082120+10:00",
+      "last_reported": "2026-10-09T15:38:04.524133+10:00",
+      "last_updated": "2026-10-09T15:38:02.721926+10:00",
+      "context": {
+        "id": "01M4FJP8B1HPVGJBY7G7YAG1FC",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_chipset_temperature": {
+      "entity_id": "sensor.cube_chipset_temperature",
+      "state": "45.0",
+      "attributes": {
+        "state_class": "measurement",
+        "unit_of_measurement": "\u00b0C",
+        "device_class": "temperature",
+        "friendly_name": "Cube Chipset Temperature"
+      },
+      "last_changed": "2026-10-09T15:37:32.722513+10:00",
+      "last_reported": "2026-10-09T15:38:04.524200+10:00",
+      "last_updated": "2026-10-09T15:37:32.722513+10:00",
+      "context": {
+        "id": "01M4FJNB1JKR1Q59Y0BVBYWVD7",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_cpu_governor": {
+      "entity_id": "sensor.cube_cpu_governor",
+      "state": "powersave",
+      "attributes": {
+        "available_governors": "performance, powersave",
+        "scaling_driver": "intel_pstate",
+        "icon": "mdi:gauge",
+        "friendly_name": "Cube CPU Governor"
+      },
+      "last_changed": "2026-10-09T15:04:33.082380+10:00",
+      "last_reported": "2026-10-09T15:38:04.524251+10:00",
+      "last_updated": "2026-10-09T15:04:33.082380+10:00",
+      "context": {
+        "id": "01M4FGRXST70EYNG0T7XK76H49",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_cpu_frequency": {
+      "entity_id": "sensor.cube_cpu_frequency",
+      "state": "1200.0",
+      "attributes": {
+        "state_class": "measurement",
+        "min_frequency_mhz": 800.0,
+        "max_frequency_mhz": 4700.0,
+        "governor": "powersave",
+        "scaling_driver": "intel_pstate",
+        "unit_of_measurement": "MHz",
+        "device_class": "frequency",
+        "friendly_name": "Cube CPU Frequency"
+      },
+      "last_changed": "2026-10-09T15:38:02.721999+10:00",
+      "last_reported": "2026-10-09T15:38:04.524313+10:00",
+      "last_updated": "2026-10-09T15:38:02.721999+10:00",
+      "context": {
+        "id": "01M4FJP8B1PB53X4P17YZE89F9",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_swappiness": {
+      "entity_id": "sensor.cube_swappiness",
+      "state": "60",
+      "attributes": {
+        "state_class": "measurement",
+        "icon": "mdi:tune",
+        "friendly_name": "Cube Swappiness"
+      },
+      "last_changed": "2026-10-09T15:04:33.082650+10:00",
+      "last_reported": "2026-10-09T15:38:04.524358+10:00",
+      "last_updated": "2026-10-09T15:04:33.082650+10:00",
+      "context": {
+        "id": "01M4FGRXSTHQCV8158X96KAN1B",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_system_status": {
+      "entity_id": "sensor.cube_system_status",
+      "state": "online",
+      "attributes": {
+        "websocket_connected": true,
+        "array_state": "STARTED",
+        "icon": "mdi:server",
+        "friendly_name": "Cube System Status"
+      },
+      "last_changed": "2026-10-09T15:04:33.082791+10:00",
+      "last_reported": "2026-10-09T15:38:04.524420+10:00",
+      "last_updated": "2026-10-09T15:04:33.378161+10:00",
+      "context": {
+        "id": "01M4FGRY32ZQ7TFW2RCECADZK4",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_array_usage": {
+      "entity_id": "sensor.cube_array_usage",
+      "state": "3.0",
+      "attributes": {
+        "state_class": "measurement",
+        "array_state": "STARTED",
+        "num_disks": 5,
+        "num_data_disks": 4,
+        "num_parity_disks": 1,
+        "total_capacity": "38.2 TB",
+        "free_space": "37.1 TB",
+        "unit_of_measurement": "%",
+        "icon": "mdi:harddisk",
+        "friendly_name": "Cube Array Usage"
+      },
+      "last_changed": "2026-10-09T15:04:33.082933+10:00",
+      "last_reported": "2026-10-09T15:38:04.524496+10:00",
+      "last_updated": "2026-10-09T15:04:33.082933+10:00",
+      "context": {
+        "id": "01M4FGRXSTFEA8M64W2ZX7PRWM",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_parity_check_progress": {
+      "entity_id": "sensor.cube_parity_check_progress",
+      "state": "0.0",
+      "attributes": {
+        "state_class": "measurement",
+        "unit_of_measurement": "%",
+        "icon": "mdi:sync",
+        "friendly_name": "Cube Parity Check Progress"
+      },
+      "last_changed": "2026-10-09T15:04:33.083074+10:00",
+      "last_reported": "2026-10-09T15:38:04.524551+10:00",
+      "last_updated": "2026-10-09T15:04:33.083074+10:00",
+      "context": {
+        "id": "01M4FGRXSVWCBCMV5B3H8CN0DY",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_fan_nct6793_fan2": {
+      "entity_id": "sensor.cube_fan_nct6793_fan2",
+      "state": "870",
+      "attributes": {
+        "state_class": "measurement",
+        "pwm_percent": 36.0,
+        "mode": "automatic",
+        "controllable": true,
+        "fan_id": "hwmon4_fan2",
+        "unit_of_measurement": "RPM",
+        "icon": "mdi:fan",
+        "friendly_name": "Cube Fan nct6793_fan2"
+      },
+      "last_changed": "2026-10-09T15:38:02.722195+10:00",
+      "last_reported": "2026-10-09T15:38:04.524853+10:00",
+      "last_updated": "2026-10-09T15:38:02.722195+10:00",
+      "context": {
+        "id": "01M4FJP8B2KAJ93Y0XNYWNNAJY",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_fan_nct6793_fan3": {
+      "entity_id": "sensor.cube_fan_nct6793_fan3",
+      "state": "0",
+      "attributes": {
+        "state_class": "measurement",
+        "pwm_percent": 30.0,
+        "mode": "manual",
+        "controllable": true,
+        "fan_id": "hwmon4_fan3",
+        "failed": true,
+        "unit_of_measurement": "RPM",
+        "icon": "mdi:fan",
+        "friendly_name": "Cube Fan nct6793_fan3"
+      },
+      "last_changed": "2026-10-09T15:04:33.083812+10:00",
+      "last_reported": "2026-10-09T15:38:04.524915+10:00",
+      "last_updated": "2026-10-09T15:04:33.083812+10:00",
+      "context": {
+        "id": "01M4FGRXSVE82KG4H1W3XS7PCE",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_fan_nct6793_fan4": {
+      "entity_id": "sensor.cube_fan_nct6793_fan4",
+      "state": "0",
+      "attributes": {
+        "state_class": "measurement",
+        "pwm_percent": 30.0,
+        "mode": "manual",
+        "controllable": true,
+        "fan_id": "hwmon4_fan4",
+        "failed": true,
+        "unit_of_measurement": "RPM",
+        "icon": "mdi:fan",
+        "friendly_name": "Cube Fan nct6793_fan4"
+      },
+      "last_changed": "2026-10-09T15:04:33.083283+10:00",
+      "last_reported": "2026-10-09T15:38:04.524652+10:00",
+      "last_updated": "2026-10-09T15:04:33.083283+10:00",
+      "context": {
+        "id": "01M4FGRXSVFRB7CYEXPYTK9DJ3",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_fan_nct6793_fan5": {
+      "entity_id": "sensor.cube_fan_nct6793_fan5",
+      "state": "1453",
+      "attributes": {
+        "state_class": "measurement",
+        "pwm_percent": 36.0,
+        "mode": "automatic",
+        "controllable": true,
+        "fan_id": "hwmon4_fan5",
+        "unit_of_measurement": "RPM",
+        "icon": "mdi:fan",
+        "friendly_name": "Cube Fan nct6793_fan5"
+      },
+      "last_changed": "2026-10-09T15:37:32.722686+10:00",
+      "last_reported": "2026-10-09T15:38:04.524726+10:00",
+      "last_updated": "2026-10-09T15:37:32.722686+10:00",
+      "context": {
+        "id": "01M4FJNB1JXCK0JMACA7R351J2",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_fan_nct6793_fan1": {
+      "entity_id": "sensor.cube_fan_nct6793_fan1",
+      "state": "794",
+      "attributes": {
+        "state_class": "measurement",
+        "pwm_percent": 64.0,
+        "mode": "automatic",
+        "controllable": true,
+        "fan_id": "hwmon4_fan1",
+        "unit_of_measurement": "RPM",
+        "icon": "mdi:fan",
+        "friendly_name": "Cube Fan nct6793_fan1"
+      },
+      "last_changed": "2026-10-09T15:38:02.722163+10:00",
+      "last_reported": "2026-10-09T15:38:04.524792+10:00",
+      "last_updated": "2026-10-09T15:38:02.722163+10:00",
+      "context": {
+        "id": "01M4FJP8B25P966CZ95Y8RZFEW",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_gpu_intel_uhd_graphics_630_utilization": {
+      "entity_id": "sensor.cube_gpu_intel_uhd_graphics_630_utilization",
+      "state": "0.0",
+      "attributes": {
+        "state_class": "measurement",
+        "gpu_name": "Intel UHD Graphics 630",
+        "gpu_driver_version": "6.18.38-Unraid",
+        "unit_of_measurement": "%",
+        "icon": "mdi:expansion-card",
+        "friendly_name": "Cube GPU Intel UHD Graphics 630 Utilization"
+      },
+      "last_changed": "2026-10-09T15:04:33.083955+10:00",
+      "last_reported": "2026-10-09T15:15:56.896123+10:00",
+      "last_updated": "2026-10-09T15:04:33.083955+10:00",
+      "context": {
+        "id": "01M4FGRXSVYH7HJK1JW7AXG38K",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_gpu_intel_uhd_graphics_630_temperature": {
+      "entity_id": "sensor.cube_gpu_intel_uhd_graphics_630_temperature",
+      "state": "0.0",
+      "attributes": {
+        "state_class": "measurement",
+        "unit_of_measurement": "\u00b0C",
+        "device_class": "temperature",
+        "friendly_name": "Cube GPU Intel UHD Graphics 630 Temperature"
+      },
+      "last_changed": "2026-10-09T15:04:33.084124+10:00",
+      "last_reported": "2026-10-09T15:38:04.525063+10:00",
+      "last_updated": "2026-10-09T15:04:33.084124+10:00",
+      "context": {
+        "id": "01M4FGRXSWAKNY236V9326BP7K",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_gpu_intel_uhd_graphics_630_power": {
+      "entity_id": "sensor.cube_gpu_intel_uhd_graphics_630_power",
+      "state": "0.0",
+      "attributes": {
+        "state_class": "measurement",
+        "unit_of_measurement": "W",
+        "device_class": "power",
+        "friendly_name": "Cube GPU Intel UHD Graphics 630 Power"
+      },
+      "last_changed": "2026-10-09T15:04:33.084281+10:00",
+      "last_reported": "2026-10-09T15:38:04.525124+10:00",
+      "last_updated": "2026-10-09T15:04:33.084281+10:00",
+      "context": {
+        "id": "01M4FGRXSW2KSS3TY1N9AQQ208",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_gpu_intel_uhd_graphics_630_energy": {
+      "entity_id": "sensor.cube_gpu_intel_uhd_graphics_630_energy",
+      "state": "0.0",
+      "attributes": {
+        "state_class": "total_increasing",
+        "current_power_watts": 0.0,
+        "gpu_name": "Intel UHD Graphics 630",
+        "gpu_driver_version": "6.18.38-Unraid",
+        "unit_of_measurement": "kWh",
+        "device_class": "energy",
+        "friendly_name": "Cube GPU Intel UHD Graphics 630 Energy"
+      },
+      "last_changed": "2026-10-09T15:04:33.084458+10:00",
+      "last_reported": "2026-10-09T15:04:34.493555+10:00",
+      "last_updated": "2026-10-09T15:04:33.084458+10:00",
+      "context": {
+        "id": "01M4FGRXSW0A83QNR1DCBTNXGS",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_ups_battery": {
+      "entity_id": "sensor.cube_ups_battery",
+      "state": "100.0",
+      "attributes": {
+        "state_class": "measurement",
+        "ups_status": "ONLINE",
+        "ups_model": "PR1000ELCDRT1U",
+        "unit_of_measurement": "%",
+        "device_class": "battery",
+        "friendly_name": "Cube UPS Battery"
+      },
+      "last_changed": "2026-10-09T15:04:33.084640+10:00",
+      "last_reported": "2026-10-09T15:38:04.525290+10:00",
+      "last_updated": "2026-10-09T15:04:33.084640+10:00",
+      "context": {
+        "id": "01M4FGRXSW5E2T7MJ8H5ACV688",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_ups_load": {
+      "entity_id": "sensor.cube_ups_load",
+      "state": "13.0",
+      "attributes": {
+        "state_class": "measurement",
+        "unit_of_measurement": "%",
+        "icon": "mdi:battery",
+        "friendly_name": "Cube UPS Load"
+      },
+      "last_changed": "2026-10-09T15:36:32.678207+10:00",
+      "last_reported": "2026-10-09T15:38:04.525368+10:00",
+      "last_updated": "2026-10-09T15:36:32.678207+10:00",
+      "context": {
+        "id": "01M4FJKGD60DNP8Z8VRC724MCQ",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_ups_runtime": {
+      "entity_id": "sensor.cube_ups_runtime",
+      "state": "100",
+      "attributes": {
+        "state_class": "measurement",
+        "unit_of_measurement": "min",
+        "device_class": "duration",
+        "icon": "mdi:timer",
+        "friendly_name": "Cube UPS Runtime"
+      },
+      "last_changed": "2026-10-09T15:35:32.721103+10:00",
+      "last_reported": "2026-10-09T15:38:04.525425+10:00",
+      "last_updated": "2026-10-09T15:35:32.721103+10:00",
+      "context": {
+        "id": "01M4FJHNVH4C1P9E1WC7JVCWRW",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_ups_power": {
+      "entity_id": "sensor.cube_ups_power",
+      "state": "104.0",
+      "attributes": {
+        "state_class": "measurement",
+        "unit_of_measurement": "W",
+        "device_class": "power",
+        "friendly_name": "Cube UPS Power"
+      },
+      "last_changed": "2026-10-09T15:36:32.678247+10:00",
+      "last_reported": "2026-10-09T15:38:04.525469+10:00",
+      "last_updated": "2026-10-09T15:36:32.678247+10:00",
+      "context": {
+        "id": "01M4FJKGD6CCHBV6Q2TYFGYERD",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_ups_energy": {
+      "entity_id": "sensor.cube_ups_energy",
+      "state": "0.746",
+      "attributes": {
+        "state_class": "total_increasing",
+        "current_power_watts": 104.0,
+        "unit_of_measurement": "kWh",
+        "device_class": "energy",
+        "friendly_name": "Cube UPS Energy"
+      },
+      "last_changed": "2026-10-09T15:37:57.926797+10:00",
+      "last_reported": "2026-10-09T15:38:04.525548+10:00",
+      "last_updated": "2026-10-09T15:37:57.926797+10:00",
+      "context": {
+        "id": "01M4FJP3N61AP67KZM6B1YH76Y",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_disk_parity_health": {
+      "entity_id": "sensor.cube_disk_parity_health",
+      "state": "UNKNOWN",
+      "attributes": {
+        "disk_name": "parity",
+        "device": "sdc",
+        "model": "WUH721816ALE6L4",
+        "serial": "2CGV0URP",
+        "spin_state": "standby",
+        "icon": "mdi:harddisk",
+        "friendly_name": "Cube Disk parity Health"
+      },
+      "last_changed": "2026-10-09T15:04:33.085641+10:00",
+      "last_reported": "2026-10-09T15:04:34.493654+10:00",
+      "last_updated": "2026-10-09T15:04:33.085641+10:00",
+      "context": {
+        "id": "01M4FGRXSXT5NETXHDNB77D90N",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_disk_disk1_health": {
+      "entity_id": "sensor.cube_disk_disk1_health",
+      "state": "UNKNOWN",
+      "attributes": {
+        "disk_name": "disk1",
+        "device": "sdd",
+        "model": "WUH721816ALE6L4",
+        "serial": "2CH181EP",
+        "spin_state": "standby",
+        "icon": "mdi:harddisk",
+        "friendly_name": "Cube Disk disk1 Health"
+      },
+      "last_changed": "2026-10-09T15:04:33.086059+10:00",
+      "last_reported": "2026-10-09T15:04:34.493668+10:00",
+      "last_updated": "2026-10-09T15:04:33.086059+10:00",
+      "context": {
+        "id": "01M4FGRXSYS3YS8KCDF0E6FQAV",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_disk_disk1_usage": {
+      "entity_id": "sensor.cube_disk_disk1_usage",
+      "state": "4.6",
+      "attributes": {
+        "state_class": "measurement",
+        "disk_name": "disk1",
+        "role": "data",
+        "status": "DISK_OK",
+        "total_size": "14.6 TB",
+        "used_size": "692.6 GB",
+        "free_size": "13.9 TB",
+        "unit_of_measurement": "%",
+        "icon": "mdi:harddisk",
+        "friendly_name": "Cube Disk disk1 Usage"
+      },
+      "last_changed": "2026-10-09T15:04:33.086461+10:00",
+      "last_reported": "2026-10-09T15:38:04.525766+10:00",
+      "last_updated": "2026-10-09T15:04:33.086461+10:00",
+      "context": {
+        "id": "01M4FGRXSYPXR43EYN11QCATHG",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_disk_disk2_health": {
+      "entity_id": "sensor.cube_disk_disk2_health",
+      "state": "UNKNOWN",
+      "attributes": {
+        "disk_name": "disk2",
+        "device": "sdf",
+        "model": "WDC WD100EFAX-68LHPN0",
+        "serial": "JEKV15MZ",
+        "spin_state": "standby",
+        "icon": "mdi:harddisk",
+        "friendly_name": "Cube Disk disk2 Health"
+      },
+      "last_changed": "2026-10-09T15:04:33.086590+10:00",
+      "last_reported": "2026-10-09T15:04:34.493710+10:00",
+      "last_updated": "2026-10-09T15:04:33.086590+10:00",
+      "context": {
+        "id": "01M4FGRXSYYDGRXB1J0V3Y08KG",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_disk_disk2_usage": {
+      "entity_id": "sensor.cube_disk_disk2_usage",
+      "state": "1.9",
+      "attributes": {
+        "state_class": "measurement",
+        "disk_name": "disk2",
+        "role": "data",
+        "status": "DISK_OK",
+        "total_size": "9.1 TB",
+        "used_size": "179.1 GB",
+        "free_size": "8.9 TB",
+        "unit_of_measurement": "%",
+        "icon": "mdi:harddisk",
+        "friendly_name": "Cube Disk disk2 Usage"
+      },
+      "last_changed": "2026-10-09T15:04:33.086960+10:00",
+      "last_reported": "2026-10-09T15:38:04.525894+10:00",
+      "last_updated": "2026-10-09T15:04:33.086960+10:00",
+      "context": {
+        "id": "01M4FGRXSYK7X7Z8AAHQN15804",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_disk_disk3_health": {
+      "entity_id": "sensor.cube_disk_disk3_health",
+      "state": "UNKNOWN",
+      "attributes": {
+        "disk_name": "disk3",
+        "device": "sde",
+        "model": "ST8000VN004-2M2101",
+        "serial": "WKD08FP6",
+        "spin_state": "standby",
+        "icon": "mdi:harddisk",
+        "friendly_name": "Cube Disk disk3 Health"
+      },
+      "last_changed": "2026-10-09T15:04:33.087134+10:00",
+      "last_reported": "2026-10-09T15:04:34.493745+10:00",
+      "last_updated": "2026-10-09T15:04:33.087134+10:00",
+      "context": {
+        "id": "01M4FGRXSZ0CB5YV52H748Q6V5",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_disk_disk3_usage": {
+      "entity_id": "sensor.cube_disk_disk3_usage",
+      "state": "1.9",
+      "attributes": {
+        "state_class": "measurement",
+        "disk_name": "disk3",
+        "role": "data",
+        "status": "DISK_OK",
+        "total_size": "7.3 TB",
+        "used_size": "142.7 GB",
+        "free_size": "7.1 TB",
+        "unit_of_measurement": "%",
+        "icon": "mdi:harddisk",
+        "friendly_name": "Cube Disk disk3 Usage"
+      },
+      "last_changed": "2026-10-09T15:04:33.087502+10:00",
+      "last_reported": "2026-10-09T15:38:04.526015+10:00",
+      "last_updated": "2026-10-09T15:04:33.087502+10:00",
+      "context": {
+        "id": "01M4FGRXSZT5X6RGQQCFGDYB4R",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_disk_disk4_health": {
+      "entity_id": "sensor.cube_disk_disk4_health",
+      "state": "UNKNOWN",
+      "attributes": {
+        "disk_name": "disk4",
+        "device": "sdg",
+        "model": "ST8000VN004-2M2101",
+        "serial": "WKD07FR0",
+        "spin_state": "standby",
+        "icon": "mdi:harddisk",
+        "friendly_name": "Cube Disk disk4 Health"
+      },
+      "last_changed": "2026-10-09T15:04:33.087631+10:00",
+      "last_reported": "2026-10-09T15:04:34.493780+10:00",
+      "last_updated": "2026-10-09T15:04:33.087631+10:00",
+      "context": {
+        "id": "01M4FGRXSZ1S8WR7243618YMEK",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_disk_disk4_usage": {
+      "entity_id": "sensor.cube_disk_disk4_usage",
+      "state": "1.9",
+      "attributes": {
+        "state_class": "measurement",
+        "disk_name": "disk4",
+        "role": "data",
+        "status": "DISK_OK",
+        "total_size": "7.3 TB",
+        "used_size": "142.7 GB",
+        "free_size": "7.1 TB",
+        "unit_of_measurement": "%",
+        "icon": "mdi:harddisk",
+        "friendly_name": "Cube Disk disk4 Usage"
+      },
+      "last_changed": "2026-10-09T15:04:33.088009+10:00",
+      "last_reported": "2026-10-09T15:38:04.526173+10:00",
+      "last_updated": "2026-10-09T15:04:33.088009+10:00",
+      "context": {
+        "id": "01M4FGRXT0FZEG8RGFA558VY5F",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_disk_parity2_health": {
+      "entity_id": "sensor.cube_disk_parity2_health",
+      "state": "DISK_NP_DSBL",
+      "attributes": {
+        "disk_name": "parity2",
+        "icon": "mdi:harddisk",
+        "friendly_name": "Cube Disk parity2 Health"
+      },
+      "last_changed": "2026-10-09T15:04:33.088181+10:00",
+      "last_reported": "2026-10-09T15:04:34.493817+10:00",
+      "last_updated": "2026-10-09T15:04:33.088181+10:00",
+      "context": {
+        "id": "01M4FGRXT05ZVGAZYH9N3WZFC2",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_disk_cache_health": {
+      "entity_id": "sensor.cube_disk_cache_health",
+      "state": "PASSED",
+      "attributes": {
+        "disk_name": "cache",
+        "device": "nvme0n1",
+        "model": "SPCC M.2 PCIe SSD",
+        "serial": "A240910N4M051200021",
+        "spin_state": "active",
+        "temperature": "29.0 \u00b0C",
+        "icon": "mdi:harddisk",
+        "friendly_name": "Cube Disk cache Health"
+      },
+      "last_changed": "2026-10-09T15:04:33.088545+10:00",
+      "last_reported": "2026-10-09T15:04:34.493832+10:00",
+      "last_updated": "2026-10-09T15:04:33.088545+10:00",
+      "context": {
+        "id": "01M4FGRXT02DGHZ8JJ4WP1A1P5",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_disk_cache_usage": {
+      "entity_id": "sensor.cube_disk_cache_usage",
+      "state": "10.6",
+      "attributes": {
+        "state_class": "measurement",
+        "disk_name": "cache",
+        "role": "cache",
+        "status": "DISK_OK",
+        "total_size": "476.9 GB",
+        "used_size": "50.6 GB",
+        "free_size": "426.3 GB",
+        "unit_of_measurement": "%",
+        "icon": "mdi:harddisk",
+        "friendly_name": "Cube Disk cache Usage"
+      },
+      "last_changed": "2026-10-09T15:04:33.088913+10:00",
+      "last_reported": "2026-10-09T15:38:04.526367+10:00",
+      "last_updated": "2026-10-09T15:04:33.088913+10:00",
+      "context": {
+        "id": "01M4FGRXT023RT6HM3QE8HBWBR",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_docker_vdisk_usage": {
+      "entity_id": "sensor.cube_docker_vdisk_usage",
+      "state": "14.6",
+      "attributes": {
+        "state_class": "measurement",
+        "total_size": "150.0 GB",
+        "used_size": "21.9 GB",
+        "free_size": "128.1 GB",
+        "unit_of_measurement": "%",
+        "icon": "mdi:docker",
+        "friendly_name": "Cube Docker vDisk Usage"
+      },
+      "last_changed": "2026-10-09T15:04:33.089118+10:00",
+      "last_reported": "2026-10-09T15:38:04.526489+10:00",
+      "last_updated": "2026-10-09T15:04:33.089118+10:00",
+      "context": {
+        "id": "01M4FGRXT1JMFND2FKP86ZS2JM",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_log_filesystem_usage": {
+      "entity_id": "sensor.cube_log_filesystem_usage",
+      "state": "6.9",
+      "attributes": {
+        "state_class": "measurement",
+        "total_size": "128.0 MB",
+        "used_size": "8.9 MB",
+        "free_size": "119.1 MB",
+        "unit_of_measurement": "%",
+        "icon": "mdi:file-document",
+        "friendly_name": "Cube Log Filesystem Usage"
+      },
+      "last_changed": "2026-10-09T15:04:33.089264+10:00",
+      "last_reported": "2026-10-09T15:38:04.526593+10:00",
+      "last_updated": "2026-10-09T15:04:33.089264+10:00",
+      "context": {
+        "id": "01M4FGRXT1T2M2YM8TPECNGEME",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_network_eth0_rx": {
+      "entity_id": "sensor.cube_network_eth0_rx",
+      "state": "492.307942388217",
+      "attributes": {
+        "state_class": "measurement",
+        "network_mac": "70:85:c2:f7:49:21",
+        "network_speed": 1000,
+        "unit_of_measurement": "kbit/s",
+        "device_class": "data_rate",
+        "icon": "mdi:download-network",
+        "friendly_name": "Cube Network ETH0 RX"
+      },
+      "last_changed": "2026-10-09T15:37:32.723301+10:00",
+      "last_reported": "2026-10-09T15:38:04.526709+10:00",
+      "last_updated": "2026-10-09T15:37:32.723301+10:00",
+      "context": {
+        "id": "01M4FJNB1K2QRM4M51C8NZZG7K",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_network_eth0_tx": {
+      "entity_id": "sensor.cube_network_eth0_tx",
+      "state": "119.784776709799",
+      "attributes": {
+        "state_class": "measurement",
+        "network_mac": "70:85:c2:f7:49:21",
+        "network_speed": 1000,
+        "unit_of_measurement": "kbit/s",
+        "device_class": "data_rate",
+        "icon": "mdi:upload-network",
+        "friendly_name": "Cube Network ETH0 TX"
+      },
+      "last_changed": "2026-10-09T15:37:32.723392+10:00",
+      "last_reported": "2026-10-09T15:38:04.526813+10:00",
+      "last_updated": "2026-10-09T15:37:32.723392+10:00",
+      "context": {
+        "id": "01M4FJNB1KTJ479D2CKQN1HSZD",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_network_br0_rx": {
+      "entity_id": "sensor.cube_network_br0_rx",
+      "state": "78.1635932907994",
+      "attributes": {
+        "state_class": "measurement",
+        "network_mac": "70:85:c2:f7:49:21",
+        "network_ip": "192.168.20.21",
+        "network_speed": 10000,
+        "unit_of_measurement": "kbit/s",
+        "device_class": "data_rate",
+        "icon": "mdi:download-network",
+        "friendly_name": "Cube Network BR0 RX"
+      },
+      "last_changed": "2026-10-09T15:37:32.723455+10:00",
+      "last_reported": "2026-10-09T15:38:04.526888+10:00",
+      "last_updated": "2026-10-09T15:37:32.723455+10:00",
+      "context": {
+        "id": "01M4FJNB1K9KBJ80CSJPTPYF9D",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_network_br0_tx": {
+      "entity_id": "sensor.cube_network_br0_tx",
+      "state": "162.311884171402",
+      "attributes": {
+        "state_class": "measurement",
+        "network_mac": "70:85:c2:f7:49:21",
+        "network_ip": "192.168.20.21",
+        "network_speed": 10000,
+        "unit_of_measurement": "kbit/s",
+        "device_class": "data_rate",
+        "icon": "mdi:upload-network",
+        "friendly_name": "Cube Network BR0 TX"
+      },
+      "last_changed": "2026-10-09T15:37:32.723505+10:00",
+      "last_reported": "2026-10-09T15:38:04.526960+10:00",
+      "last_updated": "2026-10-09T15:37:32.723505+10:00",
+      "context": {
+        "id": "01M4FJNB1KMKS26CGJEZ3XHWC9",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_share_appdata_usage": {
+      "entity_id": "sensor.cube_share_appdata_usage",
+      "state": "10.8",
+      "attributes": {
+        "state_class": "measurement",
+        "share_name": "appdata",
+        "total_size": "469.4 GB",
+        "used_size": "50.6 GB",
+        "free_size": "418.8 GB",
+        "use_cache": "only",
+        "cache_pool": "cache",
+        "unit_of_measurement": "%",
+        "icon": "mdi:folder-network",
+        "friendly_name": "Cube Share appdata Usage"
+      },
+      "last_changed": "2026-10-09T15:04:33.090107+10:00",
+      "last_reported": "2026-10-09T15:19:42.425822+10:00",
+      "last_updated": "2026-10-09T15:15:02.703340+10:00",
+      "context": {
+        "id": "01M4FHC4NFTXMTYG88M66Y5Y2S",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_share_backups_usage": {
+      "entity_id": "sensor.cube_share_backups_usage",
+      "state": "3.0",
+      "attributes": {
+        "state_class": "measurement",
+        "share_name": "backups",
+        "total_size": "38.2 TB",
+        "used_size": "1.1 TB",
+        "free_size": "37.1 TB",
+        "use_cache": "no",
+        "unit_of_measurement": "%",
+        "icon": "mdi:folder-network",
+        "friendly_name": "Cube Share backups Usage"
+      },
+      "last_changed": "2026-10-09T15:04:33.090258+10:00",
+      "last_reported": "2026-10-09T15:38:04.527165+10:00",
+      "last_updated": "2026-10-09T15:04:33.090258+10:00",
+      "context": {
+        "id": "01M4FGRXT2R9P8STHH5HQ85763",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_share_dedupbackups_usage": {
+      "entity_id": "sensor.cube_share_dedupbackups_usage",
+      "state": "3.0",
+      "attributes": {
+        "state_class": "measurement",
+        "share_name": "dedupbackups",
+        "total_size": "38.2 TB",
+        "used_size": "1.1 TB",
+        "free_size": "37.1 TB",
+        "use_cache": "no",
+        "unit_of_measurement": "%",
+        "icon": "mdi:folder-network",
+        "friendly_name": "Cube Share dedupbackups Usage"
+      },
+      "last_changed": "2026-10-09T15:04:33.090388+10:00",
+      "last_reported": "2026-10-09T15:38:04.527240+10:00",
+      "last_updated": "2026-10-09T15:04:33.090388+10:00",
+      "context": {
+        "id": "01M4FGRXT2Q247TP481JB5YRX6",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_share_domains_usage": {
+      "entity_id": "sensor.cube_share_domains_usage",
+      "state": "10.8",
+      "attributes": {
+        "state_class": "measurement",
+        "share_name": "domains",
+        "total_size": "469.4 GB",
+        "used_size": "50.6 GB",
+        "free_size": "418.8 GB",
+        "use_cache": "only",
+        "cache_pool": "cache",
+        "unit_of_measurement": "%",
+        "icon": "mdi:folder-network",
+        "friendly_name": "Cube Share domains Usage"
+      },
+      "last_changed": "2026-10-09T15:04:33.090523+10:00",
+      "last_reported": "2026-10-09T15:38:04.527314+10:00",
+      "last_updated": "2026-10-09T15:15:02.703427+10:00",
+      "context": {
+        "id": "01M4FHC4NFDBJD7Z6BEE5Z8VZT",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_share_downloads_usage": {
+      "entity_id": "sensor.cube_share_downloads_usage",
+      "state": "10.8",
+      "attributes": {
+        "state_class": "measurement",
+        "share_name": "downloads",
+        "total_size": "469.4 GB",
+        "used_size": "50.6 GB",
+        "free_size": "418.8 GB",
+        "use_cache": "only",
+        "cache_pool": "cache",
+        "unit_of_measurement": "%",
+        "icon": "mdi:folder-network",
+        "friendly_name": "Cube Share downloads Usage"
+      },
+      "last_changed": "2026-10-09T15:04:33.090651+10:00",
+      "last_reported": "2026-10-09T15:38:04.527385+10:00",
+      "last_updated": "2026-10-09T15:15:02.703468+10:00",
+      "context": {
+        "id": "01M4FHC4NFB03WRNWW5VGK4H61",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_share_isos_usage": {
+      "entity_id": "sensor.cube_share_isos_usage",
+      "state": "3.0",
+      "attributes": {
+        "state_class": "measurement",
+        "share_name": "isos",
+        "total_size": "38.2 TB",
+        "used_size": "1.1 TB",
+        "free_size": "37.1 TB",
+        "use_cache": "no",
+        "unit_of_measurement": "%",
+        "icon": "mdi:folder-network",
+        "friendly_name": "Cube Share isos Usage"
+      },
+      "last_changed": "2026-10-09T15:04:33.090782+10:00",
+      "last_reported": "2026-10-09T15:38:04.527455+10:00",
+      "last_updated": "2026-10-09T15:04:33.090782+10:00",
+      "context": {
+        "id": "01M4FGRXT2X7MXKT70DYX7P1ZY",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_share_media_usage": {
+      "entity_id": "sensor.cube_share_media_usage",
+      "state": "3.0",
+      "attributes": {
+        "state_class": "measurement",
+        "share_name": "media",
+        "total_size": "38.2 TB",
+        "used_size": "1.1 TB",
+        "free_size": "37.1 TB",
+        "use_cache": "no",
+        "unit_of_measurement": "%",
+        "icon": "mdi:folder-network",
+        "friendly_name": "Cube Share media Usage"
+      },
+      "last_changed": "2026-10-09T15:04:33.090911+10:00",
+      "last_reported": "2026-10-09T15:38:04.527523+10:00",
+      "last_updated": "2026-10-09T15:04:33.090911+10:00",
+      "context": {
+        "id": "01M4FGRXT2E73FZYSFGQF2JS6D",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_share_system_usage": {
+      "entity_id": "sensor.cube_share_system_usage",
+      "state": "10.8",
+      "attributes": {
+        "state_class": "measurement",
+        "share_name": "system",
+        "total_size": "469.4 GB",
+        "used_size": "50.6 GB",
+        "free_size": "418.8 GB",
+        "use_cache": "only",
+        "cache_pool": "cache",
+        "unit_of_measurement": "%",
+        "icon": "mdi:folder-network",
+        "friendly_name": "Cube Share system Usage"
+      },
+      "last_changed": "2026-10-09T15:04:33.091052+10:00",
+      "last_reported": "2026-10-09T15:38:04.527592+10:00",
+      "last_updated": "2026-10-09T15:15:02.703549+10:00",
+      "context": {
+        "id": "01M4FHC4NFP8XB3NK9D1MFFMVK",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_flash_usage": {
+      "entity_id": "sensor.cube_flash_usage",
+      "state": "8.5",
+      "attributes": {
+        "state_class": "measurement",
+        "total_size": "28.6 GB",
+        "used_size": "2.4 GB",
+        "free_size": "26.2 GB",
+        "guid": "0781-5583-8355-8107962689D6",
+        "vendor": "SanDisk",
+        "unit_of_measurement": "%",
+        "icon": "mdi:usb-flash-drive",
+        "friendly_name": "Cube Flash Usage"
+      },
+      "last_changed": "2026-10-09T15:04:33.091239+10:00",
+      "last_reported": "2026-10-09T15:18:17.117508+10:00",
+      "last_updated": "2026-10-09T15:04:33.091239+10:00",
+      "context": {
+        "id": "01M4FGRXT3B7H9PR4QEY8NFZFJ",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_flash_free_space": {
+      "entity_id": "sensor.cube_flash_free_space",
+      "state": "28127.821824",
+      "attributes": {
+        "state_class": "measurement",
+        "unit_of_measurement": "MB",
+        "device_class": "data_size",
+        "icon": "mdi:usb-flash-drive-outline",
+        "friendly_name": "Cube Flash Free Space"
+      },
+      "last_changed": "2026-10-09T15:04:33.091397+10:00",
+      "last_reported": "2026-10-09T15:38:04.527765+10:00",
+      "last_updated": "2026-10-09T15:04:33.091397+10:00",
+      "context": {
+        "id": "01M4FGRXT3PKWT2GS5X32ZTXJ5",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_installed_plugins": {
+      "entity_id": "sensor.cube_installed_plugins",
+      "state": "14",
+      "attributes": {
+        "state_class": "measurement",
+        "plugin_count": 14,
+        "plugin_names": [
+          "ca.update.applications",
+          "fix.common.problems",
+          "intel-gpu-top",
+          "tips.and.tweaks",
+          "unassigned.devices-plus",
+          "unassigned.devices",
+          "user.scripts",
+          "vault",
+          "ca.turbo",
+          "community.applications",
+          "dynamix.system.info",
+          "dynamix.unraid.net",
+          "recycle.bin",
+          "unraid-management-agent"
+        ],
+        "icon": "mdi:puzzle",
+        "friendly_name": "Cube Installed Plugins"
+      },
+      "last_changed": "2026-10-09T15:04:33.091536+10:00",
+      "last_reported": "2026-10-09T15:38:04.527833+10:00",
+      "last_updated": "2026-10-09T15:38:02.723024+10:00",
+      "context": {
+        "id": "01M4FJP8B3DVQHRE1SRY8W7944",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_unraid_version": {
+      "entity_id": "sensor.cube_unraid_version",
+      "state": "7.3.2",
+      "attributes": {
+        "current_version": "7.3.2",
+        "latest_version": "7.3.2",
+        "update_available": false,
+        "icon": "mdi:update",
+        "friendly_name": "Cube Unraid Version"
+      },
+      "last_changed": "2026-10-09T15:04:33.091659+10:00",
+      "last_reported": "2026-10-09T15:38:04.527878+10:00",
+      "last_updated": "2026-10-09T15:04:33.091659+10:00",
+      "context": {
+        "id": "01M4FGRXT33XSH1CFS8N310VBC",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_plugins_with_updates": {
+      "entity_id": "sensor.cube_plugins_with_updates",
+      "state": "0",
+      "attributes": {
+        "state_class": "measurement",
+        "icon": "mdi:puzzle-plus",
+        "friendly_name": "Cube Plugins With Updates"
+      },
+      "last_changed": "2026-10-09T15:04:33.091800+10:00",
+      "last_reported": "2026-10-09T15:38:04.527966+10:00",
+      "last_updated": "2026-10-09T15:04:33.091800+10:00",
+      "context": {
+        "id": "01M4FGRXT3RVS0KK2GHQE061VZ",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_diagnostics_degraded_subsystems": {
+      "entity_id": "sensor.cube_diagnostics_degraded_subsystems",
+      "state": "0",
+      "attributes": {
+        "state_class": "measurement",
+        "overall_state": "healthy",
+        "icon": "mdi:stethoscope",
+        "friendly_name": "Cube Diagnostics Degraded Subsystems"
+      },
+      "last_changed": "2026-10-09T15:04:33.091938+10:00",
+      "last_reported": "2026-10-09T15:38:04.528060+10:00",
+      "last_updated": "2026-10-09T15:04:33.091938+10:00",
+      "context": {
+        "id": "01M4FGRXT3Z9FKJZFZ5AH1FPC1",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_docker_port_conflicts": {
+      "entity_id": "sensor.cube_docker_port_conflicts",
+      "state": "0",
+      "attributes": {
+        "state_class": "measurement",
+        "icon": "mdi:lan-disconnect",
+        "friendly_name": "Cube Docker Port Conflicts"
+      },
+      "last_changed": "2026-10-09T15:04:33.092079+10:00",
+      "last_reported": "2026-10-09T15:38:04.528161+10:00",
+      "last_updated": "2026-10-09T15:04:33.092079+10:00",
+      "context": {
+        "id": "01M4FGRXT482QMGVNHPCCSKZN9",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_next_parity_check": {
+      "entity_id": "sensor.cube_next_parity_check",
+      "state": "2026-12-31T14:00:00+00:00",
+      "attributes": {
+        "mode": "yearly",
+        "frequency": 1,
+        "day": 0,
+        "month": 1,
+        "hour": 0,
+        "correcting": true,
+        "check_cron": "0 0 1 1 *",
+        "device_class": "timestamp",
+        "icon": "mdi:calendar-clock",
+        "friendly_name": "Cube Next Parity Check"
+      },
+      "last_changed": "2026-10-09T15:04:33.092288+10:00",
+      "last_reported": "2026-10-09T15:38:04.528392+10:00",
+      "last_updated": "2026-10-09T15:04:33.092288+10:00",
+      "context": {
+        "id": "01M4FGRXT4JFT2P7JT0MPS5KZA",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_last_parity_check": {
+      "entity_id": "sensor.cube_last_parity_check",
+      "state": "2026-01-13T15:16:43+00:00",
+      "attributes": {
+        "errors": 0,
+        "last_duration": "27 seconds",
+        "result": "Canceled",
+        "device_class": "timestamp",
+        "icon": "mdi:calendar-check",
+        "friendly_name": "Cube Last Parity Check"
+      },
+      "last_changed": "2026-10-09T15:04:33.092450+10:00",
+      "last_reported": "2026-10-09T15:38:04.528513+10:00",
+      "last_updated": "2026-10-09T15:04:33.092450+10:00",
+      "context": {
+        "id": "01M4FGRXT4PHRSTTQNGWSR1H9C",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_notifications": {
+      "entity_id": "sensor.cube_notifications",
+      "state": "2",
+      "attributes": {
+        "state_class": "measurement",
+        "unread_count": 2,
+        "total_count": 4,
+        "recent_notifications": [
+          {
+            "subject": "Restore of 'plex' completed",
+            "importance": "normal"
+          },
+          {
+            "subject": "Restore of 'C-Data' completed",
+            "importance": "normal"
+          },
+          {
+            "subject": "Restore of 'plex' completed",
+            "importance": "normal"
+          },
+          {
+            "subject": "Restore of 'C-Data' completed",
+            "importance": "normal"
+          }
+        ],
+        "icon": "mdi:bell",
+        "friendly_name": "Cube Notifications"
+      },
+      "last_changed": "2026-10-09T15:04:33.092596+10:00",
+      "last_reported": "2026-10-09T15:38:04.528613+10:00",
+      "last_updated": "2026-10-09T15:04:33.092596+10:00",
+      "context": {
+        "id": "01M4FGRXT44EPYMV0XG5K0YGSF",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_notifications_unread_info": {
+      "entity_id": "sensor.cube_notifications_unread_info",
+      "state": "2",
+      "attributes": {
+        "state_class": "measurement",
+        "icon": "mdi:information",
+        "friendly_name": "Cube Notifications Unread Info"
+      },
+      "last_changed": "2026-10-09T15:04:33.092718+10:00",
+      "last_reported": "2026-10-09T15:38:04.528664+10:00",
+      "last_updated": "2026-10-09T15:04:33.092718+10:00",
+      "context": {
+        "id": "01M4FGRXT4P4GQXYY1PK4WS1P0",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_notifications_unread_warning": {
+      "entity_id": "sensor.cube_notifications_unread_warning",
+      "state": "0",
+      "attributes": {
+        "state_class": "measurement",
+        "icon": "mdi:alert",
+        "friendly_name": "Cube Notifications Unread Warning"
+      },
+      "last_changed": "2026-10-09T15:04:33.092843+10:00",
+      "last_reported": "2026-10-09T15:38:04.528706+10:00",
+      "last_updated": "2026-10-09T15:04:33.092843+10:00",
+      "context": {
+        "id": "01M4FGRXT45EGA24CGHE7W93VA",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_notifications_unread_alert": {
+      "entity_id": "sensor.cube_notifications_unread_alert",
+      "state": "0",
+      "attributes": {
+        "state_class": "measurement",
+        "icon": "mdi:alert-circle",
+        "friendly_name": "Cube Notifications Unread Alert"
+      },
+      "last_changed": "2026-10-09T15:04:33.092963+10:00",
+      "last_reported": "2026-10-09T15:38:04.528741+10:00",
+      "last_updated": "2026-10-09T15:04:33.092963+10:00",
+      "context": {
+        "id": "01M4FGRXT4AA329D9STCYHEYDR",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_docker_cpu_usage": {
+      "entity_id": "sensor.cube_docker_cpu_usage",
+      "state": "0.5",
+      "attributes": {
+        "state_class": "measurement",
+        "total_containers": 16,
+        "running_containers": 0,
+        "unit_of_measurement": "%",
+        "icon": "mdi:docker",
+        "friendly_name": "Cube Docker CPU Usage"
+      },
+      "last_changed": "2026-10-09T15:38:02.723378+10:00",
+      "last_reported": "2026-10-09T15:38:04.528819+10:00",
+      "last_updated": "2026-10-09T15:38:02.723378+10:00",
+      "context": {
+        "id": "01M4FJP8B3FQWN3W1DWK1B611Y",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_docker_memory_usage": {
+      "entity_id": "sensor.cube_docker_memory_usage",
+      "state": "2486.6",
+      "attributes": {
+        "state_class": "measurement",
+        "total_containers": 16,
+        "running_containers": 0,
+        "memory_percent_of_system": 7.8,
+        "unit_of_measurement": "MB",
+        "device_class": "data_size",
+        "icon": "mdi:docker",
+        "friendly_name": "Cube Docker Memory Usage"
+      },
+      "last_changed": "2026-10-09T15:38:02.723423+10:00",
+      "last_reported": "2026-10-09T15:38:04.528918+10:00",
+      "last_updated": "2026-10-09T15:38:02.723423+10:00",
+      "context": {
+        "id": "01M4FJP8B3SRGPWNGC51P8SKJA",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_registration_type": {
+      "entity_id": "sensor.cube_registration_type",
+      "state": "plus",
+      "attributes": {
+        "icon": "mdi:license",
+        "friendly_name": "Cube Registration Type"
+      },
+      "last_changed": "2026-10-09T15:04:33.098327+10:00",
+      "last_reported": "2026-10-09T15:38:04.528962+10:00",
+      "last_updated": "2026-10-09T15:04:33.098327+10:00",
+      "context": {
+        "id": "01M4FGRXTA31TXGR3PY6QCKBP7",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "sensor.cube_registration_state": {
+      "entity_id": "sensor.cube_registration_state",
+      "state": "expired",
+      "attributes": {
+        "icon": "mdi:shield-key",
+        "friendly_name": "Cube Registration State"
+      },
+      "last_changed": "2026-10-09T15:04:33.098448+10:00",
+      "last_reported": "2026-10-09T15:38:04.528995+10:00",
+      "last_updated": "2026-10-09T15:04:33.098448+10:00",
+      "context": {
+        "id": "01M4FGRXTA478WFSJ1BT02GW50",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "binary_sensor.cube_array_started": {
+      "entity_id": "binary_sensor.cube_array_started",
+      "state": "on",
+      "attributes": {
+        "device_class": "running",
+        "icon": "mdi:harddisk",
+        "friendly_name": "Cube Array Started"
+      },
+      "last_changed": "2026-10-09T15:04:33.099003+10:00",
+      "last_reported": "2026-10-09T15:38:04.529035+10:00",
+      "last_updated": "2026-10-09T15:04:33.099003+10:00",
+      "context": {
+        "id": "01M4FGRXTBVBCPKZ504DZA30FY",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "binary_sensor.cube_parity_check_running": {
+      "entity_id": "binary_sensor.cube_parity_check_running",
+      "state": "off",
+      "attributes": {
+        "parity_check_status": "",
+        "is_paused": false,
+        "device_class": "running",
+        "icon": "mdi:shield-check",
+        "friendly_name": "Cube Parity Check Running"
+      },
+      "last_changed": "2026-10-09T15:04:33.099134+10:00",
+      "last_reported": "2026-10-09T15:38:04.529104+10:00",
+      "last_updated": "2026-10-09T15:04:33.099134+10:00",
+      "context": {
+        "id": "01M4FGRXTBW8QN6QT9QT0GSKF2",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "binary_sensor.cube_parity_valid": {
+      "entity_id": "binary_sensor.cube_parity_valid",
+      "state": "off",
+      "attributes": {
+        "device_class": "problem",
+        "icon": "mdi:shield-check",
+        "friendly_name": "Cube Parity Valid"
+      },
+      "last_changed": "2026-10-09T15:04:33.099242+10:00",
+      "last_reported": "2026-10-09T15:38:04.529130+10:00",
+      "last_updated": "2026-10-09T15:04:33.099242+10:00",
+      "context": {
+        "id": "01M4FGRXTBNR8QNF2PHEGW12V3",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "binary_sensor.cube_ups_connected": {
+      "entity_id": "binary_sensor.cube_ups_connected",
+      "state": "on",
+      "attributes": {
+        "device_class": "connectivity",
+        "icon": "mdi:battery",
+        "friendly_name": "Cube UPS Connected"
+      },
+      "last_changed": "2026-10-09T15:04:33.099345+10:00",
+      "last_reported": "2026-10-09T15:38:04.529153+10:00",
+      "last_updated": "2026-10-09T15:04:33.099345+10:00",
+      "context": {
+        "id": "01M4FGRXTB8F7ZQCZYWKA0DBAE",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "binary_sensor.cube_update_available": {
+      "entity_id": "binary_sensor.cube_update_available",
+      "state": "off",
+      "attributes": {
+        "current_version": "7.3.2",
+        "plugin_updates_count": null,
+        "device_class": "update",
+        "icon": "mdi:update",
+        "friendly_name": "Cube Update Available"
+      },
+      "last_changed": "2026-10-09T15:04:33.099443+10:00",
+      "last_reported": "2026-10-09T15:38:04.529179+10:00",
+      "last_updated": "2026-10-09T15:04:33.099443+10:00",
+      "context": {
+        "id": "01M4FGRXTBR7CVW8CY4FZJZCWK",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "binary_sensor.cube_flash_healthy": {
+      "entity_id": "binary_sensor.cube_flash_healthy",
+      "state": "off",
+      "attributes": {
+        "usage_percent": 8.52482286130805,
+        "smart_available": false,
+        "model": "Ultra_Fit",
+        "device_class": "problem",
+        "icon": "mdi:usb-flash-drive",
+        "friendly_name": "Cube Flash Healthy"
+      },
+      "last_changed": "2026-10-09T15:04:33.099544+10:00",
+      "last_reported": "2026-10-09T15:38:04.529208+10:00",
+      "last_updated": "2026-10-09T15:04:33.099544+10:00",
+      "context": {
+        "id": "01M4FGRXTB5XA1MXV0R685DEPM",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "binary_sensor.cube_mover_running": {
+      "entity_id": "binary_sensor.cube_mover_running",
+      "state": "off",
+      "attributes": {
+        "schedule": "0 12 * * *",
+        "logging": null,
+        "device_class": "running",
+        "icon": "mdi:transfer",
+        "friendly_name": "Cube Mover Running"
+      },
+      "last_changed": "2026-10-09T15:04:33.099649+10:00",
+      "last_reported": "2026-10-09T15:38:04.529235+10:00",
+      "last_updated": "2026-10-09T15:04:33.099649+10:00",
+      "context": {
+        "id": "01M4FGRXTBCTE0C3SDQ5B0MPKH",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "binary_sensor.cube_parity_check_scheduled": {
+      "entity_id": "binary_sensor.cube_parity_check_scheduled",
+      "state": "on",
+      "attributes": {
+        "mode": "yearly",
+        "day": 0,
+        "hour": 0,
+        "correcting": true,
+        "device_class": "running",
+        "icon": "mdi:calendar-check",
+        "friendly_name": "Cube Parity Check Scheduled"
+      },
+      "last_changed": "2026-10-09T15:04:33.099747+10:00",
+      "last_reported": "2026-10-09T15:38:04.529262+10:00",
+      "last_updated": "2026-10-09T15:04:33.099747+10:00",
+      "context": {
+        "id": "01M4FGRXTBSHJKD6E2K9PA9NQD",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "binary_sensor.cube_network_wlan0": {
+      "entity_id": "binary_sensor.cube_network_wlan0",
+      "state": "off",
+      "attributes": {
+        "device_class": "connectivity",
+        "icon": "mdi:ethernet",
+        "friendly_name": "Cube Network wlan0"
+      },
+      "last_changed": "2026-10-09T15:04:33.100183+10:00",
+      "last_reported": "2026-10-09T15:38:04.529370+10:00",
+      "last_updated": "2026-10-09T15:04:33.100183+10:00",
+      "context": {
+        "id": "01M4FGRXTC4TE817BRMM2RZA08",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "binary_sensor.cube_network_eth0": {
+      "entity_id": "binary_sensor.cube_network_eth0",
+      "state": "on",
+      "attributes": {
+        "device_class": "connectivity",
+        "icon": "mdi:ethernet",
+        "friendly_name": "Cube Network eth0"
+      },
+      "last_changed": "2026-10-09T15:04:33.099866+10:00",
+      "last_reported": "2026-10-09T15:38:04.529298+10:00",
+      "last_updated": "2026-10-09T15:04:33.099866+10:00",
+      "context": {
+        "id": "01M4FGRXTB8ARS5VF9TSDGPB8H",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "binary_sensor.cube_network_br0": {
+      "entity_id": "binary_sensor.cube_network_br0",
+      "state": "on",
+      "attributes": {
+        "device_class": "connectivity",
+        "icon": "mdi:ethernet",
+        "friendly_name": "Cube Network br0"
+      },
+      "last_changed": "2026-10-09T15:04:33.100077+10:00",
+      "last_reported": "2026-10-09T15:17:48.182270+10:00",
+      "last_updated": "2026-10-09T15:04:33.100077+10:00",
+      "context": {
+        "id": "01M4FGRXTC8QBAHTTAXTCFX5TK",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "binary_sensor.cube_network_eth1": {
+      "entity_id": "binary_sensor.cube_network_eth1",
+      "state": "off",
+      "attributes": {
+        "device_class": "connectivity",
+        "icon": "mdi:ethernet",
+        "friendly_name": "Cube Network eth1"
+      },
+      "last_changed": "2026-10-09T15:04:33.099966+10:00",
+      "last_reported": "2026-10-09T15:38:04.529326+10:00",
+      "last_updated": "2026-10-09T15:04:33.099966+10:00",
+      "context": {
+        "id": "01M4FGRXTB0AB7G9TEAGCVCXG8",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "switch.cube_container_homeassistant": {
+      "entity_id": "switch.cube_container_homeassistant",
+      "state": "on",
+      "attributes": {
+        "status": "running",
+        "container_image": "ghcr.io/home-assistant/home-assistant:beta",
+        "container_ports": null,
+        "icon": "mdi:docker",
+        "friendly_name": "Cube Container homeassistant"
+      },
+      "last_changed": "2026-10-09T15:04:33.101495+10:00",
+      "last_reported": "2026-10-09T15:38:04.529412+10:00",
+      "last_updated": "2026-10-09T15:04:33.101495+10:00",
+      "context": {
+        "id": "01M4FGRXTDAGZYPW4APT9ZQ5GV",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "switch.cube_container_sabnzbd": {
+      "entity_id": "switch.cube_container_sabnzbd",
+      "state": "on",
+      "attributes": {
+        "status": "running",
+        "container_image": "lscr.io/linuxserver/sabnzbd",
+        "container_ports": [
+          {
+            "public_port": 8080,
+            "private_port": 8080,
+            "type": "tcp"
+          },
+          {
+            "public_port": 8080,
+            "private_port": 8080,
+            "type": "tcp"
+          }
+        ],
+        "icon": "mdi:docker",
+        "friendly_name": "Cube Container sabnzbd"
+      },
+      "last_changed": "2026-10-09T15:04:33.101688+10:00",
+      "last_reported": "2026-10-09T15:38:04.529447+10:00",
+      "last_updated": "2026-10-09T15:04:33.101688+10:00",
+      "context": {
+        "id": "01M4FGRXTDXVSGF9HYB2C21MGY",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "switch.cube_container_plex": {
+      "entity_id": "switch.cube_container_plex",
+      "state": "on",
+      "attributes": {
+        "status": "running",
+        "container_image": "lscr.io/linuxserver/plex",
+        "container_ports": null,
+        "icon": "mdi:docker",
+        "friendly_name": "Cube Container plex"
+      },
+      "last_changed": "2026-10-09T15:04:33.101846+10:00",
+      "last_reported": "2026-10-09T15:38:04.529480+10:00",
+      "last_updated": "2026-10-09T15:04:33.101846+10:00",
+      "context": {
+        "id": "01M4FGRXTDY7S1EP77PRNARQ4R",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "switch.cube_container_influxdb": {
+      "entity_id": "switch.cube_container_influxdb",
+      "state": "off",
+      "attributes": {
+        "status": "stopped",
+        "container_image": "influxdb:latest",
+        "container_ports": null,
+        "icon": "mdi:docker",
+        "friendly_name": "Cube Container Influxdb"
+      },
+      "last_changed": "2026-10-09T15:04:33.102167+10:00",
+      "last_reported": "2026-10-09T15:38:04.529508+10:00",
+      "last_updated": "2026-10-09T15:04:33.102167+10:00",
+      "context": {
+        "id": "01M4FGRXTEP7DTZYD7Q1B9AVWH",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "switch.cube_container_telegraf": {
+      "entity_id": "switch.cube_container_telegraf",
+      "state": "off",
+      "attributes": {
+        "status": "stopped",
+        "container_image": "telegraf:latest",
+        "container_ports": null,
+        "icon": "mdi:docker",
+        "friendly_name": "Cube Container telegraf"
+      },
+      "last_changed": "2026-10-09T15:04:33.102331+10:00",
+      "last_reported": "2026-10-09T15:38:04.529535+10:00",
+      "last_updated": "2026-10-09T15:04:33.102331+10:00",
+      "context": {
+        "id": "01M4FGRXTE10TJW9766T9XPEZ3",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "switch.cube_container_recyclarr": {
+      "entity_id": "switch.cube_container_recyclarr",
+      "state": "on",
+      "attributes": {
+        "status": "running",
+        "container_image": "ghcr.io/recyclarr/recyclarr:8",
+        "container_ports": null,
+        "icon": "mdi:docker",
+        "friendly_name": "Cube Container recyclarr"
+      },
+      "last_changed": "2026-10-09T15:04:33.102485+10:00",
+      "last_reported": "2026-10-09T15:38:04.529562+10:00",
+      "last_updated": "2026-10-09T15:04:33.102485+10:00",
+      "context": {
+        "id": "01M4FGRXTEJM46FMK4Q74RKX5N",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "switch.cube_container_radarr": {
+      "entity_id": "switch.cube_container_radarr",
+      "state": "on",
+      "attributes": {
+        "status": "running",
+        "container_image": "linuxserver/radarr:latest",
+        "container_ports": [
+          {
+            "public_port": 7878,
+            "private_port": 7878,
+            "type": "tcp"
+          },
+          {
+            "public_port": 7878,
+            "private_port": 7878,
+            "type": "tcp"
+          }
+        ],
+        "icon": "mdi:docker",
+        "friendly_name": "Cube Container radarr"
+      },
+      "last_changed": "2026-10-09T15:04:33.102638+10:00",
+      "last_reported": "2026-10-09T15:38:04.529594+10:00",
+      "last_updated": "2026-10-09T15:04:33.102638+10:00",
+      "context": {
+        "id": "01M4FGRXTEMP6XKT826YJMK8NR",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "switch.cube_container_mariadb": {
+      "entity_id": "switch.cube_container_mariadb",
+      "state": "off",
+      "attributes": {
+        "status": "stopped",
+        "container_image": "mariadb",
+        "container_ports": null,
+        "icon": "mdi:docker",
+        "friendly_name": "Cube Container MariaDB"
+      },
+      "last_changed": "2026-10-09T15:04:33.102795+10:00",
+      "last_reported": "2026-10-09T15:38:04.529626+10:00",
+      "last_updated": "2026-10-09T15:04:33.102795+10:00",
+      "context": {
+        "id": "01M4FGRXTETZF6H630X066KNB9",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "switch.cube_container_mysql": {
+      "entity_id": "switch.cube_container_mysql",
+      "state": "off",
+      "attributes": {
+        "status": "stopped",
+        "container_image": "mysql",
+        "container_ports": null,
+        "icon": "mdi:docker",
+        "friendly_name": "Cube Container MySQL"
+      },
+      "last_changed": "2026-10-09T15:04:33.102946+10:00",
+      "last_reported": "2026-10-09T15:38:04.529655+10:00",
+      "last_updated": "2026-10-09T15:04:33.102946+10:00",
+      "context": {
+        "id": "01M4FGRXTE6W854K7HJZ0HAM5G",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "switch.cube_container_grafana": {
+      "entity_id": "switch.cube_container_grafana",
+      "state": "off",
+      "attributes": {
+        "status": "stopped",
+        "container_image": "grafana/grafana",
+        "container_ports": null,
+        "icon": "mdi:docker",
+        "friendly_name": "Cube Container Grafana"
+      },
+      "last_changed": "2026-10-09T15:04:33.103137+10:00",
+      "last_reported": "2026-10-09T15:38:04.529687+10:00",
+      "last_updated": "2026-10-09T15:04:33.103137+10:00",
+      "context": {
+        "id": "01M4FGRXTFWAW59TMY6BB7DSPK",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "switch.cube_container_seerr": {
+      "entity_id": "switch.cube_container_seerr",
+      "state": "on",
+      "attributes": {
+        "status": "running",
+        "container_image": "ghcr.io/binhex/arch-seerr",
+        "container_ports": [
+          {
+            "public_port": 5056,
+            "private_port": 5055,
+            "type": "tcp"
+          },
+          {
+            "public_port": 5056,
+            "private_port": 5055,
+            "type": "tcp"
+          }
+        ],
+        "icon": "mdi:docker",
+        "friendly_name": "Cube Container seerr"
+      },
+      "last_changed": "2026-10-09T15:04:33.103307+10:00",
+      "last_reported": "2026-10-09T15:38:04.529720+10:00",
+      "last_updated": "2026-10-09T15:04:33.103307+10:00",
+      "context": {
+        "id": "01M4FGRXTFN3VYSDEZ2T8XMQET",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "switch.cube_container_glances": {
+      "entity_id": "switch.cube_container_glances",
+      "state": "off",
+      "attributes": {
+        "status": "stopped",
+        "container_image": "nicolargo/glances:latest",
+        "container_ports": null,
+        "icon": "mdi:docker",
+        "friendly_name": "Cube Container Glances"
+      },
+      "last_changed": "2026-10-09T15:04:33.103463+10:00",
+      "last_reported": "2026-10-09T15:38:04.529752+10:00",
+      "last_updated": "2026-10-09T15:04:33.103463+10:00",
+      "context": {
+        "id": "01M4FGRXTFWKVRVB25H86W71RJ",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "switch.cube_container_prometheus": {
+      "entity_id": "switch.cube_container_prometheus",
+      "state": "off",
+      "attributes": {
+        "status": "stopped",
+        "container_image": "prom/prometheus",
+        "container_ports": null,
+        "icon": "mdi:docker",
+        "friendly_name": "Cube Container prometheus"
+      },
+      "last_changed": "2026-10-09T15:04:33.103613+10:00",
+      "last_reported": "2026-10-09T15:38:04.529784+10:00",
+      "last_updated": "2026-10-09T15:04:33.103613+10:00",
+      "context": {
+        "id": "01M4FGRXTFQ20E616Z97WJTVZ1",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "switch.cube_container_sonarr": {
+      "entity_id": "switch.cube_container_sonarr",
+      "state": "on",
+      "attributes": {
+        "status": "running",
+        "container_image": "linuxserver/sonarr:latest",
+        "container_ports": [
+          {
+            "public_port": 8989,
+            "private_port": 8989,
+            "type": "tcp"
+          },
+          {
+            "public_port": 8989,
+            "private_port": 8989,
+            "type": "tcp"
+          }
+        ],
+        "icon": "mdi:docker",
+        "friendly_name": "Cube Container sonarr"
+      },
+      "last_changed": "2026-10-09T15:04:33.103762+10:00",
+      "last_reported": "2026-10-09T15:38:04.529818+10:00",
+      "last_updated": "2026-10-09T15:04:33.103762+10:00",
+      "context": {
+        "id": "01M4FGRXTFFQHAH0D3RC6MWKQN",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "switch.cube_container_homebridge": {
+      "entity_id": "switch.cube_container_homebridge",
+      "state": "on",
+      "attributes": {
+        "status": "running",
+        "container_image": "homebridge/homebridge:latest",
+        "container_ports": null,
+        "icon": "mdi:docker",
+        "friendly_name": "Cube Container homebridge"
+      },
+      "last_changed": "2026-10-09T15:04:33.103915+10:00",
+      "last_reported": "2026-10-09T15:38:04.529853+10:00",
+      "last_updated": "2026-10-09T15:04:33.103915+10:00",
+      "context": {
+        "id": "01M4FGRXTFPTE1VMRKY40D05VC",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "switch.cube_container_postgresql": {
+      "entity_id": "switch.cube_container_postgresql",
+      "state": "off",
+      "attributes": {
+        "status": "stopped",
+        "container_image": "postgres:alpine",
+        "container_ports": null,
+        "icon": "mdi:docker",
+        "friendly_name": "Cube Container PostgreSQL"
+      },
+      "last_changed": "2026-10-09T15:04:33.104102+10:00",
+      "last_reported": "2026-10-09T15:38:04.529887+10:00",
+      "last_updated": "2026-10-09T15:04:33.104102+10:00",
+      "context": {
+        "id": "01M4FGRXTGHS7RN3AMYCCH23CC",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "button.cube_start_array": {
+      "entity_id": "button.cube_start_array",
+      "state": "unknown",
+      "attributes": {
+        "icon": "mdi:harddisk",
+        "friendly_name": "Cube Start Array"
+      },
+      "last_changed": "2026-10-09T15:04:33.105160+10:00",
+      "last_reported": "2026-10-09T15:04:34.494837+10:00",
+      "last_updated": "2026-10-09T15:04:33.105160+10:00",
+      "context": {
+        "id": "01M4FGRXTHMW6W07Y8XJEDJQSD",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "button.cube_stop_array": {
+      "entity_id": "button.cube_stop_array",
+      "state": "unknown",
+      "attributes": {
+        "icon": "mdi:harddisk",
+        "friendly_name": "Cube Stop Array"
+      },
+      "last_changed": "2026-10-09T15:04:33.105278+10:00",
+      "last_reported": "2026-10-09T15:04:34.494843+10:00",
+      "last_updated": "2026-10-09T15:04:33.105278+10:00",
+      "context": {
+        "id": "01M4FGRXTHTAT4NK4J6QF2H52A",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "button.cube_clear_array_disk_stats": {
+      "entity_id": "button.cube_clear_array_disk_stats",
+      "state": "unknown",
+      "attributes": {
+        "icon": "mdi:database-remove",
+        "friendly_name": "Cube Clear Array Disk Stats"
+      },
+      "last_changed": "2026-10-09T15:04:33.105384+10:00",
+      "last_reported": "2026-10-09T15:04:34.494848+10:00",
+      "last_updated": "2026-10-09T15:04:33.105384+10:00",
+      "context": {
+        "id": "01M4FGRXTHP8Q9YSRCG3GSNX5V",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "button.cube_start_parity_check": {
+      "entity_id": "button.cube_start_parity_check",
+      "state": "unknown",
+      "attributes": {
+        "icon": "mdi:shield-check",
+        "friendly_name": "Cube Start Parity Check"
+      },
+      "last_changed": "2026-10-09T15:04:33.105494+10:00",
+      "last_reported": "2026-10-09T15:04:34.494854+10:00",
+      "last_updated": "2026-10-09T15:04:33.105494+10:00",
+      "context": {
+        "id": "01M4FGRXTHN6J56AYCW2PXBSGX",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "button.cube_stop_parity_check": {
+      "entity_id": "button.cube_stop_parity_check",
+      "state": "unknown",
+      "attributes": {
+        "icon": "mdi:shield-check",
+        "friendly_name": "Cube Stop Parity Check"
+      },
+      "last_changed": "2026-10-09T15:04:33.105592+10:00",
+      "last_reported": "2026-10-09T15:04:34.494859+10:00",
+      "last_updated": "2026-10-09T15:04:33.105592+10:00",
+      "context": {
+        "id": "01M4FGRXTHABH1HZFRZS9M1NVB",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "button.cube_pause_parity_check": {
+      "entity_id": "button.cube_pause_parity_check",
+      "state": "unknown",
+      "attributes": {
+        "icon": "mdi:pause-circle",
+        "friendly_name": "Cube Pause Parity Check"
+      },
+      "last_changed": "2026-10-09T15:04:33.105693+10:00",
+      "last_reported": "2026-10-09T15:04:34.494864+10:00",
+      "last_updated": "2026-10-09T15:04:33.105693+10:00",
+      "context": {
+        "id": "01M4FGRXTHMY30ST5B6GZVGS2N",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "button.cube_resume_parity_check": {
+      "entity_id": "button.cube_resume_parity_check",
+      "state": "unknown",
+      "attributes": {
+        "icon": "mdi:play-circle",
+        "friendly_name": "Cube Resume Parity Check"
+      },
+      "last_changed": "2026-10-09T15:04:33.105795+10:00",
+      "last_reported": "2026-10-09T15:04:34.494869+10:00",
+      "last_updated": "2026-10-09T15:04:33.105795+10:00",
+      "context": {
+        "id": "01M4FGRXTHGQYHJ497ZM0BAPJ2",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "button.cube_archive_all_notifications": {
+      "entity_id": "button.cube_archive_all_notifications",
+      "state": "unknown",
+      "attributes": {
+        "icon": "mdi:archive-arrow-down",
+        "friendly_name": "Cube Archive All Notifications"
+      },
+      "last_changed": "2026-10-09T15:04:33.105893+10:00",
+      "last_reported": "2026-10-09T15:04:34.494874+10:00",
+      "last_updated": "2026-10-09T15:04:33.105893+10:00",
+      "context": {
+        "id": "01M4FGRXTHWY699D46ZHCEGKBW",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "button.cube_shutdown_system": {
+      "entity_id": "button.cube_shutdown_system",
+      "state": "unknown",
+      "attributes": {
+        "icon": "mdi:power",
+        "friendly_name": "Cube Shutdown System"
+      },
+      "last_changed": "2026-10-09T15:04:33.105993+10:00",
+      "last_reported": "2026-10-09T15:04:34.494879+10:00",
+      "last_updated": "2026-10-09T15:04:33.105993+10:00",
+      "context": {
+        "id": "01M4FGRXTHD5QVTTS5VEPBNNTW",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "button.cube_reboot_system": {
+      "entity_id": "button.cube_reboot_system",
+      "state": "unknown",
+      "attributes": {
+        "icon": "mdi:restart",
+        "friendly_name": "Cube Reboot System"
+      },
+      "last_changed": "2026-10-09T15:04:33.106116+10:00",
+      "last_reported": "2026-10-09T15:04:34.494885+10:00",
+      "last_updated": "2026-10-09T15:04:33.106116+10:00",
+      "context": {
+        "id": "01M4FGRXTJJEES5M2J79M2FQSP",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "number.cube_fan_fan_1_speed": {
+      "entity_id": "number.cube_fan_fan_1_speed",
+      "state": "64.0",
+      "attributes": {
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "mode": "automatic",
+        "fan_id": "hwmon4_fan1",
+        "rpm": 794,
+        "pwm_value": 165,
+        "unit_of_measurement": "%",
+        "icon": "mdi:fan",
+        "friendly_name": "Cube Fan Fan 1 Speed"
+      },
+      "last_changed": "2026-10-09T15:04:33.107668+10:00",
+      "last_reported": "2026-10-09T15:38:04.530182+10:00",
+      "last_updated": "2026-10-09T15:38:02.723796+10:00",
+      "context": {
+        "id": "01M4FJP8B3KRVY2FN4RETCR6NB",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "number.cube_fan_fan_2_speed": {
+      "entity_id": "number.cube_fan_fan_2_speed",
+      "state": "36.0",
+      "attributes": {
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "mode": "automatic",
+        "fan_id": "hwmon4_fan2",
+        "rpm": 870,
+        "pwm_value": 93,
+        "unit_of_measurement": "%",
+        "icon": "mdi:fan",
+        "friendly_name": "Cube Fan Fan 2 Speed"
+      },
+      "last_changed": "2026-10-09T15:38:02.723835+10:00",
+      "last_reported": "2026-10-09T15:38:04.530241+10:00",
+      "last_updated": "2026-10-09T15:38:02.723835+10:00",
+      "context": {
+        "id": "01M4FJP8B315JFWXKPS92JQAX1",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "number.cube_fan_fan_3_speed": {
+      "entity_id": "number.cube_fan_fan_3_speed",
+      "state": "30.0",
+      "attributes": {
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "mode": "manual",
+        "fan_id": "hwmon4_fan3",
+        "rpm": 0,
+        "pwm_value": 77,
+        "unit_of_measurement": "%",
+        "icon": "mdi:fan",
+        "friendly_name": "Cube Fan Fan 3 Speed"
+      },
+      "last_changed": "2026-10-09T15:04:33.107917+10:00",
+      "last_reported": "2026-10-09T15:38:04.530292+10:00",
+      "last_updated": "2026-10-09T15:04:33.107917+10:00",
+      "context": {
+        "id": "01M4FGRXTKR224108MEW1Y59GC",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "number.cube_fan_fan_4_speed": {
+      "entity_id": "number.cube_fan_fan_4_speed",
+      "state": "30.0",
+      "attributes": {
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "mode": "manual",
+        "fan_id": "hwmon4_fan4",
+        "rpm": 0,
+        "pwm_value": 77,
+        "unit_of_measurement": "%",
+        "icon": "mdi:fan",
+        "friendly_name": "Cube Fan Fan 4 Speed"
+      },
+      "last_changed": "2026-10-09T15:04:33.108036+10:00",
+      "last_reported": "2026-10-09T15:38:04.530339+10:00",
+      "last_updated": "2026-10-09T15:04:33.108036+10:00",
+      "context": {
+        "id": "01M4FGRXTMPBT4F12VA1KS8QJ5",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "number.cube_fan_fan_5_speed": {
+      "entity_id": "number.cube_fan_fan_5_speed",
+      "state": "36.0",
+      "attributes": {
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "mode": "automatic",
+        "fan_id": "hwmon4_fan5",
+        "rpm": 1453,
+        "pwm_value": 93,
+        "unit_of_measurement": "%",
+        "icon": "mdi:fan",
+        "friendly_name": "Cube Fan Fan 5 Speed"
+      },
+      "last_changed": "2026-10-09T15:04:33.108160+10:00",
+      "last_reported": "2026-10-09T15:38:04.530384+10:00",
+      "last_updated": "2026-10-09T15:37:32.724731+10:00",
+      "context": {
+        "id": "01M4FJNB1METFFZC1DWA55EQDP",
+        "parent_id": null,
+        "user_id": null
+      }
+    },
+    "event.cube_notification": {
+      "entity_id": "event.cube_notification",
+      "state": "2026-10-09T05:04:33.391+00:00",
+      "attributes": {
+        "event_types": ["info", "warning", "alert"],
+        "event_type": "info",
+        "id": "Vault_1791270889.notify",
+        "subject": "Restore of 'C-Data' completed",
+        "description": "Item was restored successfully",
+        "importance": "normal",
+        "timestamp": "2026-10-06T07:14:49Z",
+        "icon": "mdi:bell-ring",
+        "friendly_name": "Cube Notification"
+      },
+      "last_changed": "2026-10-09T15:04:33.388669+10:00",
+      "last_reported": "2026-10-09T15:04:34.494985+10:00",
+      "last_updated": "2026-10-09T15:04:33.388669+10:00",
+      "context": {
+        "id": "01M4FGRY3CGX2JWKD7AA6MYBCT",
+        "parent_id": null,
+        "user_id": null
+      }
+    }
+  }
+}
