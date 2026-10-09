@@ -20,6 +20,8 @@ TO_REDACT = {
     "mac_address",
     "serial",
     "serial_number",
+    "cable_serial_number",
+    "wwn",
     "hostname",
     "host",
     "gateway",

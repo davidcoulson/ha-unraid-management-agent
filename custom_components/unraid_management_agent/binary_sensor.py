@@ -21,6 +21,13 @@ from . import UnraidConfigEntry, UnraidDataUpdateCoordinator
 from .cleanup import async_prune_seen_names
 from .const import ATTR_PARITY_CHECK_STATUS
 from .entity import UnraidBaseEntity, UnraidEntityDescription
+from .storage import (
+    StorageEntitySpec,
+    UnraidStorageBinarySensorEntityDescription,
+    UnraidStorageEntity,
+    async_setup_storage_entities,
+    storage_binary_sensor_specs,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -544,6 +551,15 @@ async def async_setup_entry(
                     )
                 )
 
+    # Storage controllers and enclosures (each a child device of the server)
+    async_setup_storage_entities(
+        entry,
+        "binary_sensor",
+        storage_binary_sensor_specs,
+        UnraidStorageBinarySensor,
+        async_add_entities,
+    )
+
     _LOGGER.debug("Adding %d Unraid binary sensor entities", len(entities))
     async_add_entities(entities)
 
@@ -776,3 +792,22 @@ class UnraidRemoteShareBinarySensor(UnraidBaseEntity, BinarySensorEntity):
         if getattr(share, "mount_point", None):
             attrs["mount_point"] = share.mount_point
         return attrs
+
+
+class UnraidStorageBinarySensor(UnraidStorageEntity, BinarySensorEntity):
+    """A problem indicator of a storage controller or enclosure."""
+
+    entity_description: UnraidStorageBinarySensorEntityDescription
+
+    def __init__(
+        self, coordinator: UnraidDataUpdateCoordinator, spec: StorageEntitySpec
+    ) -> None:
+        """Initialize the binary sensor."""
+        super().__init__(coordinator, spec)
+        self.entity_description = spec.description  # type: ignore[assignment]
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return True when there is a problem."""
+        ctx = self._storage_context()
+        return self.entity_description.is_on_fn(ctx) if ctx else None

@@ -45,6 +45,7 @@ from .api.models import (
     RegistrationInfo,
     RemoteShare,
     ShareInfo,
+    StorageTopology,
     SystemInfo,
     UnassignedDevice,
     UnassignedInfo,
@@ -114,6 +115,8 @@ class UnraidData:
     container_updates: ContainerUpdatesResult | None = None
     diagnostics_self_test: DiagnosticsSelfTestResponse | None = None
     docker_port_conflicts: list[DockerPortConflict] | None = None
+    # None when the agent has no /storage/topology endpoint or the fetch failed
+    storage_topology: StorageTopology | None = None
 
 
 @dataclass
@@ -457,6 +460,11 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                     self.client.get_docker_port_conflicts,
                     suppress_404=True,
                 ),
+                self._fetch(
+                    "storage topology",
+                    self.client.get_storage_topology,
+                    suppress_404=True,
+                ),
             )
 
             # Unpack results with proper types (gather loses individual type info).
@@ -496,6 +504,7 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
             unassigned_info: UnassignedInfo | None = results[29]
             diagnostics_self_test: DiagnosticsSelfTestResponse | None = results[30]
             docker_port_conflicts: list[DockerPortConflict] | None = results[31]
+            storage_topology: StorageTopology | None = results[32]
 
             # If the core endpoints are all unreachable, treat the whole update
             # as failed instead of returning an empty snapshot. This flips
@@ -615,6 +624,7 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                 container_updates=container_updates,
                 diagnostics_self_test=diagnostics_self_test,
                 docker_port_conflicts=docker_port_conflicts,
+                storage_topology=storage_topology,
             )
 
             # Check for issues and create repair flows

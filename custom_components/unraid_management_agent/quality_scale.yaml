@@ -138,7 +138,12 @@ rules:
     comment: README includes concrete monitoring, automation, orchestration, and energy dashboard use cases
   dynamic-devices:
     status: done
-    comment: Remote share and unassigned device binary/switch entities and hwmon temperature sensors added dynamically via coordinator listener when data arrives after initial setup
+    comment: >
+      Remote share and unassigned device binary/switch entities and hwmon temperature sensors
+      added dynamically via coordinator listener when data arrives after initial setup. Storage
+      controller and enclosure devices (storage.py) are created the same way when the agent's
+      storage topology first becomes available or a new controller, enclosure, port or slot
+      appears.
   entity-category:
     status: done
     comment: EntityCategory.DIAGNOSTIC used for appropriate sensors
@@ -147,7 +152,11 @@ rules:
     comment: Proper device classes (temperature, power, battery, duration, etc.)
   entity-disabled-by-default:
     status: done
-    comment: User scripts and per-channel hwmon temperature sensors disabled by default with _attr_entity_registry_enabled_default
+    comment: >
+      User scripts and per-channel hwmon temperature sensors disabled by default with
+      _attr_entity_registry_enabled_default. Storage topology per-element readings
+      (temperature, fan, voltage, current) and per-slot link rate and error sensors are
+      disabled by default; enclosure-level totals stay enabled.
   entity-translations:
     status: done
     comment: Entity translations defined in strings.json entity section
@@ -174,7 +183,10 @@ rules:
       last_update_success prevent false removal during transient server outages.
       VM and container devices left without entities are removed, and
       async_remove_config_entry_device lets users delete a device whose VM or
-      container is gone.
+      container is gone. Storage controller and enclosure entities are deliberately
+      excluded from automatic removal (a powered-off shelf must show as unavailable,
+      not disappear); async_remove_config_entry_device lets users delete such a
+      device once the agent no longer reports it.
 
   # Platinum
   async-dependency:

@@ -235,6 +235,39 @@
       },
       "container_device_network_tx_rate": {
         "default": "mdi:upload-network"
+      },
+      "storage_firmware": {
+        "default": "mdi:chip"
+      },
+      "storage_pcie_link": {
+        "default": "mdi:expansion-card"
+      },
+      "storage_port_link_rate": {
+        "default": "mdi:cable-data"
+      },
+      "storage_port_width": {
+        "default": "mdi:cable-data"
+      },
+      "storage_lowest_fan_speed": {
+        "default": "mdi:fan"
+      },
+      "storage_fan_speed": {
+        "default": "mdi:fan"
+      },
+      "storage_drives_below_max_link_rate": {
+        "default": "mdi:speedometer-slow"
+      },
+      "storage_drive_media_errors": {
+        "default": "mdi:harddisk-remove"
+      },
+      "storage_drive_other_errors": {
+        "default": "mdi:alert-circle-outline"
+      },
+      "storage_slot_link_rate": {
+        "default": "mdi:speedometer"
+      },
+      "storage_slot_errors": {
+        "default": "mdi:alert-circle-outline"
       }
     },
     "binary_sensor": {
@@ -298,6 +331,39 @@
       },
       "parity_check_scheduled": {
         "default": "mdi:calendar-check"
+      },
+      "storage_power_supply": {
+        "default": "mdi:power-plug",
+        "state": {
+          "on": "mdi:power-plug-off"
+        }
+      },
+      "storage_iom": {
+        "default": "mdi:expansion-card"
+      },
+      "storage_fans": {
+        "default": "mdi:fan",
+        "state": {
+          "on": "mdi:fan-alert"
+        }
+      },
+      "storage_cabling": {
+        "default": "mdi:cable-data"
+      },
+      "storage_path_redundancy": {
+        "default": "mdi:lan-check",
+        "state": {
+          "on": "mdi:lan-disconnect"
+        }
+      },
+      "storage_iom_firmware": {
+        "default": "mdi:chip"
+      },
+      "storage_drive_health": {
+        "default": "mdi:harddisk",
+        "state": {
+          "on": "mdi:harddisk-remove"
+        }
       }
     },
     "switch": {

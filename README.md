@@ -26,6 +26,7 @@ This custom integration connects Home Assistant to the Unraid Management Agent r
 - ZFS monitoring including pool health, corrupted files, ARC statistics, and configured ARC max
 - UPS, GPU, mover, registration, notifications, network services, remote shares, and unassigned device data when available on the target server
 - Diagnostics-backed sensors such as degraded subsystem count and Docker port conflict count
+- SAS storage topology (agent with the `storage_topology` collector, storcli and/or sg3_utils on the server): each RAID/HBA controller and each disk shelf or backplane becomes a child device of the server, with controller temperature, PCIe link and HBA port link rate and width; shelf highest temperature, lowest fan speed and drive error and link-rate totals; and problem binary sensors for each power supply and I/O module, fans, cabling, path redundancy, drive health and I/O module firmware mismatches. Individual sensor readings and per-slot link rate and error counts are available but disabled by default
 
 ## Prerequisites
 
@@ -187,7 +188,7 @@ The exact entity set depends on what the Unraid Management Agent exposes for you
 - Number entities for supported fan speed control
 - Event entities for notifications
 
-Dynamic entities are cleaned up automatically when the corresponding resource is removed from Unraid.
+Dynamic entities are cleaned up automatically when the corresponding resource is removed from Unraid. Storage controller and enclosure entities are the exception: a shelf that loses power or a disconnected controller port shows as unavailable instead of being removed, and the device of hardware that is gone for good can be deleted from its device page.
 
 ## Example Automations
 
@@ -273,6 +274,7 @@ The integration is structured around a typed API package and a central coordinat
 
 - Some entities are conditional and only appear when the corresponding collector or subsystem exists on the Unraid server.
 - Container, VM, GPU, UPS, ZFS, remote share, and fan-related entities depend on runtime availability.
+- Storage controller and enclosure devices need an agent with `GET /api/v1/storage/topology` and storcli (Broadcom/LSI) and/or `sg_ses` from sg3_utils 1.48+ with SES devices on the server. They appear within about a minute of the agent starting (its first collection runs 20 seconds after start, then every 5 minutes by default).
 - Reload the integration after changing Unraid-side configuration.
 
 ### WebSocket Issues
