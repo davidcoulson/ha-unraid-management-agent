@@ -1166,3 +1166,136 @@ def test_parity_schedule_attributes_with_data():
     assert attrs["day"] == 0
     assert attrs["hour"] == 3
     assert attrs["correcting"] is True
+
+
+def test_container_updates_helpers() -> None:
+    """Test _has_container_updates and _container_updates_attributes."""
+    from custom_components.unraid_management_agent.binary_sensor import (
+        _container_updates_attributes,
+        _has_container_updates,
+    )
+
+    coordinator = MagicMock()
+    coordinator.data = None
+    assert _has_container_updates(coordinator) is False
+    assert _container_updates_attributes(coordinator) == {}
+
+    coordinator.data = MagicMock()
+    coordinator.data.container_updates = None
+    assert _has_container_updates(coordinator) is False
+    assert _container_updates_attributes(coordinator) == {}
+
+    coordinator.data.container_updates = MagicMock()
+    coordinator.data.container_updates.updates_available = 3
+    coordinator.data.container_updates.total_count = 10
+    assert _has_container_updates(coordinator) is True
+    attrs = _container_updates_attributes(coordinator)
+    assert attrs["updates_available"] == 3
+    assert attrs["total_containers"] == 10
+
+
+def test_network_service_binary_sensor_methods() -> None:
+    """Test UnraidNetworkServiceBinarySensor methods."""
+    from custom_components.unraid_management_agent.binary_sensor import (
+        UnraidNetworkServiceBinarySensor,
+    )
+
+    coordinator = MagicMock()
+    coordinator.config_entry.entry_id = "test_entry"
+    coordinator.last_update_success = True
+
+    # No data
+    coordinator.data = None
+    sensor = UnraidNetworkServiceBinarySensor(coordinator, "smb", "SMB")
+    assert sensor._get_service_info() is None
+    assert sensor.available is False
+    assert sensor.is_on is False
+    assert sensor.extra_state_attributes == {}
+
+    # Service data present
+    service_info = MagicMock()
+    service_info.running = True
+    service_info.enabled = True
+    service_info.port = 445
+    coordinator.data = MagicMock()
+    coordinator.data.network_services = MagicMock()
+    coordinator.data.network_services.smb = service_info
+
+    assert sensor._get_service_info() == service_info
+    assert sensor.available is True
+    assert sensor.is_on is True
+    assert sensor.extra_state_attributes == {"enabled": True, "port": 445}
+
+
+def test_unassigned_device_binary_sensor_methods() -> None:
+    """Test UnraidUnassignedDeviceBinarySensor methods."""
+    from custom_components.unraid_management_agent.binary_sensor import (
+        UnraidUnassignedDeviceBinarySensor,
+    )
+
+    coordinator = MagicMock()
+    coordinator.config_entry.entry_id = "test_entry"
+    coordinator.last_update_success = True
+
+    # No data
+    coordinator.data = None
+    sensor = UnraidUnassignedDeviceBinarySensor(coordinator, "dev1")
+    assert sensor._get_device() is None
+    assert sensor.available is False
+    assert sensor.is_on is False
+    assert sensor.extra_state_attributes == {}
+
+    # Device data present
+    device = MagicMock()
+    device.name = "dev1"
+    device.device = "/dev/sdb1"
+    device.filesystem = "xfs"
+    device.size_bytes = 1073741824
+    device.mounted = True
+    coordinator.data = MagicMock()
+    coordinator.data.unassigned_devices = [device]
+
+    assert sensor._get_device() == device
+    assert sensor.available is True
+    assert sensor.is_on is True
+    attrs = sensor.extra_state_attributes
+    assert attrs["device_path"] == "/dev/sdb1"
+    assert attrs["filesystem"] == "xfs"
+    assert "size" in attrs
+
+
+def test_remote_share_binary_sensor_methods() -> None:
+    """Test UnraidRemoteShareBinarySensor methods."""
+    from custom_components.unraid_management_agent.binary_sensor import (
+        UnraidRemoteShareBinarySensor,
+    )
+
+    coordinator = MagicMock()
+    coordinator.config_entry.entry_id = "test_entry"
+    coordinator.last_update_success = True
+
+    # No data
+    coordinator.data = None
+    sensor = UnraidRemoteShareBinarySensor(coordinator, "share1")
+    assert sensor._get_share() is None
+    assert sensor.available is False
+    assert sensor.is_on is False
+    assert sensor.extra_state_attributes == {}
+
+    # Share data present
+    share = MagicMock()
+    share.name = "share1"
+    share.mounted = True
+    share.protocol = "smb"
+    share.server = "192.168.1.50"
+    share.mount_point = "/mnt/remotes/share1"
+    coordinator.data = MagicMock()
+    coordinator.data.remote_shares = [share]
+
+    assert sensor._get_share() == share
+    assert sensor.available is True
+    assert sensor.is_on is True
+    attrs = sensor.extra_state_attributes
+    assert attrs["protocol"] == "smb"
+    assert attrs["server"] == "192.168.1.50"
+    assert attrs["mount_point"] == "/mnt/remotes/share1"

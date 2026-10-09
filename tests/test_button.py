@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from homeassistant.core import HomeAssistant
@@ -678,3 +678,156 @@ async def test_system_reboot_button_error(
             {"entity_id": "button.unraid_test_reboot_system"},
             blocking=True,
         )
+
+
+async def test_button_helper_press_functions() -> None:
+    """Test button helper press functions."""
+    from custom_components.unraid_management_agent.button import (
+        _async_archive_all_notifications,
+        _async_clear_array_disk_stats,
+        _async_pause_parity_check,
+        _async_resume_parity_check,
+    )
+
+    coordinator = MagicMock()
+    coordinator.client = MagicMock()
+    coordinator.client.pause_parity_check = AsyncMock()
+    coordinator.client.resume_parity_check = AsyncMock()
+    coordinator.client.clear_array_disk_stats = AsyncMock()
+    coordinator.client.archive_all_notifications = AsyncMock()
+    coordinator.async_request_refresh = AsyncMock()
+
+    await _async_pause_parity_check(coordinator)
+    coordinator.client.pause_parity_check.assert_called_once()
+    coordinator.async_request_refresh.assert_called_once()
+
+    coordinator.async_request_refresh.reset_mock()
+    await _async_resume_parity_check(coordinator)
+    coordinator.client.resume_parity_check.assert_called_once()
+    coordinator.async_request_refresh.assert_called_once()
+
+    coordinator.async_request_refresh.reset_mock()
+    await _async_clear_array_disk_stats(coordinator)
+    coordinator.client.clear_array_disk_stats.assert_called_once()
+    coordinator.async_request_refresh.assert_called_once()
+
+    coordinator.async_request_refresh.reset_mock()
+    await _async_archive_all_notifications(coordinator)
+    coordinator.client.archive_all_notifications.assert_called_once()
+    coordinator.async_request_refresh.assert_called_once()
+
+
+async def test_container_restart_button_methods() -> None:
+    """Test UnraidContainerRestartButton methods and error handling."""
+    from custom_components.unraid_management_agent.button import (
+        UnraidContainerRestartButton,
+    )
+
+    coordinator = MagicMock()
+    coordinator.config_entry.entry_id = "test_entry"
+    coordinator.last_update_success = True
+    coordinator.client = MagicMock()
+    coordinator.client.restart_container = AsyncMock()
+
+    # No data
+    coordinator.data = None
+    btn = UnraidContainerRestartButton(coordinator, "plex")
+    assert btn._find_container() is None
+    assert btn.available is False
+
+    # Press when container not found
+    await btn.async_press()
+    coordinator.client.restart_container.assert_not_called()
+
+    # Container found
+    container = MagicMock()
+    container.name = "plex"
+    container.id = "c123"
+    coordinator.data = MagicMock()
+    coordinator.data.containers = [container]
+    assert btn._find_container() == container
+    assert btn.available is True
+
+    # Successful press
+    await btn.async_press()
+    coordinator.client.restart_container.assert_called_once_with("c123")
+
+    # Error press raises HomeAssistantError
+    coordinator.client.restart_container = AsyncMock(side_effect=Exception("API Error"))
+    with pytest.raises(HomeAssistantError):
+        await btn.async_press()
+
+
+async def test_vm_buttons_methods() -> None:
+    """Test Unraid VM button classes, finding VM and press actions."""
+    from custom_components.unraid_management_agent.button import (
+        UnraidVMForceStopButton,
+        UnraidVMPauseButton,
+        UnraidVMResetButton,
+        UnraidVMRestartButton,
+        UnraidVMResumeButton,
+    )
+
+    coordinator = MagicMock()
+    coordinator.config_entry.entry_id = "test_entry"
+    coordinator.last_update_success = True
+    coordinator.client = MagicMock()
+    coordinator.client.force_stop_vm = AsyncMock()
+    coordinator.client.restart_vm = AsyncMock()
+    coordinator.client.pause_vm = AsyncMock()
+    coordinator.client.resume_vm = AsyncMock()
+    coordinator.client.reset_vm = AsyncMock()
+
+    # No data
+    coordinator.data = None
+    btn_force = UnraidVMForceStopButton(coordinator, "vm-1", "Windows 11")
+    assert btn_force._find_vm() is None
+    assert btn_force.available is False
+
+    # VM found by id and name
+    vm = MagicMock()
+    vm.id = "vm-1"
+    vm.name = "Windows 11"
+    coordinator.data = MagicMock()
+    coordinator.data.vms = [vm]
+    assert btn_force._find_vm() == vm
+    assert btn_force.available is True
+
+    # Test press and error for force stop
+    await btn_force.async_press()
+    coordinator.client.force_stop_vm.assert_called_once_with("vm-1")
+    coordinator.client.force_stop_vm = AsyncMock(side_effect=Exception("Stop failed"))
+    with pytest.raises(HomeAssistantError):
+        await btn_force.async_press()
+
+    # Test restart button
+    btn_restart = UnraidVMRestartButton(coordinator, "vm-1", "Windows 11")
+    await btn_restart.async_press()
+    coordinator.client.restart_vm.assert_called_once_with("vm-1")
+    coordinator.client.restart_vm = AsyncMock(side_effect=Exception("Restart failed"))
+    with pytest.raises(HomeAssistantError):
+        await btn_restart.async_press()
+
+    # Test pause button
+    btn_pause = UnraidVMPauseButton(coordinator, "vm-1", "Windows 11")
+    await btn_pause.async_press()
+    coordinator.client.pause_vm.assert_called_once_with("vm-1")
+    coordinator.client.pause_vm = AsyncMock(side_effect=Exception("Pause failed"))
+    with pytest.raises(HomeAssistantError):
+        await btn_pause.async_press()
+
+    # Test resume button
+    btn_resume = UnraidVMResumeButton(coordinator, "vm-1", "Windows 11")
+    await btn_resume.async_press()
+    coordinator.client.resume_vm.assert_called_once_with("vm-1")
+    coordinator.client.resume_vm = AsyncMock(side_effect=Exception("Resume failed"))
+    with pytest.raises(HomeAssistantError):
+        await btn_resume.async_press()
+
+    # Test reset button
+    btn_reset = UnraidVMResetButton(coordinator, "vm-1", "Windows 11")
+    await btn_reset.async_press()
+    coordinator.client.reset_vm.assert_called_once_with("vm-1")
+    coordinator.client.reset_vm = AsyncMock(side_effect=Exception("Reset failed"))
+    with pytest.raises(HomeAssistantError):
+        await btn_reset.async_press()

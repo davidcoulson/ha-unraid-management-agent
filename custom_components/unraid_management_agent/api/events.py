@@ -22,9 +22,9 @@ Example:
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, assert_never
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from .constants import EventType
 from .models import (
@@ -62,7 +62,7 @@ class WebSocketEvent(BaseModel):
     event_type: EventType | None = None
     data: Any = None
 
-    model_config = {"frozen": True}
+    model_config = ConfigDict(frozen=True)
 
 
 class SystemUpdateEvent(WebSocketEvent):
@@ -355,7 +355,6 @@ def parse_event(data: Any) -> WebSocketEvent:
 
     """
     event_type = identify_event_type(data)
-
     if event_type is None:
         return UnknownEvent(data=data)
 
@@ -432,5 +431,5 @@ def parse_event(data: Any) -> WebSocketEvent:
         case EventType.SOURCE_STATUS_CHANGED:
             return SourceStatusChangedEvent(data=data)
 
-        case _:
-            return UnknownEvent(data=data)  # type: ignore[unreachable]
+        case _ as unreachable:
+            assert_never(unreachable)

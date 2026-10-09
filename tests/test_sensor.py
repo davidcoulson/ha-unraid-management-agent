@@ -129,8 +129,18 @@ async def test_multi_gpu_sensors_created(
         "sensor.unraid_test_gpu_nvidia_geforce_rtx_3080_temperature",
         "sensor.unraid_test_gpu_nvidia_geforce_rtx_3080_power",
         "sensor.unraid_test_gpu_nvidia_geforce_rtx_3080_energy",
+        "sensor.unraid_test_gpu_nvidia_geforce_rtx_3080_vram_used",
+        "sensor.unraid_test_gpu_nvidia_geforce_rtx_3080_vram_total",
+        "sensor.unraid_test_gpu_nvidia_geforce_rtx_3080_vram_usage",
     ):
         assert hass.states.get(entity_id) is not None
+
+    # The Intel iGPU reports no VRAM, so it gets no VRAM sensors
+    for suffix in ("vram_used", "vram_total", "vram_usage"):
+        assert (
+            hass.states.get(f"sensor.unraid_test_gpu_intel_uhd_graphics_630_{suffix}")
+            is None
+        )
 
 
 @pytest.mark.usefixtures(
@@ -5355,3 +5365,145 @@ def test_gpu_sensor_classes_missing_index_return_none() -> None:
     assert utilization.native_value is None
     assert temperature.native_value is None
     assert power.native_value is None
+
+
+def test_swap_usage_and_swappiness_helpers() -> None:
+    """Test _get_swap_usage, _get_swap_usage_attrs, and _get_swappiness."""
+    from custom_components.unraid_management_agent.coordinator import UnraidData
+    from custom_components.unraid_management_agent.sensor import (
+        _get_swap_usage,
+        _get_swap_usage_attrs,
+        _get_swappiness,
+    )
+
+    data = UnraidData()
+    assert _get_swap_usage(data) is None
+    assert _get_swap_usage_attrs(data) == {}
+    assert _get_swappiness(data) is None
+
+    data.system = MagicMock()
+    data.system.swap_usage_percent = 12.34
+    data.system.swap_total_bytes = 1073741824
+    data.system.swap_used_bytes = 134217728
+    data.system.swap_free_bytes = 939524096
+    data.system.swappiness = 60
+
+    assert _get_swap_usage(data) == 12.3
+    assert _get_swappiness(data) == 60
+    attrs = _get_swap_usage_attrs(data)
+    assert attrs["swappiness"] == 60
+    assert "swap_total" in attrs
+    assert "swap_used" in attrs
+    assert "swap_free" in attrs
+
+
+def test_rate_and_energy_sensor_extra_stored_data_from_dict() -> None:
+    """Test UnraidRateSensorExtraStoredData and UnraidEnergySensorExtraStoredData from_dict."""
+    from custom_components.unraid_management_agent.sensor import (
+        UnraidEnergySensorExtraStoredData,
+        UnraidRateSensorExtraStoredData,
+    )
+
+    # Valid rate restore dict
+    valid_rate_dict = {
+        "native_value": 1024,
+        "native_unit_of_measurement": "B/s",
+        "last_bytes": 5000,
+        "last_timestamp": 123456.78,
+        "last_uptime_seconds": 3600,
+    }
+    rate_data = UnraidRateSensorExtraStoredData.from_dict(valid_rate_dict)
+    assert rate_data is not None
+    assert rate_data.last_bytes == 5000
+    assert rate_data.last_timestamp == 123456.78
+    assert rate_data.last_uptime_seconds == 3600
+
+    # Rate restore dict with invalid values
+    invalid_rate_dict = {
+        "native_value": 1024,
+        "native_unit_of_measurement": "B/s",
+        "last_bytes": "invalid_int",
+    }
+    assert UnraidRateSensorExtraStoredData.from_dict(invalid_rate_dict) is None
+
+    # Valid energy restore dict
+    valid_energy_dict = {
+        "native_value": 50.5,
+        "native_unit_of_measurement": "kWh",
+        "last_power_watts": 150.0,
+        "last_timestamp": 123456.78,
+        "last_uptime_seconds": 3600,
+    }
+    energy_data = UnraidEnergySensorExtraStoredData.from_dict(valid_energy_dict)
+    assert energy_data is not None
+    assert energy_data.last_power_watts == 150.0
+    assert energy_data.last_timestamp == 123456.78
+    assert energy_data.last_uptime_seconds == 3600
+
+    # Energy restore dict with invalid values
+    invalid_energy_dict = {
+        "native_value": 50.5,
+        "native_unit_of_measurement": "kWh",
+        "last_power_watts": "invalid_float",
+    }
+    assert UnraidEnergySensorExtraStoredData.from_dict(invalid_energy_dict) is None
+
+
+def test_get_system_uptime_seconds_helper() -> None:
+    """Test _get_system_uptime_seconds helper."""
+    from custom_components.unraid_management_agent.coordinator import UnraidData
+    from custom_components.unraid_management_agent.sensor import (
+        _get_system_uptime_seconds,
+    )
+
+    assert _get_system_uptime_seconds(None) is None
+
+    data = UnraidData()
+    assert _get_system_uptime_seconds(data) is None
+
+    data.system = MagicMock()
+    data.system.uptime_seconds = None
+    assert _get_system_uptime_seconds(data) is None
+
+    data.system.uptime_seconds = 86400
+    assert _get_system_uptime_seconds(data) == 86400
+
+    data.system.uptime_seconds = "invalid"
+    assert _get_system_uptime_seconds(data) is None
+
+
+def test_unassigned_device_size_sensor() -> None:
+    """Test UnraidUnassignedDeviceSensor methods."""
+    from custom_components.unraid_management_agent.sensor import (
+        UnraidUnassignedDeviceSensor,
+    )
+
+    coordinator = MagicMock()
+    coordinator.config_entry.entry_id = "test_entry"
+    coordinator.last_update_success = True
+
+    # No data
+    coordinator.data = None
+    sensor = UnraidUnassignedDeviceSensor(coordinator, "dev1")
+    assert sensor._get_device() is None
+    assert sensor.available is False
+    assert sensor.native_value is None
+    assert sensor.extra_state_attributes == {}
+
+    # Device found
+    device = MagicMock()
+    device.name = "dev1"
+    device.size_bytes = 2000000000
+    device.device = "/dev/sdc1"
+    device.filesystem = "btrfs"
+    device.mounted = True
+    coordinator.data = MagicMock()
+    coordinator.data.unassigned_devices = [device]
+
+    assert sensor._get_device() == device
+    assert sensor.available is True
+    assert sensor.native_value == 2000000000
+    attrs = sensor.extra_state_attributes
+    assert attrs["device_path"] == "/dev/sdc1"
+    assert attrs["filesystem"] == "btrfs"
+    assert attrs["mounted"] is True

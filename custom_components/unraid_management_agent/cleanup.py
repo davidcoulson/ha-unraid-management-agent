@@ -222,7 +222,17 @@ def _build_valid_dynamic_entity_keys(
         gpu_index = getattr(gpu, "index", None)
         if gpu_index is None:
             gpu_index = idx
-        for sensor_type in ("utilization", "temperature", "power", "energy"):
+        # VRAM keys stay valid for every present GPU, even ones not reporting
+        # VRAM right now, so a transient zero never deletes their history.
+        for sensor_type in (
+            "utilization",
+            "temperature",
+            "power",
+            "energy",
+            "vram_used",
+            "vram_total",
+            "vram_usage",
+        ):
             keys.add(f"gpu_{gpu_index}_{sensor_type}")  # sensor
 
     # ── Network interfaces ────────────────────────────────────────────────────
