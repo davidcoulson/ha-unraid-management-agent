@@ -10,10 +10,10 @@ import {
   mdiAlertCircle,
   mdiCheckCircle,
   mdiHarddisk,
-  mdiPause,
   mdiPlay,
   mdiShieldAlert,
   mdiShieldCheck,
+  mdiStop,
   mdiUsbFlashDrive,
 } from "./icons";
 import { registerDashboardCard } from "./register-dashboard-card";
@@ -407,7 +407,7 @@ export class UnraidStorageCard extends BaseUnraidCard {
                     class="btn ${isChecking ? "btn" : "btn-primary"}"
                     @click=${() => this.toggleEntity(paritySwitch.entity_id)}
                   >
-                    ${iconTemplate(isChecking ? mdiPause : mdiPlay, 14)}
+                    ${iconTemplate(isChecking ? mdiStop : mdiPlay, 14)}
                     <span>${isChecking ? "Cancel" : "Check Now"}</span>
                   </button>
                 `
