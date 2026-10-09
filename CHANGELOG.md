@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and event platforms, removes switch, button and number entities created
   earlier, and makes integration actions targeting a read-only entry refuse
   with a `read_only_mode` validation error. Off by default.
+- **VMs as separate devices (optional)** ([#140](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/140), closes [#145](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/145)): A new **Show virtual machines as separate devices** option (off by default) gives each VM a child device of the Unraid server, keyed by its libvirt UUID. The device holds the VM's power switch and control buttons plus numeric sensors: state, CPU usage, vCPUs, memory allocated and network receive/send rates. Memory used, network totals, disk read/write rates and disk size are disabled by default. Rates are computed from the agent's cumulative counters, and new VMs get their device without a reload. When off, VM entities stay on the server device exactly as before. VM devices left without entities (VM deleted or option turned off) are removed, and a device whose VM is gone can be deleted from the UI. Requires Home Assistant 2026.9 or newer.
 
 ### Fixed
 
