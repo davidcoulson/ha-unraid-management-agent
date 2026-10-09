@@ -20,6 +20,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   earlier, and makes integration actions targeting a read-only entry refuse
   with a `read_only_mode` validation error. Off by default.
 - **API token authentication** ([#143](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/143), contributed by @davidcoulson): An optional API token in the setup, Zeroconf and reconfigure forms is sent as a bearer token on REST requests and the websocket handshake, for agents with `API_TOKEN` set (v2026.08.02+). A rejected token shows "Invalid authentication", and a token rejected later starts Home Assistant's standard re-authentication flow. The token is redacted from diagnostics.
+- **Per-channel hwmon temperature sensors** ([#144](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/144), contributed by @davidcoulson):
+  One sensor per lm-sensors `temp*_input` channel in the agent's `temperatures`
+  list (for example a coolant probe on an Aquacomputer Octo, NVMe, NIC and CCD
+  temperatures), named from the `sensors.conf` label. Disabled by default, since
+  a typical server has dozens. Unique IDs use the full chip name and channel, so
+  they stay stable when other chips come and go. Channels that appear later are
+  added without a reload, removed channels are cleaned up like other dynamic
+  entities, and the sensors do not depend on the fan control option. Voltage,
+  current and power readings that older agents list as temperatures are skipped.
 
 ### Fixed
 

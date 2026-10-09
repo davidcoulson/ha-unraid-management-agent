@@ -190,6 +190,9 @@
       "fan": {
         "name": "Fan {name}"
       },
+      "hwmon_temperature": {
+        "name": "Temperature {name}"
+      },
       "network_rx": {
         "name": "Network {interface} RX"
       },
