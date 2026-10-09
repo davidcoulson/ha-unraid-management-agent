@@ -21,7 +21,9 @@ from .const import DOMAIN
 from .entity import (
     UnraidBaseEntity,
     UnraidEntityDescription,
+    build_container_device_info,
     build_vm_device_info,
+    container_devices_enabled,
     find_vm,
     vm_devices_enabled,
 )
@@ -334,8 +336,14 @@ class UnraidContainerRestartButton(UnraidBaseEntity, ButtonEntity):
         self._container_name = container_name
         safe_name = slugify(container_name)
         super().__init__(coordinator, f"container_{safe_name}_restart")
-        self._attr_translation_key = "container_restart"
-        self._attr_translation_placeholders = {"container_name": container_name}
+        if container_devices_enabled(coordinator):
+            self._attr_translation_key = "container_device_restart"
+            self._attr_device_info = build_container_device_info(
+                coordinator, container_name
+            )
+        else:
+            self._attr_translation_key = "container_restart"
+            self._attr_translation_placeholders = {"container_name": container_name}
 
     def _find_container(self) -> Any | None:
         """Find the container by name."""
