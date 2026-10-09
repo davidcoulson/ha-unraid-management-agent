@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { readFileSync } from "fs";
-import { resolve } from "path";
+import liveDataJson from "./live-states.json";
 import "../src/index";
 import { UnraidServerCard } from "../src/server-card";
 import { UnraidStorageCard } from "../src/storage-card";
@@ -23,8 +22,7 @@ describe("Live Server Cube Cards Verification", () => {
   let mockHass: any;
 
   beforeAll(() => {
-    const raw = readFileSync(resolve(__dirname, "live-states.json"), "utf-8");
-    liveData = JSON.parse(raw);
+    liveData = liveDataJson as unknown as { device: any; states: Record<string, any> };
 
     mockHass = {
       states: liveData.states,
@@ -129,7 +127,6 @@ describe("Live Server Cube Cards Verification", () => {
     await card.updateComplete;
 
     const html = card.shadowRoot?.innerHTML || "";
-    console.log("ACTUAL UPS HTML:", html);
     expect(html).toContain("Battery");
     expect(html).toContain("Load");
     document.body.removeChild(card);
@@ -207,6 +204,42 @@ describe("Live Server Cube Cards Verification", () => {
     expect(html).toContain("Storage");
     expect(html).toContain("Docker");
     expect(html).toContain("GPU");
+    document.body.removeChild(card);
+  });
+
+  it("verifies UnraidZfsCard renders correctly", async () => {
+    const card = new UnraidZfsCard();
+    card.setConfig({ type: "custom:unraid-zfs-card", server: "Cube" });
+    card.hass = mockHass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    const html = card.shadowRoot?.innerHTML || "";
+    expect(html).toContain("ZFS");
+    document.body.removeChild(card);
+  });
+
+  it("verifies UnraidRemoteSharesCard renders correctly", async () => {
+    const card = new UnraidRemoteSharesCard();
+    card.setConfig({ type: "custom:unraid-remote-shares-card", server: "Cube" });
+    card.hass = mockHass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    const html = card.shadowRoot?.innerHTML || "";
+    expect(html).toContain("Remote Shares");
+    document.body.removeChild(card);
+  });
+
+  it("verifies UnraidUnassignedDevicesCard renders correctly", async () => {
+    const card = new UnraidUnassignedDevicesCard();
+    card.setConfig({ type: "custom:unraid-unassigned-devices-card", server: "Cube" });
+    card.hass = mockHass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    const html = card.shadowRoot?.innerHTML || "";
+    expect(html).toContain("Unassigned");
     document.body.removeChild(card);
   });
 });

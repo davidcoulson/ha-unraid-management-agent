@@ -62,11 +62,21 @@ export class UnraidGpuCard extends BaseUnraidCard {
       if (!gpuMap.has(gpuKey)) {
         const parsedIndex = parseInt(rawKey, 10);
         const index = !isNaN(parsedIndex) ? parsedIndex : gpuMap.size;
+        const friendlyName =
+          typeof stateObj.attributes?.friendly_name === "string"
+            ? (stateObj.attributes.friendly_name as string)
+                .replace(/^(?:.*?\s+)?(?:GPU\s+)?/i, "")
+                .replace(
+                  /\s+(?:Utilization|Temperature|Power|Energy|VRAM|Usage).*$/i,
+                  "",
+                )
+            : undefined;
+
         const gpuName =
-          (stateObj.attributes?.gpu_name as string) ||
-          (stateObj.attributes?.friendly_name
-            ?.replace(/^(?:.*?\s+)?(?:GPU\s+)?/i, "")
-            ?.replace(/\s+(?:Utilization|Temperature|Power|Energy|VRAM|Usage).*$/i, "")) ||
+          (typeof stateObj.attributes?.gpu_name === "string"
+            ? (stateObj.attributes.gpu_name as string)
+            : undefined) ||
+          friendlyName ||
           (rawKey !== "0"
             ? rawKey.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
             : `GPU ${index}`);
