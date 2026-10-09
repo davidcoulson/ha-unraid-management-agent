@@ -10,8 +10,8 @@ rules:
     status: done
     comment: DataUpdateCoordinator with fixed 30s interval (local network minimum)
   brands:
-    status: todo
-    comment: No brand assets in HA brands repository
+    status: done
+    comment: Integration ships local brand assets in brand/ directory (supported in HA 2026.3+)
   common-modules:
     status: done
     comment: Shared base classes, const.py, coordinator.py, entity.py
@@ -27,6 +27,9 @@ rules:
   docs-actions:
     status: done
     comment: README documents all integration services with grouped examples
+  docs-conditions:
+    status: exempt
+    comment: Integration does not implement automation conditions
   docs-high-level-description:
     status: done
     comment: README has project description
@@ -36,6 +39,9 @@ rules:
   docs-removal-instructions:
     status: done
     comment: README includes Home Assistant, HACS, manual, and backend plugin removal steps
+  docs-triggers:
+    status: exempt
+    comment: Integration does not implement automation triggers
   entity-event-setup:
     status: done
     comment: Uses CoordinatorEntity pattern correctly

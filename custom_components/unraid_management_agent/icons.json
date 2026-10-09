@@ -91,6 +91,15 @@
       "gpu_energy": {
         "default": "mdi:expansion-card"
       },
+      "gpu_vram_used": {
+        "default": "mdi:memory"
+      },
+      "gpu_vram_total": {
+        "default": "mdi:memory"
+      },
+      "gpu_vram_usage": {
+        "default": "mdi:memory"
+      },
       "ups_battery": {
         "default": "mdi:battery",
         "state": {
