@@ -498,7 +498,10 @@
       "message": "Failed to unmount remote share: {share_name}"
     },
     "read_only_mode": {
-      "message": "The Unraid integration is in read-only mode. Turn off read-only in the integration options to control the server."
+      "message": "{title} is in read-only mode. Turn off read-only in its integration options to control the server."
+    },
+    "entry_not_loaded": {
+      "message": "{title} is not loaded, so the action cannot run. Check that the integration is set up and the server is reachable."
     }
   },
   "services": {
