@@ -26,6 +26,7 @@ This custom integration connects Home Assistant to the Unraid Management Agent r
 - ZFS monitoring including pool health, a per-pool problem sensor, scrub status and last scrub time, scrub/read/write/checksum error counts, fragmentation, corrupted files, ARC statistics, and configured ARC max
 - UPS, GPU, mover, registration, notifications, network services, remote shares, and unassigned device data when available on the target server
 - Diagnostics-backed sensors such as degraded subsystem count and Docker port conflict count
+- The agent's alert rules (agent v2026.03.00+): a problem binary sensor per rule, an event when a rule starts firing or resolves, and a count of firing alerts
 
 ## Prerequisites
 
@@ -180,12 +181,12 @@ data:
 
 The exact entity set depends on what the Unraid Management Agent exposes for your server.
 
-- Sensors for system, array, flash, plugins, mover, parity, notifications, registration, ZFS, UPS, GPU, containers, remote shares, and unassigned devices
-- Binary sensors for array state, parity state, update availability, mover state, UPS connectivity, network services, system services (Docker, libvirt and nginx running state), remote shares, and unassigned devices
+- Sensors for system, array, flash, plugins, mover, parity, notifications, registration, ZFS, UPS, GPU, containers, remote shares, unassigned devices, and firing agent alerts
+- Binary sensors for array state, parity state, update availability, mover state, UPS connectivity, network services, system services (Docker, libvirt and nginx running state), remote shares, unassigned devices, and agent alert rules (on while the rule fires; unavailable while the rule is disabled)
 - Switches for containers, virtual machines, disk spin control, and remote shares
 - Buttons for array actions, parity actions, system power actions, VM controls, and user scripts
 - Number entities for supported fan speed control
-- Event entities for notifications
+- Event entities for notifications and for agent alert rules that start firing or resolve
 - Update entities for Unraid OS (display only), each plugin, and, with container update checks enabled, each container's image; plugin and container updates can be installed from Home Assistant except in read-only mode
 
 Dynamic entities are cleaned up automatically when the corresponding resource is removed from Unraid.
@@ -244,6 +245,26 @@ automation:
       - service: unraid_management_agent.container_start
         data:
           container_id: plex
+```
+
+### React To Agent Alerts
+
+The agent evaluates its alert rules (rules you create or enable from its templates, and on recent agents the built-in "Agent data source degraded" rule) every 15 seconds. Home Assistant reads their state on each 30-second poll, so a rule that fires and resolves between two polls is not seen.
+
+```yaml
+automation:
+  - alias: Unraid Agent Alert
+    trigger:
+      - platform: state
+        entity_id: event.unraid_tower_alert
+    condition:
+      - condition: template
+        value_template: "{{ trigger.to_state.attributes.event_type == 'firing' }}"
+    action:
+      - service: notify.mobile_app
+        data:
+          title: "Unraid alert ({{ trigger.to_state.attributes.severity }})"
+          message: "{{ trigger.to_state.attributes.rule_name }}"
 ```
 
 ## Architecture

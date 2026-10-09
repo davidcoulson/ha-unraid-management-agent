@@ -18,6 +18,14 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import slugify
 
 from . import UnraidConfigEntry, UnraidDataUpdateCoordinator
+from .alerts import (
+    ALERT_STATE_FIRING,
+    alert_rule_key,
+    alert_rule_names,
+    alert_since,
+    find_alert_rule,
+    find_alert_status,
+)
 from .api.models import SystemService
 from .cleanup import async_prune_seen_names
 from .const import ATTR_PARITY_CHECK_STATUS
@@ -532,12 +540,39 @@ async def async_setup_entry(
 
     _add_remote_share_sensors()
 
-    # Register listeners so entities are added when new unassigned/remote-share data arrives
+    # Alert rule binary sensors - one per agent alert rule, created as rules appear
+    seen_alert_rules: set[str] = set()
+
+    def _add_alert_rule_sensors() -> None:
+        # Allow re-creation of entities removed from the registry (see #83)
+        async_prune_seen_names(
+            hass,
+            "binary_sensor",
+            seen_alert_rules,
+            lambda rule_id: f"{entry.entry_id}_{alert_rule_key(rule_id)}",
+        )
+        new_entities: list[BinarySensorEntity] = []
+        for rule_id, rule_name in alert_rule_names(coordinator.data).items():
+            if rule_id not in seen_alert_rules:
+                seen_alert_rules.add(rule_id)
+                new_entities.append(
+                    UnraidAlertRuleBinarySensor(coordinator, rule_id, rule_name)
+                )
+        if new_entities:
+            async_add_entities(new_entities)
+
+    _add_alert_rule_sensors()
+
+    # Register listeners so entities are added when new unassigned/remote-share
+    # data or new alert rules arrive
     entry.async_on_unload(
         coordinator.async_add_listener(callback(_add_unassigned_device_sensors))
     )
     entry.async_on_unload(
         coordinator.async_add_listener(callback(_add_remote_share_sensors))
+    )
+    entry.async_on_unload(
+        coordinator.async_add_listener(callback(_add_alert_rule_sensors))
     )
 
     # System service binary sensors (/services) - created as services appear
@@ -885,6 +920,76 @@ class UnraidRemoteShareBinarySensor(UnraidBaseEntity, BinarySensorEntity):
             attrs["server"] = share.server
         if getattr(share, "mount_point", None):
             attrs["mount_point"] = share.mount_point
+        return attrs
+
+
+class UnraidAlertRuleBinarySensor(UnraidBaseEntity, BinarySensorEntity):
+    """
+    Problem binary sensor for one agent alert rule, on while the rule fires.
+
+    The agent only evaluates enabled rules, so a disabled rule's sensor is
+    unavailable rather than reporting a misleading "OK".
+    """
+
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+    _attr_translation_key = "alert_rule"
+
+    def __init__(
+        self,
+        coordinator: UnraidDataUpdateCoordinator,
+        rule_id: str,
+        rule_name: str,
+    ) -> None:
+        """Initialize the alert rule binary sensor."""
+        self._rule_id = rule_id
+        super().__init__(coordinator, alert_rule_key(rule_id))
+        self._attr_translation_placeholders = {"rule_name": rule_name}
+
+    @property
+    def available(self) -> bool:
+        """Return True while the agent reports a status for the rule."""
+        return (
+            super().available
+            and find_alert_status(self.coordinator.data, self._rule_id) is not None
+        )
+
+    @property
+    def is_on(self) -> bool:
+        """Return True if the alert rule is firing."""
+        status = find_alert_status(self.coordinator.data, self._rule_id)
+        return status is not None and status.state == ALERT_STATE_FIRING
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """
+        Return the rule's state, severity and definition.
+
+        Notification channels are left out: they can hold webhook URLs with
+        credentials.
+        """
+        attrs: dict[str, Any] = {"rule_id": self._rule_id}
+        status = find_alert_status(self.coordinator.data, self._rule_id)
+        rule = find_alert_rule(self.coordinator.data, self._rule_id)
+        severity = (status.severity if status else None) or (
+            rule.severity if rule else None
+        )
+        if severity:
+            attrs["severity"] = severity
+        if status is not None:
+            if status.state:
+                attrs["alert_state"] = status.state
+            since = alert_since(status)
+            if since is not None:
+                attrs["since"] = since.isoformat()
+            if status.message:
+                attrs["message"] = status.message
+        if rule is not None:
+            if rule.expression:
+                attrs["expression"] = rule.expression
+            if rule.duration_seconds:
+                attrs["duration_seconds"] = rule.duration_seconds
+            if rule.cooldown_minutes:
+                attrs["cooldown_minutes"] = rule.cooldown_minutes
         return attrs
 
 

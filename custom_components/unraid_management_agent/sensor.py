@@ -40,6 +40,7 @@ from homeassistant.util import dt as dt_util
 from homeassistant.util import slugify as ha_slugify
 
 from . import UnraidConfigEntry, UnraidDataUpdateCoordinator
+from .alerts import ALERT_STATE_FIRING
 from .api import EnergyIntegrator, RateCalculator, parse_timestamp
 from .api.formatting import format_bytes, format_duration
 from .api.models import TemperatureInfo
@@ -1583,6 +1584,30 @@ ZFS_ARC_SENSOR_DESCRIPTIONS: tuple[UnraidSensorEntityDescription, ...] = (
         extra_state_attributes_fn=_get_zfs_arc_attrs,
         supported_fn=lambda data: data is not None and data.zfs_arc is not None,
     ),
+)
+
+
+# =============================================================================
+# Sensor Entity Descriptions - Alerting engine
+# =============================================================================
+
+
+def _firing_alert_names(data: UnraidData) -> list[str]:
+    """Return the names of the agent alert rules that are firing."""
+    return [
+        status.rule_name or status.rule_id or ""
+        for status in data.alert_statuses or []
+        if status.state == ALERT_STATE_FIRING
+    ]
+
+
+ALERTS_FIRING_DESCRIPTION = UnraidSensorEntityDescription(
+    key="alerts_firing",
+    translation_key="alerts_firing",
+    state_class=SensorStateClass.MEASUREMENT,
+    value_fn=lambda data: len(_firing_alert_names(data)),
+    extra_state_attributes_fn=lambda data: {"firing_rules": _firing_alert_names(data)},
+    available_fn=lambda data: data.alert_statuses is not None,
 )
 
 
@@ -4585,6 +4610,25 @@ async def async_setup_entry(
 
     _add_hwmon_temperature_sensors()
 
+    # Firing alerts count - added once the agent reports alert status, so older
+    # agents without the alerting engine don't get it and an upgraded agent
+    # gets it without a reload
+    alerts_firing_added = False
+
+    def _add_alerts_firing_sensor() -> None:
+        nonlocal alerts_firing_added
+        current_data = coordinator.data
+        if (
+            alerts_firing_added
+            or not current_data
+            or current_data.alert_statuses is None
+        ):
+            return
+        alerts_firing_added = True
+        async_add_entities([UnraidSensorEntity(coordinator, ALERTS_FIRING_DESCRIPTION)])
+
+    _add_alerts_firing_sensor()
+
     entry.async_on_unload(
         coordinator.async_add_listener(callback(_add_unassigned_device_sensors))
     )
@@ -4593,6 +4637,9 @@ async def async_setup_entry(
     )
     entry.async_on_unload(
         coordinator.async_add_listener(callback(_add_hwmon_temperature_sensors))
+    )
+    entry.async_on_unload(
+        coordinator.async_add_listener(callback(_add_alerts_firing_sensor))
     )
 
     _LOGGER.debug("Adding %d Unraid sensor entities", len(entities))
