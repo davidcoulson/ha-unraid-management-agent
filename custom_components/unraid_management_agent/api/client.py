@@ -9,6 +9,7 @@ from urllib.parse import urljoin
 
 from .exceptions import (
     UnraidAPIError,
+    UnraidAuthenticationError,
     UnraidConflictError,
     UnraidConnectionError,
     UnraidNotFoundError,
@@ -143,8 +144,17 @@ class UnraidClient:
         use_https: bool = False,
         session: aiohttp.ClientSession | None = None,
         max_concurrency: int = _DEFAULT_CONCURRENCY,
+        *,
+        api_token: str | None = None,
     ):
         self.host = host
+        self.api_token = api_token
+        # Sent as "Authorization: Bearer <token>" when the agent has API_TOKEN set
+        self._headers: dict[str, str] = (
+            {"Authorization": f"Bearer {api_token.strip()}"}
+            if api_token and api_token.strip()
+            else {}
+        )
         self.port = port
         self.timeout = timeout
         self.verify_ssl = verify_ssl
@@ -252,6 +262,7 @@ class UnraidClient:
                     async with session.request(
                         method=method,
                         url=url,
+                        headers=self._headers,
                         json=json if json is not None else data,
                         params=params,
                         timeout=request_timeout,
@@ -305,6 +316,12 @@ class UnraidClient:
                                 error_code = "UNKNOWN_ERROR"
 
                             # Raise specific exceptions based on status code
+                            if response.status == 401:
+                                raise UnraidAuthenticationError(
+                                    error_message,
+                                    error_code=error_code,
+                                    status_code=response.status,
+                                )
                             if response.status == 404:
                                 raise UnraidNotFoundError(
                                     error_message,
@@ -366,10 +383,17 @@ class UnraidClient:
 
         try:
             async with self._semaphore:
-                async with session.request(method=method, url=url) as response:
+                async with session.request(
+                    method=method, url=url, headers=self._headers
+                ) as response:
                     if response.status == 200:
                         text: str = await response.text()
                         return text
+                    if response.status == 401:
+                        msg = "API token rejected"
+                        raise UnraidAuthenticationError(
+                            msg, status_code=response.status
+                        )
 
                     error_message = await response.text() or f"HTTP {response.status}"
                     raise UnraidAPIError(
@@ -423,10 +447,15 @@ class UnraidClient:
         session = await self._ensure_session()
 
         try:
-            async with session.request(method="GET", url=url) as response:
+            async with session.request(
+                method="GET", url=url, headers=self._headers
+            ) as response:
                 if response.status == 200:
                     text: str = await response.text()
                     return text
+                if response.status == 401:
+                    msg = "API token rejected"
+                    raise UnraidAuthenticationError(msg, status_code=response.status)
 
                 error_message = await response.text() or f"HTTP {response.status}"
                 raise UnraidAPIError(

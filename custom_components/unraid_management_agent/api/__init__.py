@@ -49,6 +49,7 @@ from .events import (
 )
 from .exceptions import (
     UnraidAPIError,
+    UnraidAuthenticationError,
     UnraidConflictError,
     UnraidConnectionError,
     UnraidNotFoundError,
@@ -317,6 +318,7 @@ __all__ = [
     "UnknownEvent",
     # Exceptions
     "UnraidAPIError",
+    "UnraidAuthenticationError",
     # Clients
     "UnraidClient",
     "UnraidConflictError",
