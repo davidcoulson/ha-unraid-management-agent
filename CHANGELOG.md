@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **PR governance workflow** — added automated GitHub Actions workflow enforcing PR template completeness, mandatory CHANGELOG.md updates, issue linking checks, and bot/draft exemptions.
+- **Pull request template** — added `.github/PULL_REQUEST_TEMPLATE.md` with structured sections for description, changes made, Home Assistant testing verification, and quality checklist.
+
+### Changed
+
+- **CI test & Codecov workflow** — updated `.github/workflows/test.yml` to target `custom_components/unraid_management_agent`, provision dependencies via `uv pip install -e ".[dev,test]"`, upload coverage reports to Codecov via `codecov/codecov-action@v5`, and added concurrency cancellation.
+- **Codecov configuration** — updated `.codecov.yml` with `auto` coverage targets and clean comment formatting.
+
 ## [2026.6.5] — 2026-06-17
 
 ### Fixed

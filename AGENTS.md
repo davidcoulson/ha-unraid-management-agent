@@ -201,6 +201,7 @@ custom_components/unraid_management_agent/
 ```python
 type UnraidConfigEntry = ConfigEntry[UnraidRuntimeData]
 
+
 @dataclass
 class UnraidRuntimeData:
     coordinator: UnraidDataUpdateCoordinator
@@ -409,11 +410,14 @@ Coverage target: **95%+** (current: ~94-95%). Config flow coverage target: **100
 
 ```python
 # Integration test using fixtures
-@pytest.mark.usefixtures("mock_unraid_client_class", "mock_unraid_websocket_client_class")
+@pytest.mark.usefixtures(
+    "mock_unraid_client_class", "mock_unraid_websocket_client_class"
+)
 async def test_switch_setup(hass: HomeAssistant, mock_config_entry) -> None:
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
     assert len(hass.states.async_entity_ids("switch")) > 0
+
 
 # Unit test for helper functions
 def test_is_array_started_no_data():
@@ -533,6 +537,12 @@ The GitHub Actions CI pipeline runs on pushes to `main`, `enhancement/*`, `featu
 
 - Use [Conventional Commits](https://www.conventionalcommits.org/) format
 - Pre-commit hooks must pass before committing
+
+### CHANGELOG Updates (MANDATORY)
+
+- **Always update `CHANGELOG.md`** under the `## [Unreleased]` section with every feature, bug fix, refactor, or notable change.
+- Group entries under standard Keep a Changelog categories: `### Added`, `### Changed`, `### Deprecated`, `### Removed`, `### Fixed`, `### Security`.
+- PR governance workflows strictly enforce that PRs update `CHANGELOG.md`. AI coding agents must never consider a task complete without documenting the change in `CHANGELOG.md`.
 
 ## Additional Resources
 

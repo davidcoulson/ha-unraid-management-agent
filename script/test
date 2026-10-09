@@ -154,8 +154,14 @@ if [[ ${#COVERAGE_ARGS[@]} -gt 0 ]]; then
 else
     log_header "Running tests"
 fi
-echo ""
-pytest "${COVERAGE_ARGS[@]}" "${PYTEST_ARGS[@]}"
+CMD=(pytest)
+if [[ ${#COVERAGE_ARGS[@]} -gt 0 ]]; then
+    CMD+=("${COVERAGE_ARGS[@]}")
+fi
+if [[ ${#PYTEST_ARGS[@]} -gt 0 ]]; then
+    CMD+=("${PYTEST_ARGS[@]}")
+fi
+"${CMD[@]}"
 
 if [[ ${#COVERAGE_ARGS[@]} -gt 0 ]] && [[ " ${COVERAGE_ARGS[*]} " =~ " --cov-report=html " ]]; then
     echo ""
