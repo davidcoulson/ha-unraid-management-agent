@@ -64,6 +64,7 @@ Generate code that passes these checks on first run. As an AI agent, you should 
 5. **Validation:** run `script/lint` before considering task complete
 6. **File size:** keep files at ~200-400 lines. Split large modules into smaller ones when needed.
 7. **CHANGELOG:** always update `CHANGELOG.md` under `## [Unreleased]` with every feature, fix, or change. PR governance enforces this check.
+8. **HA Quality Scale & Deprecations:** strictly follow Platinum Quality Scale. Never use `hass.data[DOMAIN]`, never register services in `async_setup_entry()`, never use deprecated entity properties (`unit_of_measurement`), always use `async_get_clientsession(hass)`, and run `script/hassfest`. PR governance statically scans and blocks deprecated patterns.
 
 **Important: Do NOT write tests unless explicitly requested.** Focus on implementing functionality. The developer decides when and if tests are needed.
 

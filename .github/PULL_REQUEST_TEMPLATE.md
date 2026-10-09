@@ -29,6 +29,20 @@ Fixes #
 - 
 - 
 
+## Home Assistant Quality Scale & Standards
+
+<!-- Check all that apply to confirm compliance with modern Home Assistant development standards -->
+
+- [ ] Verified against the [Home Assistant Developer Docs](https://developers.home-assistant.io/) and Quality Scale (Platinum target)
+- [ ] Uses `entry.runtime_data` exclusively (zero `hass.data[DOMAIN]` usage)
+- [ ] All entities inherit from `UnraidBaseEntity` and set `_attr_has_entity_name = True`
+- [ ] Services/actions registered in `async_setup()` with full schema validation (not `async_setup_entry()`)
+- [ ] Sensor entities use `native_value` / `native_unit_of_measurement` (no deprecated properties)
+- [ ] Uses `async_get_clientsession(hass)` for all HTTP/WebSocket connections
+- [ ] Entities read from `coordinator.data` (no direct API/network calls in entity classes)
+- [ ] Diagnostics data is properly redacted via `async_redact_data()`
+- [ ] Not applicable (documentation-only or metadata change)
+
 ## Testing Performed
 
 <!-- Check all that apply and describe what you tested -->
@@ -65,6 +79,7 @@ Fixes #
 <!-- Ensure you've completed all required items before submitting -->
 
 - [ ] I have updated CHANGELOG.md under [Unreleased] with details of this change
+- [ ] I verified my code against the Home Assistant Integration Quality Scale and used no deprecated APIs
 - [ ] I linked related issues or noted "None" in **Related Issues**
 - [ ] I completed all required sections in this template and removed placeholder-only content
 - [ ] My code follows the project's coding standards and Home Assistant patterns

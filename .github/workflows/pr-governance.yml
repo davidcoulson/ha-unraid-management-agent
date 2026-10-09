@@ -16,12 +16,12 @@ permissions:
 
 jobs:
   validate-template-and-issues:
-    name: Validate PR Template And Linked Issues
+    name: Validate PR Template, Linked Issues & HA Standards
     runs-on: ubuntu-latest
     if: "!endsWith(github.actor, '[bot]') && github.actor != 'dependabot[bot]'"
 
     steps:
-      - name: Enforce PR template completion and issue linking
+      - name: Enforce PR template completion, issue linking, and HA standards
         uses: actions/github-script@v7
         with:
           script: |
@@ -65,6 +65,7 @@ jobs:
               "Type of Change",
               "Related Issues",
               "Changes Made",
+              "Home Assistant Quality Scale & Standards",
               "Testing Performed",
               "Documentation",
               "Checklist",
@@ -82,6 +83,10 @@ jobs:
 
             if (sections["Type of Change"] && getCheckedItems(sections["Type of Change"]).length === 0) {
               errors.push('At least one item must be checked in "Type of Change".');
+            }
+
+            if (sections["Home Assistant Quality Scale & Standards"] && getCheckedItems(sections["Home Assistant Quality Scale & Standards"]).length === 0) {
+              errors.push('At least one item must be checked in "Home Assistant Quality Scale & Standards".');
             }
 
             if (sections["Testing Performed"] && getCheckedItems(sections["Testing Performed"]).length === 0) {
@@ -116,8 +121,8 @@ jobs:
               }
             }
 
-            // Verify CHANGELOG.md was updated in this PR
-            let changelogModified = false;
+            // Fetch all modified files in the PR
+            let prFiles = [];
             let page = 1;
             while (true) {
               try {
@@ -128,23 +133,55 @@ jobs:
                   per_page: 100,
                   page,
                 });
-                if (files.some((f) => f.filename === "CHANGELOG.md")) {
-                  changelogModified = true;
-                  break;
-                }
+                prFiles.push(...files);
                 if (files.length < 100) break;
                 page++;
               } catch (err) {
                 core.warning(`Could not fetch PR files: ${err.message}`);
-                changelogModified = true; // Avoid hard failure on API issues
                 break;
               }
             }
 
-            if (!changelogModified) {
+            // 1. Enforce CHANGELOG.md was updated
+            const changelogModified = prFiles.some((f) => f.filename === "CHANGELOG.md");
+            if (prFiles.length > 0 && !changelogModified) {
               errors.push(
                 'CHANGELOG.md must be updated under [Unreleased] with details of the changes in this PR.',
               );
+            }
+
+            // 2. Scan modified Python files for prohibited Home Assistant anti-patterns and deprecated APIs
+            const deprecatedPatternChecks = [
+              {
+                pattern: /\bhass\.data\[DOMAIN\]/,
+                message: "Prohibited pattern: 'hass.data[DOMAIN]'. Modern Home Assistant integrations must use 'entry.runtime_data' (UnraidConfigEntry).",
+              },
+              {
+                pattern: /\bdef\s+unit_of_measurement\s*\(/,
+                message: "Deprecated property: 'unit_of_measurement'. Modern Home Assistant sensors must use 'native_unit_of_measurement' and 'native_value'.",
+              },
+              {
+                pattern: /\baiohttp\.ClientSession\s*\(/,
+                message: "Anti-pattern: Direct 'aiohttp.ClientSession()' instantiation. Use 'async_get_clientsession(hass)' instead.",
+              },
+            ];
+
+            const customComponentFiles = prFiles.filter(
+              (f) => f.filename.startsWith("custom_components/unraid_management_agent/") && f.filename.endsWith(".py")
+            );
+
+            for (const file of customComponentFiles) {
+              if (!file.patch) continue;
+              const addedLines = file.patch
+                .split("\n")
+                .filter((line) => line.startsWith("+") && !line.startsWith("+++"))
+                .join("\n");
+
+              for (const check of deprecatedPatternChecks) {
+                if (check.pattern.test(addedLines)) {
+                  errors.push(`In ${file.filename}: ${check.message}`);
+                }
+              }
             }
 
             const relatedIssuesRaw = sections["Related Issues"] || "";

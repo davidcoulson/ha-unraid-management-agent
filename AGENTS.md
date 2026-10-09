@@ -124,6 +124,30 @@ As an AI agent, **aim for Platinum Quality Scale** when generating code:
 
 **Developer expectation:** Generate production-ready code. Implement HA standards with reasonable effort.
 
+## Home Assistant Development Standards & Deprecation Prevention (MANDATORY)
+
+All code written by developers and AI agents must strictly comply with modern Home Assistant Core architectural patterns and the **Platinum Quality Scale** rules. Never introduce deprecated APIs or legacy practices.
+
+### Strictly Prohibited Deprecations & Anti-Patterns (NEVER USE)
+
+1. **`hass.data[DOMAIN]` state storage:** NEVER store runtime state, client instances, or coordinators in `hass.data[DOMAIN]`. ALWAYS use `entry.runtime_data` typed with `UnraidConfigEntry` (`ConfigEntry[UnraidRuntimeData]`).
+2. **Service registration in `async_setup_entry`:** NEVER register services/actions in `async_setup_entry()`. ALWAYS register services in `async_setup()` with input schemas (Bronze rule `action-setup`).
+3. **Direct API calls or polling from entities:** Entities MUST read state exclusively from `coordinator.data`. NEVER make direct API calls, network I/O, or raw HTTP requests from entities (Bronze rule `entity-event-setup`).
+4. **Deprecated entity attributes:**
+   - **Sensors:** ALWAYS use `_attr_native_value` and `_attr_native_unit_of_measurement`. NEVER implement or override the deprecated `unit_of_measurement` property.
+   - **Entity naming:** ALWAYS set `_attr_has_entity_name = True` (Bronze rule `has-entity-name`).
+   - **Unique IDs:** Unique IDs must be deterministically generated using `{entry_id}_{description.key}` (Bronze rule `entity-unique-id`).
+5. **Unmanaged HTTP/WebSocket sessions:** NEVER instantiate `aiohttp.ClientSession()`. ALWAYS use `async_get_clientsession(hass)` for shared session management (Platinum rule `inject-websession`).
+6. **Missing Device Info:** All entities MUST provide consistent device linking via `UnraidBaseEntity._build_device_info()` with `identifiers={(DOMAIN, entry.entry_id)}` (Silver rule `entity-device-class`).
+7. **Unredacted Diagnostics:** Diagnostics MUST always use `async_redact_data()` to strip tokens, IPs, passwords, and sensitive parameters (Platinum rule `diagnostics`).
+8. **Synchronous or blocking calls:** All I/O must be strictly asynchronous (`async`/`await`). NEVER use `time.sleep()`, synchronous `requests`, or blocking file access on the event loop.
+
+### Integration Quality Scale (Target: Platinum)
+
+- Keep `custom_components/unraid_management_agent/quality_scale.yaml` synchronized and updated when modifying features.
+- Run `script/hassfest` and `script/lint` before completing any task.
+- Verify new patterns against the [Home Assistant Developer Documentation](https://developers.home-assistant.io/) and Developer Blog before implementing changes.
+
 ## Code Style and Quality
 
 **Python:** 4 spaces, 88 char lines (ruff), double quotes, full type hints, async for all I/O

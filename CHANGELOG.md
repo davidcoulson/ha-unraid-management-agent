@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **PR governance workflow** — added automated GitHub Actions workflow enforcing PR template completeness, mandatory CHANGELOG.md updates, issue linking checks, and bot/draft exemptions.
-- **Pull request template** — added `.github/PULL_REQUEST_TEMPLATE.md` with structured sections for description, changes made, Home Assistant testing verification, and quality checklist.
+- **PR governance workflow & HA standards enforcement** — added automated GitHub Actions workflow enforcing PR template completeness, Home Assistant Quality Scale compliance, static scanning for deprecated patterns (e.g., hass.data[DOMAIN], unit_of_measurement), mandatory CHANGELOG.md updates, issue linking checks, and bot/draft exemptions.
+- **Pull request template** — added `.github/PULL_REQUEST_TEMPLATE.md` with structured sections for description, changes made, Home Assistant Quality Scale verification, and quality checklist.
 
 ### Fixed
 
