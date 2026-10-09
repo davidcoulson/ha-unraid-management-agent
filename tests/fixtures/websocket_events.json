@@ -1,0 +1,406 @@
+[
+  {
+    "event": "system_update",
+    "timestamp": "2026-10-09T14:35:07.131406-04:00",
+    "data": {
+      "hostname": "tower",
+      "version": "",
+      "agent_version": "",
+      "uptime_seconds": 0,
+      "cpu_usage_percent": 12.5,
+      "cpu_model": "",
+      "cpu_cores": 0,
+      "cpu_threads": 0,
+      "cpu_mhz": 0,
+      "cpu_temp_celsius": 0,
+      "ram_usage_percent": 0,
+      "ram_total_bytes": 0,
+      "ram_used_bytes": 0,
+      "ram_free_bytes": 0,
+      "ram_buffers_bytes": 0,
+      "ram_cached_bytes": 0,
+      "swap_usage_percent": 0,
+      "swap_total_bytes": 0,
+      "swap_used_bytes": 0,
+      "swap_free_bytes": 0,
+      "swappiness": 0,
+      "server_model": "",
+      "bios_version": "",
+      "bios_date": "",
+      "motherboard_temp_celsius": 0,
+      "hvm_enabled": false,
+      "iommu_enabled": false,
+      "ram_used_mb": 0,
+      "ram_total_mb": 0,
+      "fans": null,
+      "timestamp": "0001-01-01T00:00:00Z"
+    }
+  },
+  {
+    "event": "array_status_update",
+    "timestamp": "2026-10-09T14:35:07.13141-04:00",
+    "data": {
+      "state": "STARTED",
+      "used_percent": 0,
+      "free_bytes": 0,
+      "total_bytes": 0,
+      "parity_valid": false,
+      "parity_check_status": "",
+      "parity_check_progress": 0,
+      "num_disks": 0,
+      "num_data_disks": 0,
+      "num_parity_disks": 0,
+      "timestamp": "0001-01-01T00:00:00Z"
+    }
+  },
+  {
+    "event": "disk_list_update",
+    "timestamp": "2026-10-09T14:35:07.131411-04:00",
+    "data": [
+      {
+        "id": "disk1",
+        "device": "sdb",
+        "name": "disk1",
+        "status": "",
+        "size_bytes": 0,
+        "used_bytes": 0,
+        "free_bytes": 0,
+        "temperature_celsius": 0,
+        "smart_status": "",
+        "smart_errors": 0,
+        "spindown_delay": 0,
+        "filesystem": "",
+        "timestamp": "0001-01-01T00:00:00Z"
+      }
+    ]
+  },
+  {
+    "event": "share_list_update",
+    "timestamp": "2026-10-09T14:35:07.131411-04:00",
+    "data": [
+      {
+        "name": "appdata",
+        "path": "/mnt/user/appdata",
+        "used_bytes": 0,
+        "free_bytes": 0,
+        "total_bytes": 0,
+        "usage_percent": 0,
+        "smb_export": false,
+        "nfs_export": false,
+        "storage": "",
+        "timestamp": "0001-01-01T00:00:00Z"
+      }
+    ]
+  },
+  {
+    "event": "container_list_update",
+    "timestamp": "2026-10-09T14:35:07.131412-04:00",
+    "data": [
+      {
+        "id": "abc",
+        "name": "plex",
+        "image": "plexinc/pms",
+        "version": "",
+        "state": "running",
+        "status": "",
+        "network_mode": "",
+        "ip_address": "",
+        "cpu_percent": 0,
+        "memory_usage_bytes": 0,
+        "memory_usage_mb": 0,
+        "memory_limit_bytes": 0,
+        "memory_percent": 0,
+        "memory_display": "",
+        "network_rx_bytes": 0,
+        "network_tx_bytes": 0,
+        "network_rx_bytes_per_sec": 0,
+        "network_tx_bytes_per_sec": 0,
+        "ports": null,
+        "port_mappings": null,
+        "volume_mappings": null,
+        "restart_policy": "",
+        "uptime": "",
+        "restart_count": 0,
+        "update_status": "",
+        "timestamp": "0001-01-01T00:00:00Z"
+      }
+    ]
+  },
+  {
+    "event": "container_list_update",
+    "timestamp": "2026-10-09T14:35:07.131412-04:00",
+    "data": []
+  },
+  {
+    "event": "vm_list_update",
+    "timestamp": "2026-10-09T14:35:07.131412-04:00",
+    "data": [
+      {
+        "id": "1",
+        "name": "win11",
+        "state": "running",
+        "cpu_count": 0,
+        "guest_cpu_percent": 0,
+        "host_cpu_percent": 0,
+        "memory_allocated_bytes": 0,
+        "memory_used_bytes": 0,
+        "memory_display": "",
+        "disk_path": "",
+        "disk_size_bytes": 0,
+        "disk_read_bytes": 0,
+        "disk_write_bytes": 0,
+        "network_rx_bytes": 0,
+        "network_tx_bytes": 0,
+        "autostart": false,
+        "persistent": false,
+        "timestamp": "0001-01-01T00:00:00Z"
+      }
+    ]
+  },
+  {
+    "event": "ups_status_update",
+    "timestamp": "2026-10-09T14:35:07.131413-04:00",
+    "data": {
+      "connected": true,
+      "status": "OL",
+      "load_percent": 0,
+      "battery_charge_percent": 0,
+      "runtime_left_seconds": 0,
+      "power_watts": 0,
+      "nominal_power_watts": 0,
+      "model": "",
+      "timestamp": "0001-01-01T00:00:00Z"
+    }
+  },
+  {
+    "event": "nut_status_update",
+    "timestamp": "2026-10-09T14:35:07.131413-04:00",
+    "data": {
+      "installed": true,
+      "running": true,
+      "timestamp": "0001-01-01T00:00:00Z"
+    }
+  },
+  {
+    "event": "gpu_metrics_update",
+    "timestamp": "2026-10-09T14:35:07.131414-04:00",
+    "data": [
+      {
+        "available": false,
+        "index": 0,
+        "vendor": "nvidia",
+        "name": "RTX 3070",
+        "driver_version": "",
+        "temperature_celsius": 0,
+        "utilization_gpu_percent": 0,
+        "utilization_memory_percent": 0,
+        "memory_total_bytes": 0,
+        "memory_used_bytes": 0,
+        "power_draw_watts": 0,
+        "timestamp": "0001-01-01T00:00:00Z"
+      }
+    ]
+  },
+  {
+    "event": "gpu_metrics_update",
+    "timestamp": "2026-10-09T14:35:07.131414-04:00",
+    "data": null
+  },
+  {
+    "event": "network_list_update",
+    "timestamp": "2026-10-09T14:35:07.131414-04:00",
+    "data": [
+      {
+        "name": "eth0",
+        "mac_address": "",
+        "ip_address": "",
+        "speed_mbps": 0,
+        "state": "",
+        "bytes_received": 0,
+        "bytes_sent": 0,
+        "packets_received": 0,
+        "packets_sent": 0,
+        "errors_received": 0,
+        "errors_sent": 0,
+        "rx_bytes_per_sec": 0,
+        "tx_bytes_per_sec": 0,
+        "timestamp": "0001-01-01T00:00:00Z"
+      }
+    ]
+  },
+  {
+    "event": "hardware_update",
+    "timestamp": "2026-10-09T14:35:07.131414-04:00",
+    "data": {
+      "timestamp": "0001-01-01T00:00:00Z"
+    }
+  },
+  {
+    "event": "notifications_update",
+    "timestamp": "2026-10-09T14:35:07.131415-04:00",
+    "data": {
+      "overview": {
+        "unread": {
+          "info": 0,
+          "warning": 0,
+          "alert": 0,
+          "total": 0
+        },
+        "archive": {
+          "info": 0,
+          "warning": 0,
+          "alert": 0,
+          "total": 0
+        }
+      },
+      "notifications": [
+        {
+          "id": "n1",
+          "subject": "Test",
+          "importance": "warning",
+          "timestamp": "0001-01-01T00:00:00Z",
+          "formatted_timestamp": "",
+          "type": ""
+        }
+      ],
+      "timestamp": "0001-01-01T00:00:00Z"
+    }
+  },
+  {
+    "event": "zfs_pools_update",
+    "timestamp": "2026-10-09T14:35:07.131416-04:00",
+    "data": [
+      {
+        "name": "tank",
+        "health": "ONLINE",
+        "state": "",
+        "size_bytes": 0,
+        "allocated_bytes": 0,
+        "free_bytes": 0,
+        "fragmentation_percent": 0,
+        "capacity_percent": 0,
+        "dedup_ratio": 0,
+        "readonly": false,
+        "autoexpand": false,
+        "vdevs": null,
+        "scan_errors": 0,
+        "scan_repaired_bytes": 0,
+        "scan_start_time": "0001-01-01T00:00:00Z",
+        "scan_end_time": "0001-01-01T00:00:00Z",
+        "scan_progress_percent": 0,
+        "read_errors": 0,
+        "write_errors": 0,
+        "checksum_errors": 0,
+        "is_boot_pool": false,
+        "timestamp": "0001-01-01T00:00:00Z"
+      }
+    ]
+  },
+  {
+    "event": "zfs_datasets_update",
+    "timestamp": "2026-10-09T14:35:07.131416-04:00",
+    "data": [
+      {
+        "name": "tank/data",
+        "type": "",
+        "used_bytes": 0,
+        "available_bytes": 0,
+        "referenced_bytes": 0,
+        "compress_ratio": 0,
+        "compression": "",
+        "readonly": false,
+        "timestamp": "0001-01-01T00:00:00Z"
+      }
+    ]
+  },
+  {
+    "event": "zfs_snapshots_update",
+    "timestamp": "2026-10-09T14:35:07.131417-04:00",
+    "data": [
+      {
+        "name": "tank/data@s1",
+        "dataset": "tank/data",
+        "used_bytes": 0,
+        "referenced_bytes": 0,
+        "creation_time": "0001-01-01T00:00:00Z",
+        "timestamp": "0001-01-01T00:00:00Z"
+      }
+    ]
+  },
+  {
+    "event": "zfs_arc_stats_update",
+    "timestamp": "2026-10-09T14:35:07.131417-04:00",
+    "data": {
+      "size_bytes": 0,
+      "size_mb": 0,
+      "target_size_bytes": 0,
+      "min_size_bytes": 0,
+      "max_size_bytes": 0,
+      "configured_max_bytes": 0,
+      "usage_percent": 0,
+      "hit_ratio_percent": 0,
+      "mru_hit_ratio_percent": 0,
+      "mfu_hit_ratio_percent": 0,
+      "hits": 0,
+      "misses": 0,
+      "timestamp": "0001-01-01T00:00:00Z"
+    }
+  },
+  {
+    "event": "fan_control_update",
+    "timestamp": "2026-10-09T14:35:07.131417-04:00",
+    "data": {
+      "fans": null,
+      "profiles": null,
+      "config": {
+        "enabled": false,
+        "control_enabled": false,
+        "control_method": "",
+        "poll_interval_seconds": 0,
+        "safety": {
+          "min_speed_percent": 0,
+          "critical_temp_celsius": 0,
+          "failure_rpm_threshold": 0
+        }
+      },
+      "summary": {
+        "total_fans": 0,
+        "controllable_fans": 0
+      },
+      "timestamp": "0001-01-01T00:00:00Z"
+    }
+  },
+  {
+    "event": "update",
+    "timestamp": "2026-10-09T14:35:07.131418-04:00",
+    "data": {
+      "event": "collector_state_change",
+      "collector": "docker",
+      "enabled": false,
+      "status": "stopped",
+      "interval": 30,
+      "timestamp": "0001-01-01T00:00:00Z"
+    }
+  },
+  {
+    "event": "source_status_changed",
+    "timestamp": "2026-10-09T14:35:07.131418-04:00",
+    "data": {
+      "subsystem": "unassigned",
+      "state": "degraded",
+      "last_checked": "0001-01-01T00:00:00Z"
+    }
+  },
+  {
+    "event": "mover_update",
+    "timestamp": "2026-10-09T14:35:07.131418-04:00",
+    "data": {
+      "active": false,
+      "last_run_duration_seconds": 0,
+      "last_run_files_moved": 0,
+      "last_run_bytes_moved": 0,
+      "current_throughput_mbs": 0,
+      "timestamp": "0001-01-01T00:00:00Z"
+    }
+  }
+]
