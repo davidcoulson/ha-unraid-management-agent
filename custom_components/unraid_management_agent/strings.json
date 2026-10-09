@@ -347,6 +347,9 @@
       "network_service": {
         "name": "{service_name} Service"
       },
+      "system_service": {
+        "name": "{service_name} Service"
+      },
       "unassigned_device_mounted": {
         "name": "Unassigned Device {device_name} Mounted"
       },

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Final
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -18,6 +18,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import slugify
 
 from . import UnraidConfigEntry, UnraidDataUpdateCoordinator
+from .api.models import SystemService
 from .cleanup import async_prune_seen_names
 from .const import ATTR_PARITY_CHECK_STATUS
 from .entity import UnraidBaseEntity, UnraidEntityDescription
@@ -26,6 +27,21 @@ _LOGGER = logging.getLogger(__name__)
 
 # Coordinator handles updates, so no parallel update limit
 PARALLEL_UPDATES = 0
+
+# Services in the agent's /services list that /settings/network-services also
+# reports. Those already have a "<name> Service" network service binary
+# sensor, so they get no second entity here.
+_NETWORK_SERVICE_DUPLICATES: Final = frozenset(
+    {"smb", "nfs", "ftp", "sshd", "syslog", "ntpd", "avahi", "wireguard"}
+)
+
+# Display names for the services that get a system service binary sensor;
+# services added to the agent later fall back to their raw name.
+_SYSTEM_SERVICE_DISPLAY_NAMES: Final[dict[str, str]] = {
+    "docker": "Docker",
+    "libvirt": "Libvirt",
+    "nginx": "Nginx",
+}
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -516,6 +532,38 @@ async def async_setup_entry(
         coordinator.async_add_listener(callback(_add_remote_share_sensors))
     )
 
+    # System service binary sensors (/services) - created as services appear
+    seen_system_services: set[str] = set()
+
+    def _add_system_service_sensors() -> None:
+        current_data = coordinator.data
+        if not current_data or not current_data.system_services:
+            return
+        # Allow re-creation of entities removed from the registry (see #83)
+        async_prune_seen_names(
+            hass,
+            "binary_sensor",
+            seen_system_services,
+            lambda name: f"{entry.entry_id}_system_service_{slugify(name)}",
+        )
+        new_entities: list[BinarySensorEntity] = []
+        for service in current_data.system_services:
+            name = service.name
+            if (
+                name
+                and name not in _NETWORK_SERVICE_DUPLICATES
+                and name not in seen_system_services
+            ):
+                seen_system_services.add(name)
+                new_entities.append(UnraidSystemServiceBinarySensor(coordinator, name))
+        if new_entities:
+            async_add_entities(new_entities)
+
+    _add_system_service_sensors()
+    entry.async_on_unload(
+        coordinator.async_add_listener(callback(_add_system_service_sensors))
+    )
+
     # Network service binary sensors
     if data and data.network_services:
         # Iterate over known service fields on NetworkServicesStatus
@@ -659,6 +707,60 @@ class UnraidNetworkServiceBinarySensor(UnraidBaseEntity, BinarySensorEntity):
             "enabled": getattr(service_info, "enabled", None),
             "port": getattr(service_info, "port", None),
         }
+
+
+class UnraidSystemServiceBinarySensor(UnraidBaseEntity, BinarySensorEntity):
+    """Running state of a system service from the agent's /services list."""
+
+    _attr_device_class = BinarySensorDeviceClass.RUNNING
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
+    _attr_translation_key = "system_service"
+
+    def __init__(
+        self,
+        coordinator: UnraidDataUpdateCoordinator,
+        service_name: str,
+    ) -> None:
+        """Initialize the system service binary sensor."""
+        self._service_name = service_name
+        super().__init__(coordinator, f"system_service_{slugify(service_name)}")
+        self._attr_translation_placeholders = {
+            "service_name": _SYSTEM_SERVICE_DISPLAY_NAMES.get(
+                service_name, service_name
+            )
+        }
+
+    def _get_service(self) -> SystemService | None:
+        """Return this service from the latest coordinator data, if present."""
+        data = self.coordinator.data
+        for service in (data.system_services if data else None) or []:
+            if service.name == self._service_name:
+                return service
+        return None
+
+    @property
+    def available(self) -> bool:
+        """Return False when the service is missing from the current data."""
+        return super().available and self._get_service() is not None
+
+    @property
+    def is_on(self) -> bool:
+        """Return True if the service is running."""
+        service = self._get_service()
+        return service is not None and service.running is True
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return whether the service is enabled in Unraid's settings, if known."""
+        data = self.coordinator.data
+        settings: Any = None
+        if data and self._service_name == "docker":
+            settings = data.docker_settings
+        elif data and self._service_name == "libvirt":
+            settings = data.vm_settings
+        enabled = getattr(settings, "enabled", None)
+        return {} if enabled is None else {"enabled": enabled}
 
 
 class UnraidUnassignedDeviceBinarySensor(UnraidBaseEntity, BinarySensorEntity):
