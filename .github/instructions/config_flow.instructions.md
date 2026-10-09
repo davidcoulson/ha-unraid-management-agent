@@ -35,7 +35,7 @@ applyTo: "custom_components/unraid_management_agent/config_flow.py"
 ## This Integration's Config Flow
 
 - Single file: `config_flow.py` (no package structure)
-- No authentication (local API)
+- Optional API token (bearer auth, agent v2026.08.02+); reauth flow when it is rejected
 - User step collects host/port
 - Validates connection before creating entry
 - Options flow for configurable settings
@@ -102,7 +102,7 @@ applyTo: "custom_components/unraid_management_agent/config_flow.py"
 **In `async_setup_entry()` in `__init__.py`:**
 
 - Raise `ConfigEntryNotReady` for temporary failures (device offline, network issues)
-- No auth errors needed (local API without authentication)
+- Raise `ConfigEntryAuthFailed` when the agent rejects the API token (HTTP 401); show `invalid_auth` in the flow
 - **NEVER** log `ConfigEntryNotReady` manually (HA logs at debug automatically)
 
 ## Version and Migration

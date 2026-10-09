@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and event platforms, removes switch, button and number entities created
   earlier, and makes integration actions targeting a read-only entry refuse
   with a `read_only_mode` validation error. Off by default.
+- **API token authentication** ([#143](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/143), contributed by @davidcoulson): An optional API token in the setup, Zeroconf and reconfigure forms is sent as a bearer token on REST requests and the websocket handshake, for agents with `API_TOKEN` set (v2026.08.02+). A rejected token shows "Invalid authentication", and a token rejected later starts Home Assistant's standard re-authentication flow. The token is redacted from diagnostics.
 
 ### Fixed
 
