@@ -50,6 +50,11 @@ _NETWORK_SERVICE_DUPLICATES: Final = frozenset(
     {"smb", "nfs", "ftp", "sshd", "syslog", "ntpd", "avahi", "wireguard"}
 )
 
+# System services whose sensor is enabled by default: Docker and the VM
+# Manager back containers and VMs. Others (nginx, later additions) start
+# disabled like the network service sensors.
+_SYSTEM_SERVICES_ENABLED_BY_DEFAULT: Final = frozenset({"docker", "libvirt"})
+
 # Display names for the services that get a system service binary sensor;
 # services added to the agent later fall back to their raw name.
 _SYSTEM_SERVICE_DISPLAY_NAMES: Final[dict[str, str]] = {
@@ -773,7 +778,6 @@ class UnraidSystemServiceBinarySensor(UnraidBaseEntity, BinarySensorEntity):
 
     _attr_device_class = BinarySensorDeviceClass.RUNNING
     _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_entity_registry_enabled_default = False
     _attr_translation_key = "system_service"
 
     def __init__(
@@ -784,6 +788,9 @@ class UnraidSystemServiceBinarySensor(UnraidBaseEntity, BinarySensorEntity):
         """Initialize the system service binary sensor."""
         self._service_name = service_name
         super().__init__(coordinator, f"system_service_{slugify(service_name)}")
+        self._attr_entity_registry_enabled_default = (
+            service_name in _SYSTEM_SERVICES_ENABLED_BY_DEFAULT
+        )
         self._attr_translation_placeholders = {
             "service_name": _SYSTEM_SERVICE_DISPLAY_NAMES.get(
                 service_name, service_name
