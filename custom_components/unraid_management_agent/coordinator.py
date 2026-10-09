@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
@@ -119,6 +120,8 @@ class UnraidRuntimeData:
 
     coordinator: UnraidDataUpdateCoordinator
     client: UnraidClient
+    # Platforms forwarded at setup (fewer in read-only mode); unload uses the same list
+    platforms: list[Platform]
 
 
 type UnraidConfigEntry = ConfigEntry[UnraidRuntimeData]
