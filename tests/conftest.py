@@ -92,12 +92,16 @@ def mock_async_unraid_client() -> Generator[MagicMock]:
         client.get_vm_settings = AsyncMock(return_value=None)
         client.get_registration_info = AsyncMock(return_value=None)
         client.get_network_services = AsyncMock(return_value=None)
+        client.list_services = AsyncMock(return_value=None)
         client.get_unassigned_info = AsyncMock(return_value=mock_unassigned_info())
         client.get_fan_status = AsyncMock(return_value=None)
         client.get_storage_topology = AsyncMock(return_value=None)
         client.check_all_container_updates = AsyncMock(return_value=None)
         client.mount_remote_share = AsyncMock(return_value=None)
         client.unmount_remote_share = AsyncMock(return_value=None)
+        # Alerting engine: no data by default, as with agents without it
+        client.list_alert_rules = AsyncMock(return_value=None)
+        client.get_alerts_status = AsyncMock(return_value=None)
 
         # Mock control methods
         client.start_array = AsyncMock(return_value=True)

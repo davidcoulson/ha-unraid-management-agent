@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Final
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -18,6 +18,15 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import slugify
 
 from . import UnraidConfigEntry, UnraidDataUpdateCoordinator
+from .alerts import (
+    ALERT_STATE_FIRING,
+    alert_rule_key,
+    alert_rule_names,
+    alert_since,
+    find_alert_rule,
+    find_alert_status,
+)
+from .api.models import SystemService
 from .cleanup import async_prune_seen_names
 from .const import ATTR_PARITY_CHECK_STATUS
 from .entity import UnraidBaseEntity, UnraidEntityDescription
@@ -33,6 +42,21 @@ _LOGGER = logging.getLogger(__name__)
 
 # Coordinator handles updates, so no parallel update limit
 PARALLEL_UPDATES = 0
+
+# Services in the agent's /services list that /settings/network-services also
+# reports. Those already have a "<name> Service" network service binary
+# sensor, so they get no second entity here.
+_NETWORK_SERVICE_DUPLICATES: Final = frozenset(
+    {"smb", "nfs", "ftp", "sshd", "syslog", "ntpd", "avahi", "wireguard"}
+)
+
+# Display names for the services that get a system service binary sensor;
+# services added to the agent later fall back to their raw name.
+_SYSTEM_SERVICE_DISPLAY_NAMES: Final[dict[str, str]] = {
+    "docker": "Docker",
+    "libvirt": "Libvirt",
+    "nginx": "Nginx",
+}
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -459,6 +483,14 @@ async def async_setup_entry(
                     UnraidNetworkInterfaceBinarySensor(coordinator, interface_name)
                 )
 
+    # ZFS pool problem binary sensors - only if zfs collector is enabled
+    if coordinator.is_collector_enabled("zfs"):
+        entities.extend(
+            UnraidZFSPoolProblemBinarySensor(coordinator, pool.name)
+            for pool in (data.zfs_pools if data else None) or []
+            if pool.name
+        )
+
     # Unassigned device mounted binary sensors - created dynamically as devices appear
     seen_unassigned: set[str] = set()
 
@@ -515,12 +547,71 @@ async def async_setup_entry(
 
     _add_remote_share_sensors()
 
-    # Register listeners so entities are added when new unassigned/remote-share data arrives
+    # Alert rule binary sensors - one per agent alert rule, created as rules appear
+    seen_alert_rules: set[str] = set()
+
+    def _add_alert_rule_sensors() -> None:
+        # Allow re-creation of entities removed from the registry (see #83)
+        async_prune_seen_names(
+            hass,
+            "binary_sensor",
+            seen_alert_rules,
+            lambda rule_id: f"{entry.entry_id}_{alert_rule_key(rule_id)}",
+        )
+        new_entities: list[BinarySensorEntity] = []
+        for rule_id, rule_name in alert_rule_names(coordinator.data).items():
+            if rule_id not in seen_alert_rules:
+                seen_alert_rules.add(rule_id)
+                new_entities.append(
+                    UnraidAlertRuleBinarySensor(coordinator, rule_id, rule_name)
+                )
+        if new_entities:
+            async_add_entities(new_entities)
+
+    _add_alert_rule_sensors()
+
+    # Register listeners so entities are added when new unassigned/remote-share
+    # data or new alert rules arrive
     entry.async_on_unload(
         coordinator.async_add_listener(callback(_add_unassigned_device_sensors))
     )
     entry.async_on_unload(
         coordinator.async_add_listener(callback(_add_remote_share_sensors))
+    )
+    entry.async_on_unload(
+        coordinator.async_add_listener(callback(_add_alert_rule_sensors))
+    )
+
+    # System service binary sensors (/services) - created as services appear
+    seen_system_services: set[str] = set()
+
+    def _add_system_service_sensors() -> None:
+        current_data = coordinator.data
+        if not current_data or not current_data.system_services:
+            return
+        # Allow re-creation of entities removed from the registry (see #83)
+        async_prune_seen_names(
+            hass,
+            "binary_sensor",
+            seen_system_services,
+            lambda name: f"{entry.entry_id}_system_service_{slugify(name)}",
+        )
+        new_entities: list[BinarySensorEntity] = []
+        for service in current_data.system_services:
+            name = service.name
+            if (
+                name
+                and name not in _NETWORK_SERVICE_DUPLICATES
+                and name not in seen_system_services
+            ):
+                seen_system_services.add(name)
+                new_entities.append(UnraidSystemServiceBinarySensor(coordinator, name))
+        if new_entities:
+            async_add_entities(new_entities)
+
+    _add_system_service_sensors()
+    entry.async_on_unload(
+        coordinator.async_add_listener(callback(_add_system_service_sensors))
     )
 
     # Network service binary sensors
@@ -677,6 +768,60 @@ class UnraidNetworkServiceBinarySensor(UnraidBaseEntity, BinarySensorEntity):
         }
 
 
+class UnraidSystemServiceBinarySensor(UnraidBaseEntity, BinarySensorEntity):
+    """Running state of a system service from the agent's /services list."""
+
+    _attr_device_class = BinarySensorDeviceClass.RUNNING
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
+    _attr_translation_key = "system_service"
+
+    def __init__(
+        self,
+        coordinator: UnraidDataUpdateCoordinator,
+        service_name: str,
+    ) -> None:
+        """Initialize the system service binary sensor."""
+        self._service_name = service_name
+        super().__init__(coordinator, f"system_service_{slugify(service_name)}")
+        self._attr_translation_placeholders = {
+            "service_name": _SYSTEM_SERVICE_DISPLAY_NAMES.get(
+                service_name, service_name
+            )
+        }
+
+    def _get_service(self) -> SystemService | None:
+        """Return this service from the latest coordinator data, if present."""
+        data = self.coordinator.data
+        for service in (data.system_services if data else None) or []:
+            if service.name == self._service_name:
+                return service
+        return None
+
+    @property
+    def available(self) -> bool:
+        """Return False when the service is missing from the current data."""
+        return super().available and self._get_service() is not None
+
+    @property
+    def is_on(self) -> bool:
+        """Return True if the service is running."""
+        service = self._get_service()
+        return service is not None and service.running is True
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return whether the service is enabled in Unraid's settings, if known."""
+        data = self.coordinator.data
+        settings: Any = None
+        if data and self._service_name == "docker":
+            settings = data.docker_settings
+        elif data and self._service_name == "libvirt":
+            settings = data.vm_settings
+        enabled = getattr(settings, "enabled", None)
+        return {} if enabled is None else {"enabled": enabled}
+
+
 class UnraidUnassignedDeviceBinarySensor(UnraidBaseEntity, BinarySensorEntity):
     """Mounted status binary sensor for an unassigned device."""
 
@@ -804,10 +949,135 @@ class UnraidStorageBinarySensor(UnraidStorageEntity, BinarySensorEntity):
     ) -> None:
         """Initialize the binary sensor."""
         super().__init__(coordinator, spec)
-        self.entity_description = spec.description  # type: ignore[assignment]
+        self.entity_description = spec.description
 
     @property
     def is_on(self) -> bool | None:
         """Return True when there is a problem."""
         ctx = self._storage_context()
         return self.entity_description.is_on_fn(ctx) if ctx else None
+
+
+class UnraidAlertRuleBinarySensor(UnraidBaseEntity, BinarySensorEntity):
+    """
+    Problem binary sensor for one agent alert rule, on while the rule fires.
+
+    The agent only evaluates enabled rules, so a disabled rule's sensor is
+    unavailable rather than reporting a misleading "OK".
+    """
+
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+    _attr_translation_key = "alert_rule"
+
+    def __init__(
+        self,
+        coordinator: UnraidDataUpdateCoordinator,
+        rule_id: str,
+        rule_name: str,
+    ) -> None:
+        """Initialize the alert rule binary sensor."""
+        self._rule_id = rule_id
+        super().__init__(coordinator, alert_rule_key(rule_id))
+        self._attr_translation_placeholders = {"rule_name": rule_name}
+
+    @property
+    def available(self) -> bool:
+        """Return True while the agent reports a status for the rule."""
+        return (
+            super().available
+            and find_alert_status(self.coordinator.data, self._rule_id) is not None
+        )
+
+    @property
+    def is_on(self) -> bool:
+        """Return True if the alert rule is firing."""
+        status = find_alert_status(self.coordinator.data, self._rule_id)
+        return status is not None and status.state == ALERT_STATE_FIRING
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """
+        Return the rule's state, severity and definition.
+
+        Notification channels are left out: they can hold webhook URLs with
+        credentials.
+        """
+        attrs: dict[str, Any] = {"rule_id": self._rule_id}
+        status = find_alert_status(self.coordinator.data, self._rule_id)
+        rule = find_alert_rule(self.coordinator.data, self._rule_id)
+        severity = (status.severity if status else None) or (
+            rule.severity if rule else None
+        )
+        if severity:
+            attrs["severity"] = severity
+        if status is not None:
+            if status.state:
+                attrs["alert_state"] = status.state
+            since = alert_since(status)
+            if since is not None:
+                attrs["since"] = since.isoformat()
+            if status.message:
+                attrs["message"] = status.message
+        if rule is not None:
+            if rule.expression:
+                attrs["expression"] = rule.expression
+            if rule.duration_seconds:
+                attrs["duration_seconds"] = rule.duration_seconds
+            if rule.cooldown_minutes:
+                attrs["cooldown_minutes"] = rule.cooldown_minutes
+        return attrs
+
+
+class UnraidZFSPoolProblemBinarySensor(UnraidBaseEntity, BinarySensorEntity):
+    """On when a ZFS pool is not ONLINE or has read/write/checksum/scrub errors."""
+
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+
+    def __init__(
+        self,
+        coordinator: UnraidDataUpdateCoordinator,
+        pool_name: str,
+    ) -> None:
+        """Initialize the ZFS pool problem binary sensor."""
+        self._pool_name = pool_name
+        super().__init__(coordinator, f"zfs_{pool_name}_problem")
+        self._attr_translation_key = "zfs_pool_problem"
+        self._attr_translation_placeholders = {"pool_name": pool_name}
+
+    def _get_pool(self) -> Any | None:
+        """Return this pool from coordinator data."""
+        data = self.coordinator.data
+        if not data or not data.zfs_pools:
+            return None
+        return next((p for p in data.zfs_pools if p.name == self._pool_name), None)
+
+    @staticmethod
+    def _error_counts(pool: Any) -> dict[str, int | None]:
+        """Return the pool's error totals and last scrub error count."""
+        return {
+            "read_errors": pool.error_total("read_errors"),
+            "write_errors": pool.error_total("write_errors"),
+            "checksum_errors": pool.error_total("checksum_errors"),
+            "scrub_errors": pool.scan_errors,
+        }
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return True if the pool is unhealthy or has reported errors."""
+        pool = self._get_pool()
+        if pool is None:
+            return None
+        health = pool.health or pool.state
+        if health and health.upper() != "ONLINE":
+            return True
+        return any(count for count in self._error_counts(pool).values())
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return pool health and error counts."""
+        pool = self._get_pool()
+        if pool is None:
+            return {}
+        attrs: dict[str, Any] = {"health": pool.health or pool.state}
+        attrs.update(self._error_counts(pool))
+        return attrs

@@ -21,6 +21,9 @@ from .api.constants import EventType
 from .api.events import WebSocketEvent, parse_event
 from .api.exceptions import UnraidAuthenticationError, UnraidTimeoutError
 from .api.models import (
+    AlertRule,
+    AlertsStatusResponse,
+    AlertStatus,
     ArrayStatus,
     CollectorDetails,
     CollectorStatus,
@@ -47,6 +50,8 @@ from .api.models import (
     ShareInfo,
     StorageTopology,
     SystemInfo,
+    SystemService,
+    SystemServiceList,
     UnassignedDevice,
     UnassignedInfo,
     UpdateStatus,
@@ -117,6 +122,13 @@ class UnraidData:
     docker_port_conflicts: list[DockerPortConflict] | None = None
     # None when the agent has no /storage/topology endpoint or the fetch failed
     storage_topology: StorageTopology | None = None
+    # Alerting engine (agent /alerts/rules and /alerts/status). None when the
+    # agent does not provide them (older agents: 404) or the fetch failed.
+    alert_rules: list[AlertRule] | None = None
+    alert_statuses: list[AlertStatus] | None = None
+    # Running state of system services (docker, libvirt, nginx, ...) from
+    # /services; None when the agent lacks the endpoint or the fetch failed
+    system_services: list[SystemService] | None = None
 
 
 @dataclass
@@ -460,6 +472,16 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                     self.client.get_docker_port_conflicts,
                     suppress_404=True,
                 ),
+                # /services exists on agents v2026.02.02+; older ones return 404
+                self._fetch(
+                    "system services", self.client.list_services, suppress_404=True
+                ),
+                self._fetch(
+                    "alert rules", self.client.list_alert_rules, suppress_404=True
+                ),
+                self._fetch(
+                    "alert status", self.client.get_alerts_status, suppress_404=True
+                ),
                 self._fetch(
                     "storage topology",
                     self.client.get_storage_topology,
@@ -504,7 +526,10 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
             unassigned_info: UnassignedInfo | None = results[29]
             diagnostics_self_test: DiagnosticsSelfTestResponse | None = results[30]
             docker_port_conflicts: list[DockerPortConflict] | None = results[31]
-            storage_topology: StorageTopology | None = results[32]
+            system_service_list: SystemServiceList | None = results[32]
+            alert_rules: list[AlertRule] | None = results[33]
+            alerts_status: AlertsStatusResponse | None = results[34]
+            storage_topology: StorageTopology | None = results[35]
 
             # If the core endpoints are all unreachable, treat the whole update
             # as failed instead of returning an empty snapshot. This flips
@@ -624,6 +649,15 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                 container_updates=container_updates,
                 diagnostics_self_test=diagnostics_self_test,
                 docker_port_conflicts=docker_port_conflicts,
+                # A null service list is treated like a failed fetch (None)
+                system_services=list(system_service_list.services)
+                if system_service_list and system_service_list.services is not None
+                else None,
+                alert_rules=alert_rules,
+                # The agent sends "statuses": null when no rule is enabled
+                alert_statuses=list(alerts_status.statuses or [])
+                if alerts_status is not None
+                else None,
                 storage_topology=storage_topology,
             )
 

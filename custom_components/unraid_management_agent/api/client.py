@@ -107,6 +107,9 @@ _LOGGER = logging.getLogger(__name__)
 _MAX_RETRIES: int = 3
 _RETRY_BASE_DELAY: float = 1.0  # seconds, doubles each retry
 _DEFAULT_CONCURRENCY: int = 10  # max simultaneous API requests
+# Container and plugin updates download images or packages before returning;
+# the agent allows a container update up to 10 minutes.
+_UPDATE_TIMEOUT: float = 1200.0  # seconds
 
 
 class UnraidClient:
@@ -2015,7 +2018,9 @@ class UnraidClient:
             Update result with previous/new digest and status
 
         """
-        data = await self._request("POST", f"/docker/{container_id}/update")
+        data = await self._request(
+            "POST", f"/docker/{container_id}/update", timeout_seconds=_UPDATE_TIMEOUT
+        )
         return ContainerUpdateResult.model_validate(data)
 
     async def update_all_containers(self) -> ContainerBulkUpdateResult:
@@ -2187,7 +2192,9 @@ class UnraidClient:
             Update result with status and message
 
         """
-        data = await self._request("POST", f"/plugins/{plugin_name}/update")
+        data = await self._request(
+            "POST", f"/plugins/{plugin_name}/update", timeout_seconds=_UPDATE_TIMEOUT
+        )
         return PluginUpdateResult.model_validate(data)
 
     async def update_all_plugins(self) -> PluginBulkUpdateResult:

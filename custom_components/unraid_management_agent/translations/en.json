@@ -5,10 +5,10 @@
         "title": "Connect to Unraid Server",
         "description": "Enter the connection details for your Unraid Management Agent",
         "data": {
-          "host": "Host",
-          "port": "Port",
+          "host": "[%key:common::config_flow::data::host%]",
+          "port": "[%key:common::config_flow::data::port%]",
           "enable_websocket": "Enable WebSocket for real-time updates",
-          "api_token": "API token"
+          "api_token": "[%key:common::config_flow::data::api_token%]"
         },
         "data_description": {
           "api_token": "Required if an API token is set in the agent's settings (Settings > Unraid Management Agent > Authentication). Leave empty if authentication is disabled."
@@ -18,10 +18,10 @@
         "title": "Reconfigure Unraid Server",
         "description": "Update the connection details for your Unraid Management Agent",
         "data": {
-          "host": "Host",
-          "port": "Port",
+          "host": "[%key:common::config_flow::data::host%]",
+          "port": "[%key:common::config_flow::data::port%]",
           "enable_websocket": "Enable WebSocket for real-time updates",
-          "api_token": "API token"
+          "api_token": "[%key:common::config_flow::data::api_token%]"
         },
         "data_description": {
           "api_token": "Required if an API token is set in the agent's settings (Settings > Unraid Management Agent > Authentication). Leave empty if authentication is disabled."
@@ -31,7 +31,7 @@
         "title": "Reauthenticate Unraid Management Agent",
         "description": "The Unraid Management Agent at {host} rejected the API token. Enter the token shown in the agent's settings (Settings > Unraid Management Agent > Authentication).",
         "data": {
-          "api_token": "API token"
+          "api_token": "[%key:common::config_flow::data::api_token%]"
         },
         "data_description": {
           "api_token": "The API token currently set in the agent's settings (Settings > Unraid Management Agent > Authentication). It is sent as a bearer token on every request."
@@ -39,16 +39,16 @@
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect",
-      "invalid_auth": "Invalid authentication",
-      "timeout": "Timeout connecting to the device",
-      "already_configured": "Device is already configured",
-      "unknown": "Unexpected error"
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
+      "timeout": "[%key:common::config_flow::error::timeout%]",
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
+      "unknown": "[%key:common::config_flow::error::unknown%]"
     },
     "abort": {
-      "already_configured": "Device is already configured",
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
       "unique_id_mismatch": "The server at this address has a different unique ID. Create a new entry instead.",
-      "reauth_successful": "Re-authentication was successful"
+      "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]"
     },
     "flow_title": "{host}"
   },
@@ -68,8 +68,8 @@
         "data_description": {
           "enable_websocket": "WebSocket provides instant updates instead of polling. When disabled, data is polled every 30 seconds.",
           "enable_fan_control": "Create fan speed sensor and control entities. Disable if your system does not have controllable fans.",
-          "enable_container_updates": "Periodically check Docker containers for available image updates. This may slow down polling and uses additional network requests.",
-          "read_only": "Only create sensors. Switches, buttons and number controls are not created (existing ones are removed), and the integration's actions refuse to run, so Home Assistant cannot start, stop or reboot anything on the server.",
+          "enable_container_updates": "Periodically check Docker containers for available image updates. This may slow down polling and uses additional network requests. Also creates an update entity for each container, from which its image update can be installed.",
+          "read_only": "Only create sensors. Switches, buttons and number controls are not created (existing ones are removed), and the integration's actions refuse to run, so Home Assistant cannot start, stop or reboot anything on the server. Update entities still show available updates but do not offer to install them.",
           "enable_vm_devices": "Give each VM its own device under the server, holding its power switch, control buttons and metric sensors (CPU, memory, network and disk rates). When off, VM switches and buttons stay on the server device and no VM sensors are created.",
           "enable_container_devices": "Give each container its own device under the server, holding its switches, restart button and metric sensors with short names (Running, CPU, Memory). When off, container entities stay on the server device, named after the container."
         }
@@ -140,6 +140,15 @@
       },
       "gpu_energy": {
         "name": "GPU {gpu_name} Energy"
+      },
+      "gpu_vram_used": {
+        "name": "GPU {gpu_name} VRAM Used"
+      },
+      "gpu_vram_total": {
+        "name": "GPU {gpu_name} VRAM Total"
+      },
+      "gpu_vram_usage": {
+        "name": "GPU {gpu_name} VRAM Usage"
       },
       "ups_battery": {
         "name": "UPS Battery"
@@ -227,6 +236,40 @@
       },
       "zfs_pool_health": {
         "name": "ZFS Pool {pool_name} Health"
+      },
+      "zfs_pool_scrub_status": {
+        "name": "ZFS Pool {pool_name} Scrub Status",
+        "state": {
+          "none": "Never run",
+          "scrubbing": "Scrubbing",
+          "scrub_paused": "Scrub paused",
+          "scrub_finished": "Scrub finished",
+          "scrub_canceled": "Scrub canceled",
+          "resilvering": "Resilvering",
+          "resilver_finished": "Resilver finished",
+          "resilver_canceled": "Resilver canceled"
+        }
+      },
+      "zfs_pool_last_scrub": {
+        "name": "ZFS Pool {pool_name} Last Scrub"
+      },
+      "zfs_pool_scrub_errors": {
+        "name": "ZFS Pool {pool_name} Scrub Errors"
+      },
+      "zfs_pool_scrub_repaired": {
+        "name": "ZFS Pool {pool_name} Scrub Repaired"
+      },
+      "zfs_pool_read_errors": {
+        "name": "ZFS Pool {pool_name} Read Errors"
+      },
+      "zfs_pool_write_errors": {
+        "name": "ZFS Pool {pool_name} Write Errors"
+      },
+      "zfs_pool_checksum_errors": {
+        "name": "ZFS Pool {pool_name} Checksum Errors"
+      },
+      "zfs_pool_fragmentation": {
+        "name": "ZFS Pool {pool_name} Fragmentation"
       },
       "container_cpu": {
         "name": "{container_name} CPU"
@@ -359,6 +402,9 @@
       },
       "storage_slot_errors": {
         "name": "Slot {index} Errors"
+      },
+      "alerts_firing": {
+        "name": "Firing alerts"
       }
     },
     "binary_sensor": {
@@ -377,6 +423,9 @@
       "zfs_available": {
         "name": "ZFS Available"
       },
+      "zfs_pool_problem": {
+        "name": "ZFS Pool {pool_name} Problem"
+      },
       "network_interface": {
         "name": "Network {interface}"
       },
@@ -393,6 +442,9 @@
         "name": "Parity Check Scheduled"
       },
       "network_service": {
+        "name": "{service_name} Service"
+      },
+      "system_service": {
         "name": "{service_name} Service"
       },
       "unassigned_device_mounted": {
@@ -427,6 +479,27 @@
       },
       "storage_drive_health": {
         "name": "Drive Health"
+      },
+      "alert_rule": {
+        "name": "Alert {rule_name}",
+        "state_attributes": {
+          "alert_state": {
+            "name": "Alert state",
+            "state": {
+              "ok": "OK",
+              "pending": "Pending",
+              "firing": "Firing"
+            }
+          },
+          "severity": {
+            "name": "Severity",
+            "state": {
+              "info": "Info",
+              "warning": "Warning",
+              "critical": "Critical"
+            }
+          }
+        }
       }
     },
     "switch": {
@@ -469,6 +542,17 @@
               "info": "Info",
               "warning": "Warning",
               "alert": "Alert"
+            }
+          }
+        }
+      },
+      "alert_event": {
+        "name": "Alert",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "firing": "Firing",
+              "resolved": "Resolved"
             }
           }
         }
@@ -544,9 +628,26 @@
       "container_device_restart": {
         "name": "Restart"
       }
+    },
+    "update": {
+      "unraid_os": {
+        "name": "Unraid OS"
+      },
+      "plugin": {
+        "name": "Plugin {name}"
+      },
+      "container_image": {
+        "name": "Container {name} Image"
+      },
+      "container_device_image": {
+        "name": "Image"
+      }
     }
   },
   "exceptions": {
+    "api_error": {
+      "message": "Error communicating with Unraid API"
+    },
     "no_config_entries": {
       "message": "No Unraid Management Agent entries configured"
     },
@@ -667,6 +768,12 @@
     "fan_speed_set_failed": {
       "message": "Failed to set fan speed"
     },
+    "remote_share_mount_error": {
+      "message": "Failed to mount remote share: {share_name}"
+    },
+    "remote_share_unmount_error": {
+      "message": "Failed to unmount remote share: {share_name}"
+    },
     "read_only_mode": {
       "message": "{title} is in read-only mode. Turn off read-only in its integration options to control the server."
     },
@@ -675,6 +782,12 @@
     },
     "auth_failed": {
       "message": "The Unraid Management Agent rejected the API token. Re-authenticate the integration with the agent's current token."
+    },
+    "plugin_update_failed": {
+      "message": "Failed to update plugin {name}"
+    },
+    "container_update_failed": {
+      "message": "Failed to update container {name}"
     }
   },
   "services": {

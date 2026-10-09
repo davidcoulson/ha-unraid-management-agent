@@ -40,6 +40,7 @@ from homeassistant.util import dt as dt_util
 from homeassistant.util import slugify as ha_slugify
 
 from . import UnraidConfigEntry, UnraidDataUpdateCoordinator
+from .alerts import ALERT_STATE_FIRING
 from .api import EnergyIntegrator, RateCalculator, parse_timestamp
 from .api.formatting import format_bytes, format_duration
 from .api.models import TemperatureInfo
@@ -1594,6 +1595,30 @@ ZFS_ARC_SENSOR_DESCRIPTIONS: tuple[UnraidSensorEntityDescription, ...] = (
 
 
 # =============================================================================
+# Sensor Entity Descriptions - Alerting engine
+# =============================================================================
+
+
+def _firing_alert_names(data: UnraidData) -> list[str]:
+    """Return the names of the agent alert rules that are firing."""
+    return [
+        status.rule_name or status.rule_id or ""
+        for status in data.alert_statuses or []
+        if status.state == ALERT_STATE_FIRING
+    ]
+
+
+ALERTS_FIRING_DESCRIPTION = UnraidSensorEntityDescription(
+    key="alerts_firing",
+    translation_key="alerts_firing",
+    state_class=SensorStateClass.MEASUREMENT,
+    value_fn=lambda data: len(_firing_alert_names(data)),
+    extra_state_attributes_fn=lambda data: {"firing_rules": _firing_alert_names(data)},
+    available_fn=lambda data: data.alert_statuses is not None,
+)
+
+
+# =============================================================================
 # Sensor Entity Class
 # =============================================================================
 
@@ -2709,12 +2734,20 @@ class UnraidZFSPoolHealthSensor(UnraidZFSPoolSensorBase):
         return attrs
 
 
+# Paths exposed in the corrupted files sensor's "files" attribute. A damaged
+# pool can list thousands of objects, so only the first few are shown; the
+# state is the full count. The attribute is also left out of the recorder
+# (see _unrecorded_attributes), whose limit for a state's attributes is 16 KiB.
+ZFS_CORRUPTED_FILES_ATTR_LIMIT = 10
+
+
 class UnraidZFSPoolCorruptedFilesSensor(UnraidZFSPoolSensorBase):
     """ZFS pool corrupted files sensor."""
 
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_icon = "mdi:file-alert"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _unrecorded_attributes = frozenset({"files"})
 
     def __init__(
         self,
@@ -2732,7 +2765,189 @@ class UnraidZFSPoolCorruptedFilesSensor(UnraidZFSPoolSensorBase):
         pool = self._get_pool()
         if not pool:
             return None
-        return getattr(pool, "corrupted_files", None)
+        count: int | None = pool.corrupted_file_count
+        return count
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return the first reported corrupted file paths."""
+        pool = self._get_pool()
+        if not pool or not pool.corrupted_file_paths:
+            return {}
+        return {"files": pool.corrupted_file_paths[:ZFS_CORRUPTED_FILES_ATTR_LIMIT]}
+
+
+# ZFS scan state reported by the agent -> enum state. ZFS keeps only the last
+# scan's statistics, so after a resilver these describe the resilver.
+ZFS_SCAN_STATES: dict[tuple[str, str], str] = {
+    ("scrub", "scanning"): "scrubbing",
+    ("scrub", "paused"): "scrub_paused",
+    ("scrub", "finished"): "scrub_finished",
+    ("scrub", "canceled"): "scrub_canceled",
+    ("resilver", "scanning"): "resilvering",
+    ("resilver", "finished"): "resilver_finished",
+    ("resilver", "canceled"): "resilver_canceled",
+}
+ZFS_SCAN_STATE_OPTIONS: list[str] = ["none", *ZFS_SCAN_STATES.values()]
+
+
+def _zfs_scan_state(pool: Any) -> str | None:
+    """Return the enum state for a pool's last (or current) scrub/resilver."""
+    state = (pool.scan_state or "").lower()
+    if not state:
+        return "none"
+    function = (
+        "resilver"
+        if (pool.scan_status or "").lower().startswith("resilver")
+        else "scrub"
+    )
+    return ZFS_SCAN_STATES.get((function, state))
+
+
+def _zfs_scan_time(value: str | None) -> datetime | None:
+    """Parse an agent scan timestamp; the zero time (never scanned) is None."""
+    parsed = parse_timestamp(value) if value else None
+    if parsed is None or parsed.year <= 1:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=dt_util.UTC)
+    return parsed
+
+
+def _zfs_scan_attrs(pool: Any) -> dict[str, Any]:
+    """Return start time and progress for the scrub status sensor."""
+    attrs: dict[str, Any] = {}
+    started = _zfs_scan_time(pool.scan_start_time)
+    if started is not None:
+        attrs["scan_start_time"] = started.isoformat()
+    if pool.scan_state in ("scanning", "paused") and (
+        pool.scan_progress_percent is not None
+    ):
+        attrs["progress_percent"] = pool.scan_progress_percent
+    return attrs
+
+
+def _zfs_error_attrs(counter: str) -> Callable[[Any], dict[str, Any]]:
+    """Return a function listing the vdevs/devices with a non-zero counter."""
+
+    def _attrs(pool: Any) -> dict[str, Any]:
+        rows = []
+        for vdev in pool.vdevs or []:
+            rows.append(vdev)
+            rows.extend(vdev.devices or [])
+        failing = {
+            row.name: getattr(row, counter)
+            for row in rows
+            if row.name and getattr(row, counter)
+        }
+        return {"devices": failing} if failing else {}
+
+    return _attrs
+
+
+@dataclass(frozen=True, kw_only=True)
+class UnraidZFSPoolSensorEntityDescription(SensorEntityDescription):
+    """Description for a per-pool ZFS sensor."""
+
+    value_fn: Callable[[Any], Any]
+    extra_state_attributes_fn: Callable[[Any], dict[str, Any]] | None = None
+
+
+ZFS_POOL_SENSOR_DESCRIPTIONS: tuple[UnraidZFSPoolSensorEntityDescription, ...] = (
+    UnraidZFSPoolSensorEntityDescription(
+        key="scrub_status",
+        translation_key="zfs_pool_scrub_status",
+        device_class=SensorDeviceClass.ENUM,
+        options=ZFS_SCAN_STATE_OPTIONS,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=_zfs_scan_state,
+        extra_state_attributes_fn=_zfs_scan_attrs,
+    ),
+    UnraidZFSPoolSensorEntityDescription(
+        key="last_scrub",
+        translation_key="zfs_pool_last_scrub",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda pool: _zfs_scan_time(pool.scan_end_time),
+    ),
+    UnraidZFSPoolSensorEntityDescription(
+        key="scrub_errors",
+        translation_key="zfs_pool_scrub_errors",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=lambda pool: pool.scan_errors,
+    ),
+    UnraidZFSPoolSensorEntityDescription(
+        key="scrub_repaired",
+        translation_key="zfs_pool_scrub_repaired",
+        device_class=SensorDeviceClass.DATA_SIZE,
+        native_unit_of_measurement=UnitOfInformation.BYTES,
+        suggested_unit_of_measurement=UnitOfInformation.MEBIBYTES,
+        suggested_display_precision=1,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=lambda pool: pool.scan_repaired_bytes,
+    ),
+    *(
+        UnraidZFSPoolSensorEntityDescription(
+            key=counter,
+            translation_key=f"zfs_pool_{counter}",
+            state_class=SensorStateClass.TOTAL_INCREASING,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            entity_registry_enabled_default=False,
+            value_fn=lambda pool, counter=counter: pool.error_total(counter),
+            extra_state_attributes_fn=_zfs_error_attrs(counter),
+        )
+        for counter in ("read_errors", "write_errors", "checksum_errors")
+    ),
+    UnraidZFSPoolSensorEntityDescription(
+        key="fragmentation",
+        translation_key="zfs_pool_fragmentation",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=lambda pool: pool.fragmentation_percent,
+    ),
+)
+
+
+class UnraidZFSPoolSensor(UnraidZFSPoolSensorBase):
+    """A scrub, error or fragmentation sensor for one ZFS pool."""
+
+    entity_description: UnraidZFSPoolSensorEntityDescription
+
+    def __init__(
+        self,
+        coordinator: UnraidDataUpdateCoordinator,
+        entry: UnraidConfigEntry,
+        pool_name: str,
+        description: UnraidZFSPoolSensorEntityDescription,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, entry, pool_name, description.key)
+        self.entity_description = description
+        self._attr_translation_placeholders = {"pool_name": pool_name}
+
+    @property
+    def native_value(self) -> Any:
+        """Return the value for this pool."""
+        pool = self._get_pool()
+        if pool is None:
+            return None
+        return self.entity_description.value_fn(pool)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return extra attributes for this pool."""
+        pool = self._get_pool()
+        attrs_fn = self.entity_description.extra_state_attributes_fn
+        if pool is None or attrs_fn is None:
+            return None
+        return attrs_fn(pool)
 
 
 class UnraidZFSArcConfiguredMaxSensor(UnraidBaseEntity, SensorEntity):
@@ -2891,6 +3106,113 @@ class UnraidGPUPowerSensor(UnraidGPUSensorBase):
             return None
         result: float | None = gpu.power_draw_watts
         return result
+
+
+def _gpu_vram_total(gpu: Any) -> int | None:
+    """
+    Return a GPU's total VRAM in bytes, or None if it reports no VRAM.
+
+    The agent sends ``memory_total_bytes: 0`` (not null) for GPUs it cannot
+    read VRAM from (e.g. Intel iGPUs, which share system RAM), and older
+    agents may omit the field. Both mean "no VRAM data".
+    """
+    total = getattr(gpu, "memory_total_bytes", None)
+    if isinstance(total, int) and total > 0:
+        return total
+    return None
+
+
+class UnraidGPUVramUsedSensor(UnraidGPUSensorBase):
+    """Per-GPU VRAM used sensor."""
+
+    _attr_native_unit_of_measurement = UnitOfInformation.BYTES
+    _attr_device_class = SensorDeviceClass.DATA_SIZE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_suggested_unit_of_measurement = UnitOfInformation.MEBIBYTES
+    _attr_suggested_display_precision = 0
+
+    def __init__(
+        self,
+        coordinator: UnraidDataUpdateCoordinator,
+        entry: UnraidConfigEntry,
+        gpu_index: int,
+        gpu_name: str,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, entry, gpu_index, gpu_name, "vram_used")
+        self._attr_translation_key = "gpu_vram_used"
+        self._attr_translation_placeholders = {"gpu_name": gpu_name}
+
+    @property
+    def native_value(self) -> int | None:
+        """Return VRAM used in bytes."""
+        gpu = self._find_gpu()
+        if not gpu or _gpu_vram_total(gpu) is None:
+            return None
+        result: int | None = gpu.memory_used_bytes
+        return result
+
+
+class UnraidGPUVramTotalSensor(UnraidGPUSensorBase):
+    """Per-GPU total VRAM sensor."""
+
+    _attr_native_unit_of_measurement = UnitOfInformation.BYTES
+    _attr_device_class = SensorDeviceClass.DATA_SIZE
+    _attr_suggested_unit_of_measurement = UnitOfInformation.GIBIBYTES
+    _attr_suggested_display_precision = 1
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self,
+        coordinator: UnraidDataUpdateCoordinator,
+        entry: UnraidConfigEntry,
+        gpu_index: int,
+        gpu_name: str,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, entry, gpu_index, gpu_name, "vram_total")
+        self._attr_translation_key = "gpu_vram_total"
+        self._attr_translation_placeholders = {"gpu_name": gpu_name}
+
+    @property
+    def native_value(self) -> int | None:
+        """Return total VRAM in bytes."""
+        gpu = self._find_gpu()
+        if not gpu:
+            return None
+        return _gpu_vram_total(gpu)
+
+
+class UnraidGPUVramUsageSensor(UnraidGPUSensorBase):
+    """Per-GPU VRAM usage percentage sensor (used / total)."""
+
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_suggested_display_precision = 1
+
+    def __init__(
+        self,
+        coordinator: UnraidDataUpdateCoordinator,
+        entry: UnraidConfigEntry,
+        gpu_index: int,
+        gpu_name: str,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, entry, gpu_index, gpu_name, "vram_usage")
+        self._attr_translation_key = "gpu_vram_usage"
+        self._attr_translation_placeholders = {"gpu_name": gpu_name}
+
+    @property
+    def native_value(self) -> float | None:
+        """Return VRAM usage as a percentage of total VRAM."""
+        gpu = self._find_gpu()
+        if not gpu:
+            return None
+        total = _gpu_vram_total(gpu)
+        used = gpu.memory_used_bytes
+        if total is None or used is None:
+            return None
+        return round(used / total * 100, 2)
 
 
 # =============================================================================
@@ -3888,7 +4210,7 @@ class UnraidStorageSensor(UnraidStorageEntity, SensorEntity):
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, spec)
-        self.entity_description = spec.description  # type: ignore[assignment]
+        self.entity_description = spec.description
 
     @property
     def native_value(self) -> Any:
@@ -3984,6 +4306,21 @@ async def async_setup_entry(
                     UnraidGPUEnergySensor(coordinator, entry, gpu_index, gpu_name),
                 ]
             )
+            # VRAM sensors only for GPUs that report VRAM (not iGPUs/old agents)
+            if _gpu_vram_total(gpu) is not None:
+                entities.extend(
+                    [
+                        UnraidGPUVramUsedSensor(
+                            coordinator, entry, gpu_index, gpu_name
+                        ),
+                        UnraidGPUVramTotalSensor(
+                            coordinator, entry, gpu_index, gpu_name
+                        ),
+                        UnraidGPUVramUsageSensor(
+                            coordinator, entry, gpu_index, gpu_name
+                        ),
+                    ]
+                )
 
     # UPS sensors - only if ups collector is enabled
     if (
@@ -4076,6 +4413,10 @@ async def async_setup_entry(
                                 pool.name,
                             ),
                         ]
+                    )
+                    entities.extend(
+                        UnraidZFSPoolSensor(coordinator, entry, pool.name, description)
+                        for description in ZFS_POOL_SENSOR_DESCRIPTIONS
                     )
 
             # ZFS ARC sensors
@@ -4295,6 +4636,25 @@ async def async_setup_entry(
 
     _add_hwmon_temperature_sensors()
 
+    # Firing alerts count - added once the agent reports alert status, so older
+    # agents without the alerting engine don't get it and an upgraded agent
+    # gets it without a reload
+    alerts_firing_added = False
+
+    def _add_alerts_firing_sensor() -> None:
+        nonlocal alerts_firing_added
+        current_data = coordinator.data
+        if (
+            alerts_firing_added
+            or not current_data
+            or current_data.alert_statuses is None
+        ):
+            return
+        alerts_firing_added = True
+        async_add_entities([UnraidSensorEntity(coordinator, ALERTS_FIRING_DESCRIPTION)])
+
+    _add_alerts_firing_sensor()
+
     entry.async_on_unload(
         coordinator.async_add_listener(callback(_add_unassigned_device_sensors))
     )
@@ -4303,6 +4663,9 @@ async def async_setup_entry(
     )
     entry.async_on_unload(
         coordinator.async_add_listener(callback(_add_hwmon_temperature_sensors))
+    )
+    entry.async_on_unload(
+        coordinator.async_add_listener(callback(_add_alerts_firing_sensor))
     )
 
     # Storage controllers and enclosures (each a child device of the server)

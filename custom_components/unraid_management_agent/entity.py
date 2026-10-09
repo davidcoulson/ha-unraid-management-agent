@@ -15,8 +15,10 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import (
     CONF_ENABLE_CONTAINER_DEVICES,
     CONF_ENABLE_VM_DEVICES,
+    CONF_READ_ONLY,
     DEFAULT_ENABLE_CONTAINER_DEVICES,
     DEFAULT_ENABLE_VM_DEVICES,
+    DEFAULT_READ_ONLY,
     DOMAIN,
     MANUFACTURER,
 )
@@ -71,10 +73,8 @@ class UnraidBaseEntity(CoordinatorEntity["UnraidDataUpdateCoordinator"]):
             sw_version=version,
             configuration_url=f"http://{host}",
         )
-
         if agent_version:
             device_info["hw_version"] = agent_version
-
         return device_info
 
     @property
@@ -183,6 +183,11 @@ def build_container_device_info(
     )
 
 
+def read_only_enabled(coordinator: UnraidDataUpdateCoordinator) -> bool:
+    """Return True when the entry is in read-only mode (nothing may change the server)."""
+    return bool(coordinator.config_entry.options.get(CONF_READ_ONLY, DEFAULT_READ_ONLY))
+
+
 class UnraidEntity(UnraidBaseEntity):
     """Entity with description support for Unraid Management Agent."""
 
@@ -214,5 +219,6 @@ __all__ = [
     "build_vm_device_info",
     "container_devices_enabled",
     "find_vm",
+    "read_only_enabled",
     "vm_devices_enabled",
 ]

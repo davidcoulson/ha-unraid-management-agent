@@ -21,6 +21,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import slugify
 
 from .api import (
@@ -43,6 +44,7 @@ from .coordinator import (
     UnraidDataUpdateCoordinator,
     UnraidRuntimeData,
 )
+from .frontend import async_register_frontend
 from .storage import CONTROLLER, ENCLOSURE, current_storage_ids, device_identifier
 
 # Service field constants
@@ -278,14 +280,17 @@ PLATFORMS: list[Platform] = [
     Platform.BUTTON,
     Platform.NUMBER,
     Platform.EVENT,
+    Platform.UPDATE,
 ]
 
 # Platforms that only report state. In read-only mode nothing that can change
-# the server (switches, buttons, numbers) is created.
+# the server (switches, buttons, numbers) is created. Update entities are kept:
+# they still report available updates, but do not offer to install them.
 READ_ONLY_PLATFORMS: list[Platform] = [
     Platform.SENSOR,
     Platform.BINARY_SENSOR,
     Platform.EVENT,
+    Platform.UPDATE,
 ]
 CONTROL_DOMAINS: frozenset[str] = frozenset(
     str(platform) for platform in PLATFORMS if platform not in READ_ONLY_PLATFORMS
@@ -308,8 +313,10 @@ def _async_remove_control_entities(
             registry.async_remove(entity.entity_id)
 
 
-async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up Unraid Management Agent integration."""
+    # Register dashboard card frontend
+    await async_register_frontend(hass)
     # Register services once at integration level (not per entry)
     await async_setup_services(hass)
     return True
@@ -422,6 +429,8 @@ async def async_remove_config_entry_device(
         for kind in (CONTROLLER, ENCLOSURE):
             prefix = device_identifier(entry.entry_id, kind, "")
             if identifier.startswith(prefix):
+                if topology is None or topology.state != "ok":
+                    return False
                 return identifier[len(prefix) :] not in current_storage_ids(
                     topology, kind
                 )
@@ -624,7 +633,7 @@ async def async_setup_services(hass: HomeAssistant) -> None:
 
         async def _api_call() -> Any:
             return await coordinator.client.set_container_autostart(
-                container_id, enabled
+                container_id, enabled=enabled
             )
 
         await _async_service_call(

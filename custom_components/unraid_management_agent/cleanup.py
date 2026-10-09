@@ -31,7 +31,14 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 from homeassistant.util import slugify
 
-from .const import CONF_ENABLE_VM_DEVICES, DEFAULT_ENABLE_VM_DEVICES, DOMAIN
+from .alerts import ALERT_RULE_KEY_PREFIX, alert_rule_key, alert_rule_names
+from .const import (
+    CONF_ENABLE_CONTAINER_UPDATES,
+    CONF_ENABLE_VM_DEVICES,
+    DEFAULT_ENABLE_CONTAINER_UPDATES,
+    DEFAULT_ENABLE_VM_DEVICES,
+    DOMAIN,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -59,10 +66,13 @@ _DYNAMIC_KEY_PREFIXES: tuple[str, ...] = (
     "network_service_",
     "network_",  # per-interface binary sensors + rx/tx sensors
     "share_",
+    "system_service_",  # per-service running binary sensors from /services
     "zfs_",  # covers dynamic pool sensors; static zfs_available/zfs_arc_* added to valid set
     "remote_share_",
     "unassigned_device_",
     "user_script_",
+    "plugin_",  # plugin update entities
+    ALERT_RULE_KEY_PREFIX,  # "alert_rule_": per-rule alert binary sensors
 )
 
 # Static entity keys that start with a dynamic prefix and must never be removed.
@@ -72,6 +82,7 @@ _ALWAYS_VALID_KEYS: frozenset[str] = frozenset(
         "zfs_available",  # binary_sensor - static, key starts with "zfs_"
         "zfs_arc_hit_ratio",  # sensor - static, key starts with "zfs_"
         "zfs_arc_configured_max",  # sensor - static, key starts with "zfs_"
+        "container_updates_available",  # binary_sensor - static, starts with "container_"
     ]
 )
 
@@ -94,7 +105,7 @@ def _user_script_key(name: str) -> str:
 
 
 def _build_valid_dynamic_entity_keys(
-    data: UnraidData, *, vm_devices: bool = False
+    data: UnraidData, *, vm_devices: bool = False, container_updates: bool = False
 ) -> set[str]:
     """
     Compute the complete set of valid dynamic entity key suffixes from coordinator data.
@@ -107,11 +118,17 @@ def _build_valid_dynamic_entity_keys(
         data: Current coordinator data snapshot.
         vm_devices: Whether per-VM sensors exist (the "VMs as separate
             devices" option); when off they are stale and get removed.
+        container_updates: Whether per-container update entities exist (the
+            "container update checks" option); when off they are stale and
+            get removed.
 
     Returns:
         Set of valid entity key suffixes.
 
     """
+    # Imported here: update.py imports this module
+    from .update import container_update_key, is_updatable_plugin, plugin_update_key
+
     keys: set[str] = set(_ALWAYS_VALID_KEYS)
 
     # ── Containers ──────────────────────────────────────────────────────────
@@ -131,6 +148,8 @@ def _build_valid_dynamic_entity_keys(
         keys.add(f"container_{safe_sensor}_restart_count")  # sensor
         keys.add(f"container_{safe_sensor}_network_rx_rate")  # sensor
         keys.add(f"container_{safe_sensor}_network_tx_rate")  # sensor
+        if container_updates:
+            keys.add(container_update_key(name))  # update
 
     # ── Virtual Machines ─────────────────────────────────────────────────────
     vm_sensor_keys: tuple[str, ...] = ()
@@ -221,7 +240,17 @@ def _build_valid_dynamic_entity_keys(
         gpu_index = getattr(gpu, "index", None)
         if gpu_index is None:
             gpu_index = idx
-        for sensor_type in ("utilization", "temperature", "power", "energy"):
+        # VRAM keys stay valid for every present GPU, even ones not reporting
+        # VRAM right now, so a transient zero never deletes their history.
+        for sensor_type in (
+            "utilization",
+            "temperature",
+            "power",
+            "energy",
+            "vram_used",
+            "vram_total",
+            "vram_usage",
+        ):
             keys.add(f"gpu_{gpu_index}_{sensor_type}")  # sensor
 
     # ── Network interfaces ────────────────────────────────────────────────────
@@ -255,6 +284,11 @@ def _build_valid_dynamic_entity_keys(
             if getattr(data.network_services, service_key, None) is not None:
                 keys.add(f"network_service_{slugify(service_key)}")  # binary sensor
 
+    # ── System services (/services) ───────────────────────────────────────────
+    for service in data.system_services or []:
+        if service.name:
+            keys.add(f"system_service_{slugify(service.name)}")  # binary sensor
+
     # ── User shares ───────────────────────────────────────────────────────────
     for share in data.shares or []:
         name = getattr(share, "name", None)
@@ -268,6 +302,18 @@ def _build_valid_dynamic_entity_keys(
             keys.add(f"zfs_{name}_usage")  # sensor
             keys.add(f"zfs_{name}_health")  # sensor
             keys.add(f"zfs_{name}_corrupted_files")  # sensor
+            for suffix in (
+                "scrub_status",
+                "last_scrub",
+                "scrub_errors",
+                "scrub_repaired",
+                "read_errors",
+                "write_errors",
+                "checksum_errors",
+                "fragmentation",
+            ):
+                keys.add(f"zfs_{name}_{suffix}")  # sensor
+            keys.add(f"zfs_{name}_problem")  # binary sensor
 
     # ── Remote shares ─────────────────────────────────────────────────────────
     for share in data.remote_shares or []:
@@ -291,6 +337,15 @@ def _build_valid_dynamic_entity_keys(
         name = getattr(script, "name", "") or ""
         if name:
             keys.add(_user_script_key(name))  # button
+
+    # ── Plugins ───────────────────────────────────────────────────────────────
+    for plugin in (data.plugins.plugins if data.plugins else None) or []:
+        if is_updatable_plugin(plugin):
+            keys.add(plugin_update_key(plugin.name))  # update
+
+    # ── Alert rules ───────────────────────────────────────────────────────────
+    for rule_id in alert_rule_names(data):
+        keys.add(alert_rule_key(rule_id))  # binary sensor
 
     return keys
 
@@ -362,6 +417,8 @@ def _unavailable_data_prefixes(data: UnraidData) -> set[str]:
         prefixes.add("network_service_")
     if data.shares is None:
         prefixes.add("share_")
+    if data.system_services is None:
+        prefixes.add("system_service_")
     if data.zfs_pools is None:
         prefixes.add("zfs_")
     if data.remote_shares is None:
@@ -370,6 +427,12 @@ def _unavailable_data_prefixes(data: UnraidData) -> set[str]:
         prefixes.add("unassigned_device_")
     if data.user_scripts is None:
         prefixes.add("user_script_")
+    if data.plugins is None or data.plugins.plugins is None:
+        prefixes.add("plugin_")
+    # The rule list is the source of truth: the status list omits disabled
+    # rules, whose binary sensors must stay.
+    if data.alert_rules is None:
+        prefixes.add(ALERT_RULE_KEY_PREFIX)
     return prefixes
 
 
@@ -414,8 +477,13 @@ def async_cleanup_stale_entities(
     vm_devices = bool(
         entry.options.get(CONF_ENABLE_VM_DEVICES, DEFAULT_ENABLE_VM_DEVICES)
     )
+    container_updates = bool(
+        entry.options.get(
+            CONF_ENABLE_CONTAINER_UPDATES, DEFAULT_ENABLE_CONTAINER_UPDATES
+        )
+    )
     valid_keys = _build_valid_dynamic_entity_keys(
-        coordinator.data, vm_devices=vm_devices
+        coordinator.data, vm_devices=vm_devices, container_updates=container_updates
     )
     unavailable_prefixes = _unavailable_data_prefixes(coordinator.data)
     candidates = coordinator.stale_entity_candidates

@@ -21,6 +21,7 @@ Service actions are registered in `async_setup()` in `__init__.py` (not in a sep
 ```python
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the integration."""
+
     async def handle_action(call: ServiceCall) -> None:
         """Handle the action."""
         ...
@@ -41,10 +42,12 @@ Use voluptuous with `homeassistant.helpers.config_validation`:
 import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
 
-SERVICE_SCHEMA = vol.Schema({
-    vol.Required("device_id"): cv.string,
-    vol.Optional("force", default=False): cv.boolean,
-})
+SERVICE_SCHEMA = vol.Schema(
+    {
+        vol.Required("device_id"): cv.string,
+        vol.Optional("force", default=False): cv.boolean,
+    }
+)
 ```
 
 ## Exception Handling

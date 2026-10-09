@@ -34,12 +34,7 @@
       "ports": [
         {
           "port": 0,
-          "phys": [
-            0,
-            1,
-            2,
-            3
-          ],
+          "phys": [0, 1, 2, 3],
           "width": 4,
           "link_rate_gbps": 12,
           "attached_sas_address": "0x500a09809ef42c5d",
@@ -49,12 +44,7 @@
         },
         {
           "port": 1,
-          "phys": [
-            4,
-            5,
-            6,
-            7
-          ],
+          "phys": [4, 5, 6, 7],
           "width": 4,
           "link_rate_gbps": 12,
           "attached_sas_address": "0x500a098be2d98d01",
@@ -2103,10 +2093,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        1,
-        0
-      ],
+      "controller_ports": [1, 0],
       "ports": [
         {
           "port": 0,
@@ -2150,10 +2137,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -2197,10 +2181,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        1,
-        0
-      ],
+      "controller_ports": [1, 0],
       "ports": [
         {
           "port": 0,
@@ -2244,10 +2225,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        1,
-        0
-      ],
+      "controller_ports": [1, 0],
       "ports": [
         {
           "port": 0,
@@ -2290,10 +2268,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -2336,10 +2311,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -2382,10 +2354,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -2428,10 +2397,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -2475,10 +2441,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        1,
-        0
-      ],
+      "controller_ports": [1, 0],
       "ports": [
         {
           "port": 0,
@@ -2522,10 +2485,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -2569,10 +2529,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -2616,10 +2573,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        1,
-        0
-      ],
+      "controller_ports": [1, 0],
       "ports": [
         {
           "port": 0,
@@ -2663,10 +2617,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -2710,10 +2661,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        1,
-        0
-      ],
+      "controller_ports": [1, 0],
       "ports": [
         {
           "port": 0,
@@ -2757,10 +2705,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -2803,10 +2748,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        1,
-        0
-      ],
+      "controller_ports": [1, 0],
       "ports": [
         {
           "port": 0,
@@ -2849,10 +2791,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -2896,10 +2835,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -2943,10 +2879,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -2989,10 +2922,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -3035,10 +2965,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -3081,10 +3008,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -3128,10 +3052,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -3175,10 +3096,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -3222,10 +3140,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -3269,10 +3184,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -3315,10 +3227,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -3361,10 +3270,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -3407,10 +3313,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -3453,10 +3356,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -3500,10 +3400,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -3547,10 +3444,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -3594,10 +3488,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -3641,10 +3532,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -3688,10 +3576,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        1,
-        0
-      ],
+      "controller_ports": [1, 0],
       "ports": [
         {
           "port": 0,
@@ -3735,10 +3620,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        1,
-        0
-      ],
+      "controller_ports": [1, 0],
       "ports": [
         {
           "port": 0,
@@ -3782,10 +3664,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -3828,10 +3707,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -3874,10 +3750,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -3921,10 +3794,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -3968,10 +3838,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -4014,10 +3881,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
@@ -4060,10 +3924,7 @@
       "shield_counter": 0,
       "smart_alert": false,
       "multipath": true,
-      "controller_ports": [
-        0,
-        1
-      ],
+      "controller_ports": [0, 1],
       "ports": [
         {
           "port": 0,
