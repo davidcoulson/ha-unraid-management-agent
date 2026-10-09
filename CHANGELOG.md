@@ -11,9 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Home Assistant 2026.10 & Quality Scale Uplift** — modernized integration patterns for HA 2026.10+:
   - Added local brand assets (`brand/icon.png` and `brand/logo.png`) adhering to HA 2026.3+ local brands feature and updated `quality_scale.yaml` (`brands: done`).
-  - Updated `DeviceInfo` construction with `hw_version` passed directly to the constructor.
-  - Aligned repairs flow return types with `RepairsFlowResult` for HA 2026.10 generic `FlowHandler` contracts.
-  - Typed `async_setup` with `ConfigType` and updated `BinarySensorDeviceClass` import location.
+  - Updated `DeviceInfo` construction to conditionally set `hw_version` only when available to preserve stored hardware versions across entity registrations.
+  - Aligned repairs flow return types with `FlowResult` and imported `BinarySensorDeviceClass` from `homeassistant.components.binary_sensor` for seamless compatibility across HA 2026.4 through 2026.10+.
   - Relaxed `websockets` dependency constraint in `manifest.json` (`<18.0.0`) for HA 2026.10 compatibility.
 - **Pydantic v2 ConfigDict Migration** — converted all 108+ API and event models in `custom_components/unraid_management_agent/api/` (`models.py`, `events.py`, `mcp.py`) from deprecated dict-style `model_config = {...}` to modern `ConfigDict(frozen=True, extra="allow")` with `populate_by_name=True`.
 - **Comprehensive Platform Test Suites** — expanded test coverage across the integration:

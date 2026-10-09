@@ -410,12 +410,12 @@ async def test_duplicate_services_setup(hass: HomeAssistant) -> None:
     """Test async_setup_services exits early when services already registered."""
     from custom_components.unraid_management_agent import async_setup_services
 
-    with patch("homeassistant.core.ServiceRegistry.has_service", return_value=True):
-        with patch(
-            "homeassistant.core.ServiceRegistry.async_register"
-        ) as mock_register:
-            await async_setup_services(hass)
-            mock_register.assert_not_called()
+    with (
+        patch("homeassistant.core.ServiceRegistry.has_service", return_value=True),
+        patch("homeassistant.core.ServiceRegistry.async_register") as mock_register,
+    ):
+        await async_setup_services(hass)
+        mock_register.assert_not_called()
 
 
 async def test_services_calls_and_actions(
@@ -518,11 +518,13 @@ async def test_services_error_handling(
         )
 
     # Test service call when no config entries exist
-    with patch.object(hass.config_entries, "async_entries", return_value=[]):
-        with pytest.raises(HomeAssistantError):
-            await hass.services.async_call(
-                DOMAIN,
-                "container_stop",
-                {"container_id": "test_container"},
-                blocking=True,
-            )
+    with (
+        patch.object(hass.config_entries, "async_entries", return_value=[]),
+        pytest.raises(HomeAssistantError),
+    ):
+        await hass.services.async_call(
+            DOMAIN,
+            "container_stop",
+            {"container_id": "test_container"},
+            blocking=True,
+        )
