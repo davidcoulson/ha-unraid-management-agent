@@ -89,6 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The agent reports the syslog service as `syslog_server`, but the integration
   only read `syslog`, so there was no "Syslog Service" binary sensor next to
   the other network services. Both keys are now accepted.
+- **Container Updates Available sensor deleted by stale cleanup** ([#158](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/158), contributed by @davidcoulson): its key starts with the dynamic `container_` prefix, so cleanup removed it about 10 minutes after setup. It is now allowlisted, and a new test fails if any static entity key ever collides with a dynamic prefix again.
 - **ZFS pools unavailable once the agent reports corrupted files** ([#172](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/172), contributed by @davidcoulson):
   The agent sends `corrupted_files` as the list of paths from `zpool status -v`,
   but the integration typed it as a number. One pool with permanent errors
