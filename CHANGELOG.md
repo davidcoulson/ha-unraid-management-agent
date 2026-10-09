@@ -105,11 +105,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   only the last scan's statistics, so after a resilver these describe the
   resilver. Agents up to 2026.09.01 report zero scrub times, which show as
   unknown (fixed in [unraid-management-agent#185](https://github.com/ruaan-deysel/unraid-management-agent/issues/185)).
-- **System service running sensors** ([#166](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/166), contributed by @davidcoulson):
-  One "<name> Service" binary sensor (device class running, diagnostic,
-  disabled by default) per service in the agent's `/services` list that the
-  network service sensors do not already cover: today Docker, Libvirt and
-  Nginx. Docker and Libvirt carry an `enabled` attribute from Unraid's Docker
+- **System service running sensors** ([#166](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/166), [#175](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/175), contributed by @davidcoulson):
+  One `<name> Service` binary sensor (device class running, diagnostic) per
+  service in the agent's `/services` list that the network service sensors do
+  not already cover: today Docker, Libvirt and Nginx. Docker and Libvirt are
+  enabled by default; Nginx and services the agent adds later are disabled by
+  default. Docker and Libvirt carry an `enabled` attribute from Unraid's Docker
   and VM Manager settings. Services the agent adds later get a sensor without a
   reload, removed ones are cleaned up like other dynamic entities, and agents
   without the endpoint (before v2026.02.02) simply get none. Read-only: no
