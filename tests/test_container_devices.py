@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock
+
 import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
@@ -17,6 +19,9 @@ from custom_components.unraid_management_agent.cleanup import (
 from custom_components.unraid_management_agent.const import (
     CONF_ENABLE_CONTAINER_DEVICES,
     DOMAIN,
+)
+from custom_components.unraid_management_agent.entity import (
+    build_container_device_info,
 )
 
 from .const import MOCK_CONFIG, MOCK_OPTIONS
@@ -151,3 +156,17 @@ async def test_only_devices_of_deleted_containers_can_be_removed(
         c for c in coordinator.data.containers if c.name != "plex"
     ]
     assert await async_remove_config_entry_device(hass, entry, plex)
+
+
+async def test_container_device_falls_back_to_server_when_server_missing(
+    hass: HomeAssistant,
+) -> None:
+    """Without a registered server device, container entities stay on the server."""
+    entry = _entry(hass, container_devices=True)
+    coordinator = MagicMock()
+    coordinator.hass = hass
+    coordinator.config_entry = entry
+
+    info = build_container_device_info(coordinator, "plex")
+
+    assert info == {"identifiers": {(DOMAIN, ENTRY_ID)}}
