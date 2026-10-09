@@ -58,6 +58,7 @@ export class UnraidUpsCard extends BaseUnraidCard {
 
   protected override render(): TemplateResult {
     const statusState = this.getEntity("ups_status");
+    const connectedState = this.getEntity("ups_connected", "binary_sensor");
     const batteryState = this.getEntity("ups_battery");
     const loadState = this.getEntity("ups_load");
     const runtimeState = this.getEntity("ups_runtime");
@@ -65,9 +66,18 @@ export class UnraidUpsCard extends BaseUnraidCard {
     const voltageOut = this.getEntity("ups_output_voltage");
     const healthState = this.getEntity("ups_battery_health");
 
-    const hasStatus = Boolean(statusState && statusState.state !== "unavailable" && statusState.state !== "unknown");
-    const status = hasStatus && statusState ? statusState.state : (statusState?.state || "Unavailable");
-    const isOnline = hasStatus && status.toLowerCase().includes("online");
+    const isConnected = connectedState?.state === "on";
+    const hasStatus = Boolean(
+      (statusState && statusState.state !== "unavailable" && statusState.state !== "unknown") ||
+      isConnected
+    );
+    const status =
+      statusState && statusState.state !== "unavailable" && statusState.state !== "unknown"
+        ? statusState.state
+        : isConnected
+        ? "Online"
+        : (statusState?.state || "Unavailable");
+    const isOnline = hasStatus && (status.toLowerCase().includes("online") || isConnected);
     const isBattery = hasStatus && (status.toLowerCase().includes("battery") || status.toLowerCase().includes("discharge"));
     const isUnavailable = !hasStatus || status === "Unavailable" || status === "unavailable";
 

@@ -31,11 +31,14 @@ export class UnraidGpuCard extends BaseUnraidCard {
   static override editorTag = GPU_EDITOR_TAG;
 
   private getGpus(): GPUItem[] {
-    const gpuMap = new Map<number, GPUItem>();
+    const gpuMap = new Map<string, GPUItem>();
     if (!this.hass?.states) return [];
 
     const device = this.getActiveDevice();
     const deviceId = device?.id;
+    const cleanName = device?.name
+      ? device.name.toLowerCase().replace(/[^a-z0-9]/g, "_")
+      : undefined;
 
     for (const [entityId, stateObj] of Object.entries(this.hass.states)) {
       if (!entityId.startsWith("sensor.")) continue;
@@ -45,23 +48,53 @@ export class UnraidGpuCard extends BaseUnraidCard {
         if (ent && ent.device_id && ent.device_id !== deviceId) continue;
       }
 
-      const match = entityId.match(/_gpu_(\d+)_(utilization|temperature|power|energy|memory_utilization)$/i);
-      if (!match || !match[1] || !match[2]) continue;
+      if (cleanName && !entityId.includes(cleanName)) continue;
 
-      const index = parseInt(match[1], 10);
+      const match = entityId.match(
+        /_gpu_(?:(.+?)_)?(utilization|temperature|power|energy|memory_utilization|vram_usage)$/i
+      );
+      if (!match || !match[2]) continue;
+
+      const rawKey = match[1] || "0";
+      const gpuKey = rawKey.toLowerCase();
       const metric = match[2].toLowerCase();
 
-      if (!gpuMap.has(index)) {
-        const gpuName = (stateObj.attributes?.gpu_name as string) || `GPU ${index}`;
-        const driver = (stateObj.attributes?.driver_version as string) || undefined;
-        gpuMap.set(index, {
+      if (!gpuMap.has(gpuKey)) {
+        const parsedIndex = parseInt(rawKey, 10);
+        const index = !isNaN(parsedIndex) ? parsedIndex : gpuMap.size;
+        const gpuName =
+          (stateObj.attributes?.gpu_name as string) ||
+          (stateObj.attributes?.friendly_name
+            ?.replace(/^(?:.*?\s+)?(?:GPU\s+)?/i, "")
+            ?.replace(/\s+(?:Utilization|Temperature|Power|Energy|VRAM|Usage).*$/i, "")) ||
+          (rawKey !== "0"
+            ? rawKey.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+            : `GPU ${index}`);
+        const driver =
+          (stateObj.attributes?.gpu_driver_version as string) ||
+          (stateObj.attributes?.driver_version as string) ||
+          undefined;
+
+        gpuMap.set(gpuKey, {
           index,
           name: gpuName,
           driver,
         });
       }
 
-      const item = gpuMap.get(index)!;
+      const item = gpuMap.get(gpuKey)!;
+
+      // Update name and driver from any metric attribute that provides them
+      if (stateObj.attributes?.gpu_name && (!item.name || item.name.startsWith("GPU "))) {
+        item.name = stateObj.attributes.gpu_name as string;
+      }
+      if (
+        (stateObj.attributes?.gpu_driver_version || stateObj.attributes?.driver_version) &&
+        !item.driver
+      ) {
+        item.driver = (stateObj.attributes.gpu_driver_version || stateObj.attributes.driver_version) as string;
+      }
+
       const numVal = parseFloat(stateObj.state);
 
       if (metric === "utilization") {
@@ -76,7 +109,7 @@ export class UnraidGpuCard extends BaseUnraidCard {
       } else if (metric === "energy") {
         item.energy = !isNaN(numVal) ? Number(numVal.toFixed(2)) : undefined;
         item.energyEntityId = entityId;
-      } else if (metric === "memory_utilization") {
+      } else if (metric === "memory_utilization" || metric === "vram_usage") {
         item.memUtilPct = !isNaN(numVal) ? Math.round(numVal) : undefined;
         item.memUtilEntityId = entityId;
       }

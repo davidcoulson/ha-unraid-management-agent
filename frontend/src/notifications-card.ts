@@ -24,8 +24,11 @@ export class UnraidNotificationsCard extends BaseUnraidCard {
     const alertsState = this.getEntity("notifications_unread_alert");
     const warningsState = this.getEntity("notifications_unread_warning");
     const infoState = this.getEntity("notifications_unread_info");
-    const totalState = this.getEntity("notification_count");
-    const eventState = this.getEntity("notification_event", "event");
+    const totalState =
+      this.getEntity("notification_count") || this.getEntity("notifications");
+    const eventState =
+      this.getEntity("notification_event", "event") ||
+      this.getEntity("notification", "event");
 
     const alertCount = Number(alertsState?.state) || 0;
     const warningCount = Number(warningsState?.state) || 0;

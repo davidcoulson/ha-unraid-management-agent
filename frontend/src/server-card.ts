@@ -48,7 +48,11 @@ export class UnraidServerCard extends BaseUnraidCard {
     const ramState = this.getEntity("ram_usage");
     const arrayUsage = this.getEntity("array_usage");
     const arrayState = this.getEntity("array_state");
-    const tempState = this.getEntity("system_temperature") || this.getEntity("temperature_average");
+    const arrayStarted = this.getEntity("array_started", "binary_sensor");
+    const tempState =
+      this.getEntity("system_temperature") ||
+      this.getEntity("temperature_average") ||
+      this.getEntity("cpu_temperature");
     const powerState = this.getEntity("cpu_power");
     const uptimeState = this.getEntity("uptime");
     const alertsState = this.getEntity("notifications_unread_alert");
@@ -58,7 +62,9 @@ export class UnraidServerCard extends BaseUnraidCard {
     const ramPct = Math.round(Number(ramState?.state) || 0);
     const arrayPct = Math.round(Number(arrayUsage?.state) || 0);
 
-    const isArrayStarted = arrayState?.state?.toLowerCase() === "started" || arrayState?.state === "Normal";
+    const isArrayStarted = arrayStarted
+      ? arrayStarted.state === "on"
+      : arrayState?.state?.toLowerCase() === "started" || arrayState?.state === "Normal";
     const alertCount = Number(alertsState?.state) || 0;
 
     const cpuModel = (cpuState?.attributes?.cpu_model as string) || (device?.model ?? "Multi-Core CPU");
@@ -95,9 +101,9 @@ export class UnraidServerCard extends BaseUnraidCard {
     // Boot / Flash device
     const bootDisk = this.getBootDiskEntity();
     const bootAttrs = bootDisk?.attributes;
-    const bootUsed = (bootAttrs?.used || bootAttrs?.fs_used) as string | undefined;
-    const bootTotal = (bootAttrs?.total || bootAttrs?.fs_size) as string | undefined;
-    const bootDevice = bootAttrs?.device as string | undefined;
+    const bootUsed = (bootAttrs?.used || bootAttrs?.used_size || bootAttrs?.fs_used) as string | undefined;
+    const bootTotal = (bootAttrs?.total || bootAttrs?.total_size || bootAttrs?.fs_size) as string | undefined;
+    const bootDevice = (bootAttrs?.device || bootAttrs?.vendor) as string | undefined;
     const bootText = bootUsed && bootTotal
       ? `Flash (${bootUsed} / ${bootTotal})`
       : bootDevice

@@ -74,7 +74,7 @@ export class UnraidStorageCard extends BaseUnraidCard {
 
   private getDisks(): DiskItem[] {
     const usageEntities = this.getEntities("disk_usage");
-    const healthEntities = this.getEntities("disk_health", "binary_sensor");
+    const healthEntities = this.getEntities("disk_health");
     const tempEntities = this.getEntities("disk_temperature");
     const errorEntities = this.getEntities("disk_error_count");
     const spinEntities = this.getEntities("disk_spin", "switch");

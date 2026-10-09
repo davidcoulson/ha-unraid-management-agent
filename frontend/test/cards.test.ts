@@ -978,6 +978,62 @@ describe("Unraid Custom Cards", () => {
     document.body.removeChild(card);
   });
 
+  it("renders UnraidGpuCard with named GPU slug entities like Intel UHD Graphics", async () => {
+    const card = new UnraidGpuCard();
+    card.setConfig({ type: "custom:unraid-gpu-card" });
+    const hass = createMockHass();
+    // Add named GPU slug entities
+    hass.states["sensor.cube_gpu_intel_uhd_graphics_630_utilization"] = {
+      entity_id: "sensor.cube_gpu_intel_uhd_graphics_630_utilization",
+      state: "15.0",
+      attributes: {
+        friendly_name: "Cube GPU Intel UHD Graphics 630 Utilization",
+        gpu_name: "Intel UHD Graphics 630",
+        gpu_driver_version: "6.18.38-Unraid",
+      },
+      last_changed: "",
+      last_updated: "",
+    };
+    hass.states["sensor.cube_gpu_intel_uhd_graphics_630_temperature"] = {
+      entity_id: "sensor.cube_gpu_intel_uhd_graphics_630_temperature",
+      state: "42.0",
+      attributes: {
+        friendly_name: "Cube GPU Intel UHD Graphics 630 Temperature",
+      },
+      last_changed: "",
+      last_updated: "",
+    };
+    hass.states["sensor.cube_gpu_intel_uhd_graphics_630_power"] = {
+      entity_id: "sensor.cube_gpu_intel_uhd_graphics_630_power",
+      state: "8.5",
+      attributes: {
+        friendly_name: "Cube GPU Intel UHD Graphics 630 Power",
+      },
+      last_changed: "",
+      last_updated: "",
+    };
+    hass.states["sensor.cube_gpu_intel_uhd_graphics_630_energy"] = {
+      entity_id: "sensor.cube_gpu_intel_uhd_graphics_630_energy",
+      state: "1.25",
+      attributes: {
+        friendly_name: "Cube GPU Intel UHD Graphics 630 Energy",
+      },
+      last_changed: "",
+      last_updated: "",
+    };
+    card.hass = hass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("Intel UHD Graphics 630");
+    expect(card.shadowRoot?.innerHTML).toContain("15%");
+    expect(card.shadowRoot?.innerHTML).toContain("42°C");
+    expect(card.shadowRoot?.innerHTML).toContain("9W");
+    expect(card.shadowRoot?.innerHTML).toContain("1.25 kWh");
+    expect(card.shadowRoot?.innerHTML).toContain("6.18.38-Unraid");
+    document.body.removeChild(card);
+  });
+
   it("renders UnraidNotificationsCard with unread counts", async () => {
     const card = new UnraidNotificationsCard();
     card.setConfig({ type: "custom:unraid-notifications-card" });

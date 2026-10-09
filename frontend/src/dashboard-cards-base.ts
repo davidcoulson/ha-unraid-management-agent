@@ -179,6 +179,25 @@ export abstract class BaseUnraidCard extends LitElement {
 
     for (const [entityId, stateObj] of Object.entries(this.hass.states)) {
       if (cleanName && !entityId.includes(cleanName)) continue;
+
+      if (entityId.startsWith("binary_sensor.") && entityId.includes("_network_")) {
+        if (entityId.includes("_network_service_")) continue;
+        const linkMatch = entityId.match(
+          /_network_(?:([a-zA-Z0-9_-]+)_link|([a-zA-Z0-9_-]+))$/i
+        );
+        const ifaceName = linkMatch ? linkMatch[1] || linkMatch[2] : null;
+        if (ifaceName) {
+          if (!ifaceMap.has(ifaceName)) {
+            ifaceMap.set(ifaceName, {
+              name: ifaceName,
+              displayName: ifaceName.toUpperCase(),
+            });
+          }
+          ifaceMap.get(ifaceName)!.link = stateObj;
+          continue;
+        }
+      }
+
       const match = entityId.match(
         /_network_([a-zA-Z0-9_-]+)_(inbound(?:_throughput)?|outbound(?:_throughput)?|rx(?:_throughput)?|tx(?:_throughput)?|speed|ip|ip_address|link)$/i
       );
@@ -220,7 +239,9 @@ export abstract class BaseUnraidCard extends LitElement {
       if (cleanName && !s.entity_id.includes(cleanName)) return false;
       return (
         (s.entity_id.includes("_disk_flash_") ||
-          s.entity_id.includes("_disk_boot_")) &&
+          s.entity_id.includes("_disk_boot_") ||
+          s.entity_id.endsWith("_flash_usage") ||
+          s.entity_id.endsWith("_boot_usage")) &&
         s.entity_id.endsWith("_usage")
       );
     });
@@ -240,9 +261,27 @@ export abstract class BaseUnraidCard extends LitElement {
     if (this.hass.entities && deviceId) {
       const matches: HassEntity[] = [];
       for (const ent of Object.values(this.hass.entities)) {
+        const keyMatch =
+          ent.translation_key === translationKey ||
+          (translationKey === "docker_container" &&
+            (ent.translation_key === "container" ||
+              ent.translation_key === "container_device_running")) ||
+          (translationKey === "docker_container_autostart" &&
+            (ent.translation_key === "container_autostart" ||
+              ent.translation_key === "container_device_autostart")) ||
+          (translationKey === "docker_container_restart" &&
+            (ent.translation_key === "container_restart" ||
+              ent.translation_key === "container_device_restart")) ||
+          (translationKey === "virtual_machine" &&
+            (ent.translation_key === "vm" || ent.translation_key === "vm_power")) ||
+          (translationKey === "virtual_machine_status" &&
+            ent.translation_key === "vm_status") ||
+          (translationKey === "vm_reboot" &&
+            (ent.translation_key === "vm_restart" || ent.translation_key === "vm_reboot"));
+
         if (
           ent.device_id === deviceId &&
-          ent.translation_key === translationKey &&
+          keyMatch &&
           (!domain || ent.entity_id.startsWith(`${domain}.`))
         ) {
           const stateObj = this.hass.states[ent.entity_id];
@@ -266,6 +305,71 @@ export abstract class BaseUnraidCard extends LitElement {
           reg.platform !== "unraid"
         )
           return false;
+      }
+      if (
+        translationKey === "docker_container" ||
+        translationKey === "container"
+      ) {
+        return (
+          s.entity_id.startsWith("switch.") &&
+          (s.entity_id.includes("_container_") ||
+            s.entity_id.includes("_docker_")) &&
+          !s.entity_id.includes("_autostart")
+        );
+      }
+      if (
+        translationKey === "docker_container_autostart" ||
+        translationKey === "container_autostart"
+      ) {
+        return (
+          s.entity_id.startsWith("switch.") &&
+          (s.entity_id.includes("_container_") ||
+            s.entity_id.includes("_docker_")) &&
+          s.entity_id.includes("_autostart")
+        );
+      }
+      if (
+        translationKey === "docker_container_restart" ||
+        translationKey === "container_restart"
+      ) {
+        return (
+          s.entity_id.startsWith("button.") &&
+          (s.entity_id.includes("_container_") ||
+            s.entity_id.includes("_docker_")) &&
+          (s.entity_id.includes("_restart") || s.entity_id.includes("_reboot"))
+        );
+      }
+      if (
+        translationKey === "virtual_machine" ||
+        translationKey === "vm"
+      ) {
+        return (
+          s.entity_id.startsWith("switch.") &&
+          (s.entity_id.includes("_vm_") ||
+            s.entity_id.includes("_virtual_machine_"))
+        );
+      }
+      if (
+        translationKey === "virtual_machine_status" ||
+        translationKey === "vm_status"
+      ) {
+        return (
+          s.entity_id.startsWith("sensor.") &&
+          (s.entity_id.includes("_vm_") ||
+            s.entity_id.includes("_virtual_machine_")) &&
+          s.entity_id.endsWith("_status")
+        );
+      }
+      if (
+        translationKey === "vm_reboot" ||
+        translationKey === "vm_restart"
+      ) {
+        return (
+          s.entity_id.startsWith("button.") &&
+          (s.entity_id.includes("_vm_") ||
+            s.entity_id.includes("_virtual_machine_")) &&
+          (s.entity_id.includes("_restart") || s.entity_id.includes("_reboot"))
+        );
       }
       if (translationKey === "disk_usage") {
         return (

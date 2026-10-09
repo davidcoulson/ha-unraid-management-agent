@@ -91,6 +91,51 @@ export class UnraidFansCard extends BaseUnraidCard {
       });
     }
 
+    // Fallback: If no sensor.* RPM entities exist, check for number.* fan controls (e.g. UMA fan speed controls)
+    if (list.length === 0) {
+      for (const [entityId, stateObj] of Object.entries(this.hass.states)) {
+        if (!entityId.startsWith("number.")) continue;
+        if (deviceId && this.hass.entities) {
+          const ent = this.hass.entities[entityId];
+          if (ent && ent.device_id && ent.device_id !== deviceId) continue;
+        }
+        if (!entityId.includes("_fan_")) continue;
+
+        const fanId = stateObj.attributes?.fan_id as string | number | undefined;
+        const attrRpm = stateObj.attributes?.rpm != null ? Number(stateObj.attributes.rpm) : NaN;
+        const speedVal = parseFloat(stateObj.state);
+        const rpmNum = !isNaN(attrRpm) ? attrRpm : 0;
+        const rpmText = !isNaN(attrRpm)
+          ? `${attrRpm} RPM`
+          : !isNaN(speedVal)
+          ? `${Math.round(speedVal)}%`
+          : stateObj.state;
+
+        const originalName =
+          (stateObj.attributes?.original_name as string) ||
+          (stateObj.attributes?.friendly_name as string) ||
+          entityId.split(".")[1] ||
+          "Fan";
+
+        const cleanName = originalName
+          .replace(/^(?:.*?\s+)?Fan\s+/i, "Fan ")
+          .replace(/\s+RPM$/i, "")
+          .replace(/\s+Speed$/i, "")
+          .trim();
+
+        list.push({
+          id: entityId,
+          name: cleanName,
+          rpm: rpmNum,
+          rpmText,
+          isFailed: false,
+          fanId,
+          controlEntityId: entityId,
+          rpmEntityId: entityId,
+        });
+      }
+    }
+
     return list.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
   }
 

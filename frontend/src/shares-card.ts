@@ -78,9 +78,18 @@ export class UnraidSharesCard extends BaseUnraidCard {
         name: cleanName,
         entityId: u.entity_id,
         usagePct: Math.min(100, Math.max(0, Math.round(Number(u.state) || 0))),
-        used: (u.attributes.used as string) || "",
-        total: (u.attributes.total as string) || "",
-        free: (u.attributes.free as string) || "",
+        used:
+          (u.attributes.used_size as string) ||
+          (u.attributes.used as string) ||
+          "",
+        total:
+          (u.attributes.total_size as string) ||
+          (u.attributes.total as string) ||
+          "",
+        free:
+          (u.attributes.free_size as string) ||
+          (u.attributes.free as string) ||
+          "",
         isProtected,
         color,
         allocator: u.attributes.allocator as string | undefined,
