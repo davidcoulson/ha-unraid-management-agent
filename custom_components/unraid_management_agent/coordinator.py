@@ -81,6 +81,11 @@ _FAILED_UPDATE_WARN_THRESHOLD = 3
 # so rapid connect/disconnect cycles don't hammer the API.
 _RECONNECT_REFRESH_DEBOUNCE = timedelta(seconds=10)
 
+# Parity history only changes when a parity check or sync finishes, and the
+# agent re-reads parity-checks.log from the boot device on every request, so
+# it is fetched on this slower cadence instead of on every poll.
+_PARITY_HISTORY_INTERVAL = timedelta(minutes=15)
+
 
 @dataclass
 class UnraidData:
@@ -196,6 +201,7 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
         self._pending_system_action_disconnected = False
         self._previous_uptime_seconds: int | None = None
         self._last_reboot_detected_at: datetime | None = None
+        self._parity_history_fetched_at: datetime | None = None
 
         super().__init__(
             hass,
@@ -407,6 +413,26 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                 _LOGGER.debug("Error fetching %s: %s", label, err)
             return None
 
+    async def _fetch_parity_history(self) -> ParityHistory | None:
+        """
+        Return parity history, fetching it at most once per interval.
+
+        Between fetches the previous value is reused. A failed fetch also
+        keeps the previous value and is retried on the next poll.
+        """
+        previous = self.data.parity_history if self.data else None
+        now = dt_util.utcnow()
+        if (
+            self._parity_history_fetched_at is not None
+            and now - self._parity_history_fetched_at < _PARITY_HISTORY_INTERVAL
+        ):
+            return previous
+        history = await self._fetch("parity history", self.client.get_parity_history)
+        if history is None:
+            return previous
+        self._parity_history_fetched_at = now
+        return history
+
     async def _async_update_data(self) -> UnraidData:
         """
         Fetch data from API endpoint.
@@ -417,6 +443,10 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
         Note: Collector enable/disable is configured on the Unraid Management Agent
         plugin side. The integration fetches all available data and the API will
         return empty results for disabled collectors.
+
+        ZFS datasets and snapshots are not polled because no entity uses them
+        (the snapshot list can be large), and parity history is fetched on a
+        slower cadence (see _fetch_parity_history).
         """
         try:
             # Fetch all data concurrently - each method returns typed Pydantic models
@@ -437,8 +467,6 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                 ),
                 self._fetch("user scripts", self.client.list_user_scripts),
                 self._fetch("ZFS pools", self.client.list_zfs_pools),
-                self._fetch("ZFS datasets", self.client.list_zfs_datasets),
-                self._fetch("ZFS snapshots", self.client.list_zfs_snapshots),
                 self._fetch(
                     "ZFS ARC stats", self.client.get_zfs_arc_stats, suppress_404=True
                 ),
@@ -449,7 +477,7 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                 self._fetch("disk settings", self.client.get_disk_settings),
                 self._fetch("mover settings", self.client.get_mover_settings),
                 self._fetch("parity schedule", self.client.get_parity_schedule),
-                self._fetch("parity history", self.client.get_parity_history),
+                self._fetch_parity_history(),
                 self._fetch("flash info", self.client.get_flash_info),
                 self._fetch("plugins", self.client.list_plugins),
                 self._fetch("update status", self.client.get_update_status),
@@ -507,29 +535,27 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
             notification_overview: NotificationOverview | None = results[10]
             user_scripts: list[UserScript] | None = results[11]
             zfs_pools: list[ZFSPool] | None = results[12]
-            zfs_datasets: list[ZFSDataset] | None = results[13]
-            zfs_snapshots: list[ZFSSnapshot] | None = results[14]
-            zfs_arc: ZFSArcStats | None = results[15]
-            collectors: CollectorStatus | None = results[16]
-            fan_control: FanControlStatus | None = results[17]
-            disk_settings: DiskSettings | None = results[18]
-            mover_settings: MoverSettings | None = results[19]
-            parity_schedule: ParitySchedule | None = results[20]
-            parity_history: ParityHistory | None = results[21]
-            flash_info: FlashDriveInfo | None = results[22]
-            plugins: PluginList | None = results[23]
-            update_status: UpdateStatus | None = results[24]
-            docker_settings: DockerSettings | None = results[25]
-            vm_settings: VMSettings | None = results[26]
-            registration: RegistrationInfo | None = results[27]
-            network_services: NetworkServicesStatus | None = results[28]
-            unassigned_info: UnassignedInfo | None = results[29]
-            diagnostics_self_test: DiagnosticsSelfTestResponse | None = results[30]
-            docker_port_conflicts: list[DockerPortConflict] | None = results[31]
-            system_service_list: SystemServiceList | None = results[32]
-            alert_rules: list[AlertRule] | None = results[33]
-            alerts_status: AlertsStatusResponse | None = results[34]
-            storage_topology: StorageTopology | None = results[35]
+            zfs_arc: ZFSArcStats | None = results[13]
+            collectors: CollectorStatus | None = results[14]
+            fan_control: FanControlStatus | None = results[15]
+            disk_settings: DiskSettings | None = results[16]
+            mover_settings: MoverSettings | None = results[17]
+            parity_schedule: ParitySchedule | None = results[18]
+            parity_history: ParityHistory | None = results[19]
+            flash_info: FlashDriveInfo | None = results[20]
+            plugins: PluginList | None = results[21]
+            update_status: UpdateStatus | None = results[22]
+            docker_settings: DockerSettings | None = results[23]
+            vm_settings: VMSettings | None = results[24]
+            registration: RegistrationInfo | None = results[25]
+            network_services: NetworkServicesStatus | None = results[26]
+            unassigned_info: UnassignedInfo | None = results[27]
+            diagnostics_self_test: DiagnosticsSelfTestResponse | None = results[28]
+            docker_port_conflicts: list[DockerPortConflict] | None = results[29]
+            system_service_list: SystemServiceList | None = results[30]
+            alert_rules: list[AlertRule] | None = results[31]
+            alerts_status: AlertsStatusResponse | None = results[32]
+            storage_topology: StorageTopology | None = results[33]
 
             # If the core endpoints are all unreachable, treat the whole update
             # as failed instead of returning an empty snapshot. This flips
@@ -624,8 +650,9 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                 notifications=notifications,
                 user_scripts=user_scripts,
                 zfs_pools=zfs_pools,
-                zfs_datasets=zfs_datasets,
-                zfs_snapshots=zfs_snapshots,
+                # Not polled (no entity uses them); keep values from WebSocket
+                zfs_datasets=self.data.zfs_datasets if self.data else None,
+                zfs_snapshots=self.data.zfs_snapshots if self.data else None,
                 zfs_arc=zfs_arc,
                 collectors=collectors,
                 fan_control=fan_control,
