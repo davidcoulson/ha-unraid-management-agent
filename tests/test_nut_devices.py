@@ -29,6 +29,7 @@ from custom_components.unraid_management_agent.diagnostics import (
     async_get_config_entry_diagnostics,
 )
 from custom_components.unraid_management_agent.nut import (
+    find_nut_status,
     secondary_nut_device_names,
     secondary_nut_statuses,
 )
@@ -428,6 +429,14 @@ def test_cleanup_keeps_listed_devices() -> None:
     assert "nut_" in _unavailable_data_prefixes(UnraidData())
     assert secondary_nut_device_names(UnraidData()) == set()
     assert secondary_nut_statuses(None) == []
+    assert find_nut_status(None, "ups") is None
+    assert find_nut_status(UnraidData(), "ups") is None
+    # An older agent's device list without /ups data: no device is known to be
+    # covered, so every listed device keeps valid keys.
+    listed_only = UnraidData(
+        nut=NUTInfo.model_validate({"devices": [{"name": "ups"}, {"name": "ats"}]})
+    )
+    assert secondary_nut_device_names(listed_only) == {"ups", "ats"}
 
 
 def test_nut_websocket_payload_is_classified() -> None:
