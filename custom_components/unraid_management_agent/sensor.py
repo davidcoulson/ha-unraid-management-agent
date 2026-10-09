@@ -1790,28 +1790,43 @@ class UnraidHwmonTemperatureSensor(UnraidBaseEntity, SensorEntity):
     def __init__(
         self,
         coordinator: UnraidDataUpdateCoordinator,
-        reading_name: str,
+        hwmon_key: str,
         key: str,
         display_name: str,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, f"temperature_{key}")
-        self._reading_name = reading_name
+        self._hwmon_key = hwmon_key
         self._attr_translation_placeholders = {"name": display_name}
-        self._attr_extra_state_attributes = {"sensor": reading_name}
+
+    def _current_reading(self) -> TemperatureInfo | None:
+        """Return this channel's reading from the latest data, if present."""
+        data = self.coordinator.data
+        system = data.system if data else None
+        for reading in getattr(system, "temperatures", None) or []:
+            if (
+                isinstance(reading, TemperatureInfo)
+                and reading.hwmon_key == self._hwmon_key
+            ):
+                return reading
+        return None
+
+    @property
+    def available(self) -> bool:
+        """Return False when the channel is missing from the current data."""
+        return super().available and self._current_reading() is not None
 
     @property
     def native_value(self) -> float | None:
         """Return the temperature."""
-        data = self.coordinator.data
-        system = data.system if data else None
-        for reading in (getattr(system, "temperatures", None) or []) if system else []:
-            if (
-                isinstance(reading, TemperatureInfo)
-                and reading.name == self._reading_name
-            ):
-                return reading.value_celsius
-        return None
+        reading = self._current_reading()
+        return reading.value_celsius if reading else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return the raw lm-sensors name of the reading."""
+        reading = self._current_reading()
+        return {"sensor": reading.name} if reading else None
 
 
 class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
@@ -3907,7 +3922,7 @@ async def async_setup_entry(
                 seen_temperatures.add(key)
                 new_entities.append(
                     UnraidHwmonTemperatureSensor(
-                        coordinator, reading.name or "", key, display_name
+                        coordinator, reading.hwmon_key or "", key, display_name
                     )
                 )
         if new_entities:
