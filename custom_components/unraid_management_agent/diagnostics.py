@@ -7,6 +7,7 @@ from typing import Any
 from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.const import CONF_API_TOKEN, CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
+from pydantic import BaseModel
 
 from . import UnraidConfigEntry
 
@@ -37,8 +38,8 @@ def _serialize_data(data: Any) -> Any:
     if data is None:
         return None
 
-    # Check if it's a Pydantic model (has model_dump method)
-    if hasattr(data, "model_dump"):
+    # Check if it's a Pydantic model
+    if isinstance(data, BaseModel):
         return data.model_dump()
 
     # Check if it's a dataclass with our UnraidData

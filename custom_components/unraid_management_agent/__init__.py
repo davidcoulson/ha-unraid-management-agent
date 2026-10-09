@@ -21,6 +21,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import slugify
 
 from .api import (
@@ -307,7 +308,7 @@ def _async_remove_control_entities(
             registry.async_remove(entity.entity_id)
 
 
-async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up Unraid Management Agent integration."""
     # Register services once at integration level (not per entry)
     await async_setup_services(hass)
@@ -616,7 +617,7 @@ async def async_setup_services(hass: HomeAssistant) -> None:
 
         async def _api_call() -> Any:
             return await coordinator.client.set_container_autostart(
-                container_id, enabled
+                container_id, enabled=enabled
             )
 
         await _async_service_call(
