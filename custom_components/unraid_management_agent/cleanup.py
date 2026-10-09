@@ -59,6 +59,7 @@ _DYNAMIC_KEY_PREFIXES: tuple[str, ...] = (
     "network_service_",
     "network_",  # per-interface binary sensors + rx/tx sensors
     "share_",
+    "system_service_",  # per-service running binary sensors from /services
     "zfs_",  # covers dynamic pool sensors; static zfs_available/zfs_arc_* added to valid set
     "remote_share_",
     "unassigned_device_",
@@ -266,6 +267,11 @@ def _build_valid_dynamic_entity_keys(
             if getattr(data.network_services, service_key, None) is not None:
                 keys.add(f"network_service_{slugify(service_key)}")  # binary sensor
 
+    # ── System services (/services) ───────────────────────────────────────────
+    for service in data.system_services or []:
+        if service.name:
+            keys.add(f"system_service_{slugify(service.name)}")  # binary sensor
+
     # ── User shares ───────────────────────────────────────────────────────────
     for share in data.shares or []:
         name = getattr(share, "name", None)
@@ -373,6 +379,8 @@ def _unavailable_data_prefixes(data: UnraidData) -> set[str]:
         prefixes.add("network_service_")
     if data.shares is None:
         prefixes.add("share_")
+    if data.system_services is None:
+        prefixes.add("system_service_")
     if data.zfs_pools is None:
         prefixes.add("zfs_")
     if data.remote_shares is None:

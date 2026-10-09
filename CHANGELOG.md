@@ -61,6 +61,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   current and power readings that older agents list as temperatures are skipped.
 - **API token authentication** ([#143](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/143), contributed by @davidcoulson): An optional API token in the setup, Zeroconf and reconfigure forms is sent as a bearer token on REST requests and the websocket handshake, for agents with `API_TOKEN` set (v2026.08.02+). A rejected token shows "Invalid authentication", and a token rejected later starts Home Assistant's standard re-authentication flow. The token is redacted from diagnostics.
 - **Docker containers as separate devices (optional)** ([#142](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/142), closes [#147](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/147)): A new **Show Docker containers as separate devices** option (off by default) groups each container's run and autostart switches, restart button and metric sensors on a child device of the Unraid server, with short names (Running, Autostart, Restart, CPU, Memory, Memory usage, Restart count, Network RX/TX). Unique IDs are unchanged, so history is kept. When off, container entities stay on the server device exactly as before. Container devices left without entities are removed, and a device whose container is gone can be deleted from the UI. Requires Home Assistant 2026.9 or newer.
+- **System service running sensors** ([#166](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/166), contributed by @davidcoulson):
+  One "<name> Service" binary sensor (device class running, diagnostic,
+  disabled by default) per service in the agent's `/services` list that the
+  network service sensors do not already cover: today Docker, Libvirt and
+  Nginx. Docker and Libvirt carry an `enabled` attribute from Unraid's Docker
+  and VM Manager settings. Services the agent adds later get a sensor without a
+  reload, removed ones are cleaned up like other dynamic entities, and agents
+  without the endpoint (before v2026.02.02) simply get none. Read-only: no
+  start/stop controls.
 - **GPU VRAM sensors** ([#169](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/169), contributed by @davidcoulson):
   Each GPU that reports video memory gets **VRAM Used** (shown in MiB),
   **VRAM Total** (diagnostic, shown in GiB) and **VRAM Usage** (used / total, %)
