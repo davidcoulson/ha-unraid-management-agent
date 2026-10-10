@@ -4634,7 +4634,7 @@ async def async_setup_entry(
 
     def _add_fan_sensors() -> None:
         current_data = coordinator.data
-        if not fan_control_enabled or not current_data or not current_data.system:
+        if not current_data or not current_data.system:
             return
         async_prune_seen_names(
             hass, "sensor", seen_fans, lambda key: f"{entry.entry_id}_fan_{key}"
@@ -4645,13 +4645,16 @@ async def async_setup_entry(
         for key, fan_name, display, fan in fan_sensor_keys(fans):
             if key in seen_fans:
                 continue
-            seen_fans.add(key)
+            # Adopt even with fan sensors off, so stale cleanup keeps the entry
             adopted = async_adopt_unique_id(
                 hass,
                 "sensor",
                 f"{prefix}{key}",
                 fan_legacy_unique_ids(entry.entry_id, fan, fans),
             )
+            if not fan_control_enabled:
+                continue
+            seen_fans.add(key)
             if adopted and adopted.removeprefix(prefix) in seen_fans:
                 # A loaded sensor moved to this key; reload so it reads by it
                 hass.config_entries.async_schedule_reload(entry.entry_id)

@@ -114,12 +114,12 @@ def test_fan_legacy_ids_only_for_a_single_controller() -> None:
     assert fan_legacy_unique_ids(ENTRY_ID, {"name": "x"}, []) == []
 
 
-def _entry(hass: HomeAssistant) -> MockConfigEntry:
+def _entry(hass: HomeAssistant, *, fans: bool = True) -> MockConfigEntry:
     entry = MockConfigEntry(
         domain=DOMAIN,
         title="Unraid (unraid-test)",
         data=MOCK_CONFIG,
-        options={**MOCK_OPTIONS, CONF_ENABLE_FAN_CONTROL: True},
+        options={**MOCK_OPTIONS, CONF_ENABLE_FAN_CONTROL: fans},
         entry_id=ENTRY_ID,
     )
     entry.add_to_hass(hass)
@@ -439,3 +439,27 @@ async def test_two_controllers_fans_with_fan_control(
     state = hass.states.get(first)
     assert state is not None
     assert "fan_id" not in state.attributes
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_fan_adopted_with_fan_sensors_off(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """With the fan option off, a saved fan entity still moves to its new ID."""
+    system = mock_async_unraid_client.get_system_info.return_value
+    system.temperatures = []
+    system.fans = [FAN_A]
+    entry = _entry(hass, fans=False)
+    _register(entity_registry, entry, f"{FAN}octo_fan8", "sensor.flow")
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    flow = entity_registry.async_get("sensor.flow")
+    assert flow is not None
+    assert flow.unique_id == f"{FAN}octo_07274_50017_fan8"
+    assert hass.states.get("sensor.flow") is None
+    assert f"fan_{FAN_A.device_key}" in _build_valid_dynamic_entity_keys(
+        UnraidData(system=_system([], [FAN_A]))
+    )
