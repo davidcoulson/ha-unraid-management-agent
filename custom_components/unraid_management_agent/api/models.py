@@ -170,13 +170,38 @@ class TemperatureInfo(BaseModel):
         return label.strip("_").replace("_", " ") or feature
 
     @property
+    def hwmon_chip(self) -> str | None:
+        """
+        Return the chip name without an address that changes on reconnect.
+
+        lm-sensors names USB HID chips '<driver>-hid-<bus>-<device id>', and the
+        device id changes every time the device re-enumerates on USB (an Octo
+        that resets comes back as 'octo-hid-3-13' instead of 'octo-hid-3-3').
+        Those chips are named by driver and bus type only ('octo-hid'); other
+        chips keep their full name, whose address is stable (PCI, ISA, ACPI).
+
+        Example:
+            >>> TemperatureInfo(name="x", source="octo-hid-3-13").hwmon_chip
+            'octo-hid'
+            >>> TemperatureInfo(name="x", source="nvme-pci-2800").hwmon_chip
+            'nvme-pci-2800'
+
+        """
+        if not self.source:
+            return None
+        match = _HWMON_HID_CHIP_RE.match(self.source)
+        return match.group(1) if match else self.source
+
+    @property
     def hwmon_key(self) -> str | None:
         """
         Return a stable identity for this temperature channel, or None.
 
-        The full chip name including its bus address plus the channel
-        ('octo-hid-3-3_temp1'), so it never depends on which other chips are
-        present. Readings without a source fall back to their full name.
+        The chip name (hwmon_chip, without a USB HID device's changing
+        address) plus the channel ('octo-hid_temp1', 'nvme-pci-2800_temp1'), so
+        it never depends on which other chips are present or on a USB
+        reconnect. Readings without a source fall back to their full name.
+        hwmon_temperature_keys() resolves two identical HID chips.
 
         Example:
             >>> TemperatureInfo(
@@ -189,10 +214,47 @@ class TemperatureInfo(BaseModel):
         if feature is None or self.name is None:
             return None
         if self.source:
+            return f"{self.hwmon_chip}_{feature}"
+        return self.name.removesuffix("_input")
+
+    @property
+    def hwmon_address_key(self) -> str | None:
+        """Return the channel's identity including the chip's full address."""
+        feature = self.hwmon_feature
+        if feature is None or self.name is None:
+            return None
+        if self.source:
             return f"{self.source}_{feature}"
         return self.name.removesuffix("_input")
 
 
+def hwmon_temperature_keys(readings: Any) -> dict[str, TemperatureInfo]:
+    """
+    Map each hwmon temperature channel's key to its reading.
+
+    Keys are TemperatureInfo.hwmon_key, except when several chips share one
+    (two identical USB HID devices): those keep their full address
+    (hwmon_address_key), since nothing else tells them apart. Non-temperature
+    readings are skipped, and a channel listed twice keeps its first reading.
+    """
+    temps = [
+        reading
+        for reading in readings or []
+        if isinstance(reading, TemperatureInfo) and reading.hwmon_key
+    ]
+    sources: dict[str, set[str | None]] = {}
+    for reading in temps:
+        sources.setdefault(reading.hwmon_key or "", set()).add(reading.source)
+    keyed: dict[str, TemperatureInfo] = {}
+    for reading in temps:
+        key = reading.hwmon_key or ""
+        if len(sources[key]) > 1:
+            key = reading.hwmon_address_key or key
+        keyed.setdefault(key, reading)
+    return keyed
+
+
+_HWMON_HID_CHIP_RE = re.compile(r"^(.+-hid)-\d+-[0-9a-f]+$")
 _HWMON_TEMP_RE = re.compile(r"(?:^|_)(temp\d+)_input$")
 
 

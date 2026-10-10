@@ -43,7 +43,7 @@ from . import UnraidConfigEntry, UnraidDataUpdateCoordinator
 from .alerts import ALERT_STATE_FIRING
 from .api import EnergyIntegrator, RateCalculator, parse_timestamp
 from .api.formatting import format_bytes, format_duration
-from .api.models import TemperatureInfo
+from .api.models import TemperatureInfo, hwmon_temperature_keys
 from .cleanup import async_prune_seen_names
 from .const import (
     ATTR_ARRAY_STATE,
@@ -1776,39 +1776,41 @@ class UnraidSystemStatusSensor(UnraidBaseEntity, SensorEntity):
 # =============================================================================
 
 
+def _hwmon_readings_by_key(system: Any) -> dict[str, TemperatureInfo]:
+    """Map each hwmon temperature channel's entity key to its reading."""
+    keyed: dict[str, TemperatureInfo] = {}
+    for key, reading in hwmon_temperature_keys(
+        getattr(system, "temperatures", None)
+    ).items():
+        keyed.setdefault(ha_slugify(key), reading)
+    return keyed
+
+
 def _hwmon_temperature_channels(
     system: Any,
 ) -> list[tuple[str, TemperatureInfo, str]]:
     """
     Return (key, reading, display name) for each hwmon temperature channel.
 
-    The key comes from the full chip name and channel
-    (TemperatureInfo.hwmon_key), so it stays the same whichever other chips
-    are present. The display name uses the short chip name ('octo') unless
-    several chips share it (several 'nvme' drives); it only sets the initial
-    entity ID, so it may differ between setups without affecting identity.
+    The key comes from the chip name and channel (hwmon_temperature_keys), so
+    it stays the same whichever other chips are present and when a USB device
+    reconnects with a new address. The display name uses the short chip name
+    ('octo') unless several chips share it (several 'nvme' drives); it only
+    sets the initial entity ID, so it may differ between setups without
+    affecting identity.
     """
-    readings = [
-        reading
-        for reading in (getattr(system, "temperatures", None) or [])
-        if isinstance(reading, TemperatureInfo) and reading.hwmon_key
-    ]
+    keyed = _hwmon_readings_by_key(system)
 
     def short_chip(reading: TemperatureInfo) -> str:
         return (reading.source or "").split("-")[0]
 
     counts: dict[tuple[str, str | None], int] = {}
-    for reading in readings:
+    for reading in keyed.values():
         ident = (short_chip(reading), reading.hwmon_feature)
         counts[ident] = counts.get(ident, 0) + 1
 
     channels: list[tuple[str, TemperatureInfo, str]] = []
-    seen: set[str] = set()
-    for reading in sorted(readings, key=lambda r: r.name or ""):
-        key = ha_slugify(reading.hwmon_key or "")
-        if key in seen:
-            continue
-        seen.add(key)
+    for key, reading in sorted(keyed.items(), key=lambda kv: kv[1].name or ""):
         chip = reading.source or ""
         if counts[(short_chip(reading), reading.hwmon_feature)] == 1:
             chip = short_chip(reading)
@@ -1829,26 +1831,19 @@ class UnraidHwmonTemperatureSensor(UnraidBaseEntity, SensorEntity):
     def __init__(
         self,
         coordinator: UnraidDataUpdateCoordinator,
-        hwmon_key: str,
         key: str,
         display_name: str,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, f"temperature_{key}")
-        self._hwmon_key = hwmon_key
+        self._key = key
         self._attr_translation_placeholders = {"name": display_name}
 
     def _current_reading(self) -> TemperatureInfo | None:
         """Return this channel's reading from the latest data, if present."""
         data = self.coordinator.data
         system = data.system if data else None
-        for reading in getattr(system, "temperatures", None) or []:
-            if (
-                isinstance(reading, TemperatureInfo)
-                and reading.hwmon_key == self._hwmon_key
-            ):
-                return reading
-        return None
+        return _hwmon_readings_by_key(system).get(self._key)
 
     @property
     def available(self) -> bool:
@@ -4641,15 +4636,13 @@ async def async_setup_entry(
             lambda key: f"{entry.entry_id}_temperature_{key}",
         )
         new_entities: list[SensorEntity] = []
-        for key, reading, display_name in _hwmon_temperature_channels(
+        for key, _reading, display_name in _hwmon_temperature_channels(
             current_data.system
         ):
             if key not in seen_temperatures:
                 seen_temperatures.add(key)
                 new_entities.append(
-                    UnraidHwmonTemperatureSensor(
-                        coordinator, reading.hwmon_key or "", key, display_name
-                    )
+                    UnraidHwmonTemperatureSensor(coordinator, key, display_name)
                 )
         if new_entities:
             async_add_entities(new_entities)

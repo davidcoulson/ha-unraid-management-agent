@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import re
 from collections.abc import Callable, Coroutine
 from typing import Any, Final
 
@@ -30,6 +31,7 @@ from .api import (
     UnraidConnectionError,
     UnraidWebSocketClient,
 )
+from .api.models import hwmon_temperature_keys
 from .cleanup import async_cleanup_stale_entities
 from .const import (
     CONF_ENABLE_WEBSOCKET,
@@ -244,6 +246,44 @@ async def _async_migrate_legacy_entity_unique_ids(
                 f"{entry.entry_id}_fan_{legacy_fan_name.lower().replace(' ', '_')}",
                 f"{entry.entry_id}_fan_{normalized_key.lower().replace(' ', '_')}",
                 f"fan {legacy_fan_name}",
+            )
+
+    # hwmon temperatures of USB HID chips were keyed by the chip's full name
+    # ('octo-hid-3-3_temp1'), whose device id changes on every USB reconnect.
+    if data.system:
+        prefix = f"{entry.entry_id}_temperature_"
+        temps = hwmon_temperature_keys(getattr(data.system, "temperatures", None))
+        for key, reading in temps.items():
+            address_key = reading.hwmon_address_key
+            if not address_key or key == address_key:
+                continue
+            old_unique_id = f"{prefix}{slugify(address_key)}"
+            if ("sensor", old_unique_id) not in entries_by_unique_id:
+                # The device may have reconnected since its entity was created:
+                # take the same chip and channel at any address, enabled first.
+                pattern = re.compile(
+                    re.escape(f"{prefix}{slugify(reading.hwmon_chip or '')}_")
+                    + r"\d+_[0-9a-f]+_"
+                    + re.escape(f"{reading.hwmon_feature}")
+                    + "$"
+                )
+                candidates = sorted(
+                    (
+                        registry_entry
+                        for (domain, unique_id), registry_entry in (
+                            entries_by_unique_id.items()
+                        )
+                        if domain == "sensor" and pattern.match(unique_id)
+                    ),
+                    key=lambda registry_entry: registry_entry.disabled_by is not None,
+                )
+                if candidates:
+                    old_unique_id = candidates[0].unique_id
+            migrate(
+                "sensor",
+                old_unique_id,
+                f"{prefix}{slugify(key)}",
+                f"temperature {key}",
             )
 
     # GPU sensors migrated from single-GPU IDs to per-GPU indexed IDs.
