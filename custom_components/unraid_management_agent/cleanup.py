@@ -32,6 +32,7 @@ from homeassistant.util import dt as dt_util
 from homeassistant.util import slugify
 
 from .alerts import ALERT_RULE_KEY_PREFIX, alert_rule_key, alert_rule_names
+from .api.models import hwmon_temperature_keys
 from .const import (
     CONF_ENABLE_CONTAINER_UPDATES,
     CONF_ENABLE_VM_DEVICES,
@@ -230,10 +231,8 @@ def _build_valid_dynamic_entity_keys(
 
     # ── hwmon temperature channels (from system info) ─────────────────────────
     if data.system:
-        for reading in data.system.temperatures or []:
-            hwmon_key = getattr(reading, "hwmon_key", None)
-            if hwmon_key:
-                keys.add(f"temperature_{slugify(hwmon_key)}")  # sensor
+        for hwmon_key in hwmon_temperature_keys(data.system.temperatures):
+            keys.add(f"temperature_{slugify(hwmon_key)}")  # sensor
 
     # ── Fan speed numbers (from fan_control) ──────────────────────────────────
     if data.fan_control and data.fan_control.fans:
