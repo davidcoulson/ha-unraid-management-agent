@@ -112,6 +112,11 @@ def test_fan_legacy_ids_only_for_a_single_controller() -> None:
     assert fan_legacy_unique_ids(ENTRY_ID, FAN_A_RENAMED, [FAN_A_RENAMED, FAN_B]) == []
     assert fan_legacy_unique_ids(ENTRY_ID, FanInfo(name="cpu", rpm=1), []) == []
     assert fan_legacy_unique_ids(ENTRY_ID, {"name": "x"}, []) == []
+    # Another Octo seen only through its temperature readings
+    assert fan_legacy_unique_ids(ENTRY_ID, FAN_A, [FAN_A], [OCTO_B]) == []
+    assert fan_legacy_unique_ids(ENTRY_ID, FAN_A, [FAN_A], [OCTO_A]) == [
+        f"{FAN}octo_fan8"
+    ]
 
 
 def _entry(hass: HomeAssistant, *, fans: bool = True) -> MockConfigEntry:

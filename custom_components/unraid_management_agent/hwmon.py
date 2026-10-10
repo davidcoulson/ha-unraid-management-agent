@@ -136,17 +136,20 @@ def temperature_legacy_unique_ids(
     return ids
 
 
-def fan_legacy_unique_ids(entry_id: str, fan: Any, fans: list[Any]) -> list[str]:
+def fan_legacy_unique_ids(
+    entry_id: str, fan: Any, fans: list[Any], readings: list[Any] | None = None
+) -> list[str]:
     """
     Return the name-based unique ID a device-keyed fan was stored under.
 
-    Only when this is the only controller of its model: the name-based ID
-    ('octo_fan8') does not say which of two identical controllers it was.
+    Only when this is the only controller of its model, by its fans or its
+    temperature readings: the name-based ID ('octo_fan8') does not say which
+    of two identical controllers it was.
     """
     if not isinstance(fan, FanInfo) or not fan.device_key or not fan.chip_short:
         return []
-    if fan_model_is_shared(fan, fans):
-        return []
     chip = fan.chip_short
+    if len(_controllers(f"{chip}-hid", readings or [], fans)) > 1:
+        return []
     channel = (fan.name or "").rsplit("_", 1)[-1]
     return [f"{entry_id}_fan_{chip}_{channel}".lower()]

@@ -4650,7 +4650,12 @@ async def async_setup_entry(
                 hass,
                 "sensor",
                 f"{prefix}{key}",
-                fan_legacy_unique_ids(entry.entry_id, fan, fans),
+                fan_legacy_unique_ids(
+                    entry.entry_id,
+                    fan,
+                    fans,
+                    current_data.system.temperatures or [],
+                ),
             )
             if not fan_control_enabled:
                 continue
