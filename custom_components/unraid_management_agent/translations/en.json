@@ -76,6 +76,11 @@
       }
     }
   },
+  "device": {
+    "vm": {
+      "name": "VM \u00b7 {name}"
+    }
+  },
   "entity": {
     "sensor": {
       "cpu_usage": {
