@@ -43,7 +43,13 @@ from . import UnraidConfigEntry, UnraidDataUpdateCoordinator
 from .alerts import ALERT_STATE_FIRING
 from .api import EnergyIntegrator, RateCalculator, parse_timestamp
 from .api.formatting import format_bytes, format_duration
-from .api.models import NUTDeviceStatus, TemperatureInfo, hwmon_temperature_keys
+from .api.models import (
+    FanInfo,
+    NUTDeviceStatus,
+    TemperatureInfo,
+    fan_sensor_keys,
+    hwmon_temperature_keys,
+)
 from .cleanup import async_prune_seen_names
 from .const import (
     ATTR_ARRAY_STATE,
@@ -73,6 +79,12 @@ from .entity import (
     container_devices_enabled,
     find_vm,
     vm_devices_enabled,
+)
+from .hwmon import (
+    async_adopt_unique_id,
+    fan_legacy_unique_ids,
+    fan_model_is_shared,
+    temperature_legacy_unique_ids,
 )
 from .nut import find_nut_status, nut_device_key, secondary_nut_statuses
 from .storage import (
@@ -1815,6 +1827,8 @@ def _hwmon_temperature_channels(
         chip = reading.source or ""
         if counts[(short_chip(reading), reading.hwmon_feature)] == 1:
             chip = short_chip(reading)
+        elif reading.device_id:
+            chip = f"{short_chip(reading)} {reading.device_id}"
         channels.append((key, reading, f"{chip} {reading.label}".strip()))
     return channels
 
@@ -1870,6 +1884,7 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
     _attr_native_unit_of_measurement = "RPM"
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_icon = "mdi:fan"
+    _device_keyed = False
 
     def __init__(
         self,
@@ -1877,11 +1892,12 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
         entry: UnraidConfigEntry,
         fan_name: str,
         normalized_name: str,
+        key: str | None = None,
     ) -> None:
         """Initialize the sensor."""
         self._original_fan_name = fan_name
-        sanitized = normalized_name.lower().replace(" ", "_")
-        super().__init__(coordinator, f"fan_{sanitized}")
+        self._key = key or normalized_name.lower().replace(" ", "_")
+        super().__init__(coordinator, f"fan_{self._key}")
         self._fan_name = fan_name
         self._normalized_name = normalized_name
         self._attr_translation_key = "fan"
@@ -1896,7 +1912,9 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
         suffix, so we match on hwmon_index when an exact name match fails.
         """
         data = self.coordinator.data
-        if not data or not data.fan_control:
+        # fan_control does not say which controller a fan is on, so it cannot
+        # be matched to a device-keyed fan (see UnraidDeviceFanSensor)
+        if self._device_keyed or not data or not data.fan_control:
             return None
 
         devices = (data.fan_control.fans or []) or []
@@ -1905,6 +1923,13 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
         for device in devices:
             if device.name == self._normalized_name:
                 return device
+
+        # The fan number alone cannot tell two controllers of one model apart
+        fans: list[Any] = (data.system.fans or []) if data.system else []
+        current = self._current_fan()
+        # Nor can it stand in for a fan that is missing from the current data
+        if current is None or fan_model_is_shared(current, fans):
+            return None
 
         # Match by fan index suffix (e.g., nct6793_fan1 → index 1 → hwmon_index 1)
         match = re.search(r"_fan(\d+)$", self._fan_name)
@@ -1916,9 +1941,30 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
 
         return None
 
+    def _current_fan(self) -> Any:
+        """Return this sensor's fan from the latest system data, if present."""
+        data = self.coordinator.data
+        fans: list[Any] = (data.system.fans or []) if data and data.system else []
+        for key, *_, fan in fan_sensor_keys(fans):
+            if key == self._key:
+                return fan
+        return None
+
+    @property
+    def available(self) -> bool:
+        """Return False when a device-keyed fan's controller is missing."""
+        if self._device_keyed and self._current_fan() is None:
+            return False
+        return super().available
+
     @property
     def native_value(self) -> int | None:
         """Return the fan speed."""
+        # A device-keyed fan's own reading is unambiguous; use only that
+        current = self._current_fan()
+        if self._device_keyed:
+            return current.rpm if isinstance(current, FanInfo) else None
+
         # Prefer fan_control data (more detailed) over system.fans
         device = self._get_fan_control_device()
         if device is not None:
@@ -1931,6 +1977,10 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
             return None
 
         fans: list[Any] = (data.system.fans or []) or []
+        if isinstance(current, dict):
+            return current.get("rpm")
+        if current is not None and not isinstance(current, (int, float)):
+            return current.rpm
         for fan in fans:
             if isinstance(fan, dict):
                 if fan.get("name") == self._fan_name:
@@ -1975,6 +2025,18 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
                     attrs["failed"] = True
 
         return attrs
+
+
+class UnraidDeviceFanSensor(UnraidFanSensor):
+    """
+    Speed of a fan keyed by its controller's device_id (USB HID controllers).
+
+    It only ever reads its own controller: when that controller is missing the
+    sensor is unavailable rather than matching another one's fan by number,
+    and it takes no fan_control data, which cannot be tied to a controller.
+    """
+
+    _device_keyed = True
 
 
 class UnraidNetworkSensorBase(UnraidBaseEntity, RestoreEntity, SensorEntity):
@@ -4436,39 +4498,6 @@ async def async_setup_entry(
     for description in ARRAY_SENSOR_DESCRIPTIONS:
         entities.append(UnraidSensorEntity(coordinator, description))
 
-    # Fan sensors (dynamic, one per fan, keyed by normalized name for stability)
-    fan_control_enabled = entry.options.get(
-        CONF_ENABLE_FAN_CONTROL, DEFAULT_ENABLE_FAN_CONTROL
-    )
-    if fan_control_enabled and data and data.system:
-        fans: list[Any] = (data.system.fans or []) or []
-        seen_names: set[str] = set()
-        for idx, fan in enumerate(fans):
-            if isinstance(fan, dict):
-                fan_name = fan.get("name") or f"fan_{idx}"
-                normalized = fan_name
-            elif isinstance(fan, (int, float)):
-                fan_name = f"fan_{idx}"
-                normalized = fan_name
-            else:
-                fan_name = fan.name or f"fan_{idx}"
-                normalized = fan.normalized_name or fan_name
-            # Ensure uniqueness in case of duplicate normalized names
-            if normalized in seen_names:
-                normalized_key = f"{normalized}_{idx}"
-                _LOGGER.debug(
-                    "Duplicate fan name '%s' (normalized from '%s'), using '%s'",
-                    normalized,
-                    fan_name,
-                    normalized_key,
-                )
-                fan_name = f"{fan_name}_{idx}"
-                normalized = normalized_key
-            else:
-                normalized_key = normalized
-            seen_names.add(normalized_key)
-            entities.append(UnraidFanSensor(coordinator, entry, fan_name, normalized))
-
     # GPU sensors - only if gpu collector is enabled
     if coordinator.is_collector_enabled("gpu") and data and data.gpu:
         for loop_idx, gpu in enumerate(data.gpu):
@@ -4804,6 +4833,60 @@ async def async_setup_entry(
 
     entry.async_on_unload(coordinator.async_add_listener(callback(_add_vm_sensors)))
 
+    # Fan sensors - one per fan, created as fans appear. A fan's earlier entity
+    # (name-based, before the agent reported a device_id) is adopted first.
+    fan_control_enabled = entry.options.get(
+        CONF_ENABLE_FAN_CONTROL, DEFAULT_ENABLE_FAN_CONTROL
+    )
+    seen_fans: set[str] = set()
+
+    def _add_fan_sensors() -> None:
+        current_data = coordinator.data
+        if not current_data or not current_data.system:
+            return
+        async_prune_seen_names(
+            hass, "sensor", seen_fans, lambda key: f"{entry.entry_id}_fan_{key}"
+        )
+        fans: list[Any] = (current_data.system.fans or []) or []
+        new_entities: list[SensorEntity] = []
+        prefix = f"{entry.entry_id}_fan_"
+        for key, fan_name, display, fan in fan_sensor_keys(fans):
+            if key in seen_fans:
+                continue
+            # Adopt even with fan sensors off, so stale cleanup keeps the entry
+            adopted = async_adopt_unique_id(
+                hass,
+                "sensor",
+                f"{prefix}{key}",
+                fan_legacy_unique_ids(
+                    entry.entry_id,
+                    fan,
+                    fans,
+                    current_data.system.temperatures or [],
+                ),
+            )
+            if not fan_control_enabled:
+                continue
+            seen_fans.add(key)
+            if adopted and adopted.removeprefix(prefix) in seen_fans:
+                # A loaded sensor moved to this key; reload so it reads by it
+                hass.config_entries.async_schedule_reload(entry.entry_id)
+                return
+            sensor_class = (
+                UnraidDeviceFanSensor
+                if isinstance(fan, FanInfo) and fan.device_key
+                else UnraidFanSensor
+            )
+            new_entities.append(
+                sensor_class(coordinator, entry, fan_name, display, key)
+            )
+        if new_entities:
+            async_add_entities(new_entities)
+
+    _add_fan_sensors()
+
+    entry.async_on_unload(coordinator.async_add_listener(callback(_add_fan_sensors)))
+
     # hwmon temperature sensors - one per channel, created as channels appear.
     # Independent of fan control: these are plain lm-sensors readings.
     seen_temperatures: set[str] = set()
@@ -4820,11 +4903,30 @@ async def async_setup_entry(
             lambda key: f"{entry.entry_id}_temperature_{key}",
         )
         new_entities: list[SensorEntity] = []
-        for key, _reading, display_name in _hwmon_temperature_channels(
-            current_data.system
-        ):
+        prefix = f"{entry.entry_id}_temperature_"
+        channels = _hwmon_temperature_channels(current_data.system)
+        readings = [reading for _, reading, _ in channels]
+        for key, reading, display_name in channels:
             if key not in seen_temperatures:
                 seen_temperatures.add(key)
+                # A channel of a USB controller may be stored under an earlier
+                # key (address or model based); keep that entity (see hwmon.py)
+                adopted = async_adopt_unique_id(
+                    hass,
+                    "sensor",
+                    f"{prefix}{key}",
+                    temperature_legacy_unique_ids(
+                        hass,
+                        entry.entry_id,
+                        reading,
+                        readings,
+                        current_data.system.fans or [],
+                    ),
+                )
+                if adopted and adopted.removeprefix(prefix) in seen_temperatures:
+                    # A loaded sensor moved to this key; reload so it reads by it
+                    hass.config_entries.async_schedule_reload(entry.entry_id)
+                    return
                 new_entities.append(
                     UnraidHwmonTemperatureSensor(coordinator, key, display_name)
                 )
