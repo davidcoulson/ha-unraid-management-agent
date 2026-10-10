@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Governance parity with unraid-management-agent**:
+  - Added a mandatory **Pre-Submission Governance** section to `.github/PULL_REQUEST_TEMPLATE.md` requiring explicit local verification, lint/test confirmation, duplicate-PR prevention, and human verification for AI-assisted PRs.
+  - Updated `.github/workflows/pr-governance.yml` to enforce completion of every Pre-Submission Governance checkbox.
+  - Added PR workflow concurrency cancellation for `.github/workflows/pr-governance.yml` to stop superseded runs and reduce CI runner waste on rapid PR updates.
+
 - **Structured issue forms for triage and contribution compliance**:
   - Replaced legacy Markdown issue templates with GitHub Issue Forms in `.github/ISSUE_TEMPLATE/01-bug-report.yml` and `.github/ISSUE_TEMPLATE/02-enhancement-request.yml`.
   - Enforced required bug/enhancement fields and required confirmation checkboxes to improve report quality and ensure contributors acknowledge repository contribution rules.

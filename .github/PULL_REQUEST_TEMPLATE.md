@@ -14,6 +14,23 @@
 - [ ] Code refactoring (no functional changes)
 - [ ] Test additions or improvements
 
+## Pre-Submission Governance
+
+<!--
+	REQUIRED for everyone, including AI agents and automation.
+	Every box below is mandatory. If any box is left unchecked, the automated
+	"PR Governance" check fails and the PR will not be reviewed or merged.
+	Do not open multiple overlapping or back-to-back PRs for the same work;
+	batch related changes together to avoid wasting CI runner capacity.
+-->
+
+- [ ] I built and ran the project locally and verified this change actually works (not just that it compiles)
+- [ ] I ran `script/test` locally and all tests pass
+- [ ] I ran `script/lint` locally and it passes
+- [ ] I pasted real local verification output under **Testing Performed** below (no placeholder text)
+- [ ] This PR is self-contained and is not a duplicate; I have not opened other overlapping or back-to-back PRs for the same change
+- [ ] If an AI agent created or assisted with this PR, a human reviewed and verified the changes before submission
+
 ## Related Issues
 
 <!-- Link to related issues, or specify "None" for self-contained changes -->
@@ -56,7 +73,7 @@ Fixes #
 
 ### Test Results
 
-```
+```text
 [Paste relevant test output or results]
 ```
 
