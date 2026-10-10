@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Structured issue forms for triage and contribution compliance**:
+  - Replaced legacy Markdown issue templates with GitHub Issue Forms in `.github/ISSUE_TEMPLATE/01-bug-report.yml` and `.github/ISSUE_TEMPLATE/02-enhancement-request.yml`.
+  - Enforced required bug/enhancement fields and required confirmation checkboxes to improve report quality and ensure contributors acknowledge repository contribution rules.
+  - Ensured automatic issue labeling at creation by binding form templates to `bug` and `enhancement` labels.
+  - Updated `.github/ISSUE_TEMPLATE/config.yml` to keep blank issues disabled and route support users to Discussions/community channels.
+  - Added `.github/workflows/labels.yml` to sync labels from `.github/labels.yml` so required form labels stay present.
+
 - **Bundled Lovelace Dashboard Cards Suite** ([#150](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/150)):
   - Shipped a complete suite of custom Lovelace cards bundled directly with the integration under `custom_components/unraid_management_agent/frontend/unraid-cards.js` (no separate manual HACS card installation required).
   - Automatically registered via `async_register_frontend` during `async_setup` with cache-busting URLs (`?v={version}-{digest}`) in Lovelace resource storage and YAML mode fallback.

@@ -1,11 +1,11 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Unraid Management Agent (backend)
+  - name: Ask a question in GitHub Discussions
+    url: https://github.com/ruaan-deysel/ha-unraid-management-agent/discussions
+    about: Use Discussions for setup help, troubleshooting, and general usage questions.
+  - name: Unraid Management Agent backend/plugin issues
     url: https://github.com/ruaan-deysel/unraid-management-agent/issues/new/choose
-    about: Issues for the Unraid Management Agent plugin/API belong here (not the Home Assistant integration)
+    about: Backend, API, or plugin defects belong in the Unraid Management Agent repository.
   - name: Home Assistant Community
     url: https://community.home-assistant.io
-    about: Ask questions in the Home Assistant community
-  - name: Home Assistant Discord
-    url: https://discord.gg/home-assistant
-    about: Chat with other Home Assistant users
+    about: Ask Home Assistant specific questions in the community forum.

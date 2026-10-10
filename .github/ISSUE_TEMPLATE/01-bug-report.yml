@@ -1,0 +1,104 @@
+name: Bug report
+description: Report a reproducible bug or regression in the Home Assistant integration.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug.
+
+        Use this form for integration defects and regressions. For setup questions or troubleshooting help,
+        use Discussions instead.
+  - type: dropdown
+    id: affected-area
+    attributes:
+      label: Affected area
+      description: Which part of the integration is affected most directly?
+      options:
+        - API client and WebSocket
+        - Coordinator refresh and updates
+        - Config flow and options
+        - Sensors
+        - Binary sensors
+        - Switches
+        - Buttons
+        - Number entities
+        - Update entities
+        - Frontend dashboard cards
+        - Diagnostics or repairs
+        - Documentation
+        - CI or repository automation
+    validations:
+      required: true
+  - type: input
+    id: integration-version
+    attributes:
+      label: Integration version
+      description: What integration version are you running?
+      placeholder: "2026.10.0"
+    validations:
+      required: true
+  - type: input
+    id: home-assistant-version
+    attributes:
+      label: Home Assistant version
+      description: What Home Assistant version are you running?
+      placeholder: "2026.10.0"
+    validations:
+      required: true
+  - type: input
+    id: unraid-version
+    attributes:
+      label: Unraid version
+      description: What Unraid version are you running?
+      placeholder: "7.2.0"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the bug, including what you expected to happen.
+      placeholder: Tell us the failure mode, expected behavior, and what changed.
+    validations:
+      required: true
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Provide a minimal, repeatable sequence.
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. Run ...
+        4. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: relevant-logs
+    attributes:
+      label: Relevant log output
+      description: Paste relevant logs, tracebacks, or API responses.
+      render: shell
+    validations:
+      required: false
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add screenshots, links, or anything else that helps narrow the issue.
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmation
+      options:
+        - label: I searched existing issues and discussions before opening this bug report.
+          required: true
+        - label: I confirm this issue targets the Home Assistant integration, not the backend/plugin repository.
+          required: true
+        - label: I read and agree to follow AGENTS.md and repository contribution rules for this report.
+          required: true
