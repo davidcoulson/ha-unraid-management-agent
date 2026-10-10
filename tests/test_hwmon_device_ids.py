@@ -468,3 +468,34 @@ async def test_fan_adopted_with_fan_sensors_off(
     assert f"fan_{FAN_A.device_key}" in _build_valid_dynamic_entity_keys(
         UnraidData(system=_system([], [FAN_A]))
     )
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_missing_controller_fan_is_unavailable(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """A disconnected Octo's fan does not borrow the other Octo's speed."""
+    system = mock_async_unraid_client.get_system_info.return_value
+    system.temperatures = []
+    system.fans = [FAN_A_SHARED, FAN_B]
+    mock_async_unraid_client.get_fan_status.return_value = FanControlStatus(
+        fans=[FanDevice(id="hwmon11_fan8", name="fan8", rpm=900, hwmon_index=8)]
+    )
+    entry = _entry(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    first = entity_registry.async_get_entity_id(
+        "sensor", DOMAIN, f"{FAN}octo_07274_50017_fan8"
+    )
+    assert first is not None
+    assert _value(hass, first) == 751
+
+    system.fans = [_fan("octo_fan8", 900, "octo-hid-3-14", SERIAL_B)]
+    await entry.runtime_data.coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+    state = hass.states.get(first)
+    assert state is not None
+    assert state.state == "unavailable"

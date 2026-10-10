@@ -1882,6 +1882,7 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
     _attr_native_unit_of_measurement = "RPM"
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_icon = "mdi:fan"
+    _device_keyed = False
 
     def __init__(
         self,
@@ -1922,7 +1923,9 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
         # The fan number alone cannot tell two controllers of one model apart
         fans: list[Any] = (data.system.fans or []) if data.system else []
         current = self._current_fan()
-        if fan_model_is_shared(current, fans):
+        if (self._device_keyed and current is None) or fan_model_is_shared(
+            current, fans
+        ):
             return None
 
         # Match by fan index suffix (e.g., nct6793_fan1 → index 1 → hwmon_index 1)
@@ -1945,12 +1948,19 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
         return None
 
     @property
+    def available(self) -> bool:
+        """Return False when a device-keyed fan's controller is missing."""
+        if self._device_keyed and self._current_fan() is None:
+            return False
+        return super().available
+
+    @property
     def native_value(self) -> int | None:
         """Return the fan speed."""
-        # A device-keyed fan's own reading is unambiguous; use it first
+        # A device-keyed fan's own reading is unambiguous; use only that
         current = self._current_fan()
-        if isinstance(current, FanInfo) and current.device_key:
-            return current.rpm
+        if self._device_keyed:
+            return current.rpm if isinstance(current, FanInfo) else None
 
         # Prefer fan_control data (more detailed) over system.fans
         device = self._get_fan_control_device()
@@ -2012,6 +2022,17 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
                     attrs["failed"] = True
 
         return attrs
+
+
+class UnraidDeviceFanSensor(UnraidFanSensor):
+    """
+    Speed of a fan keyed by its controller's device_id (USB HID controllers).
+
+    It only ever reads its own controller: when that controller is missing the
+    sensor is unavailable rather than matching another one's fan by number.
+    """
+
+    _device_keyed = True
 
 
 class UnraidNetworkSensorBase(UnraidBaseEntity, RestoreEntity, SensorEntity):
@@ -4664,8 +4685,13 @@ async def async_setup_entry(
                 # A loaded sensor moved to this key; reload so it reads by it
                 hass.config_entries.async_schedule_reload(entry.entry_id)
                 return
+            sensor_class = (
+                UnraidDeviceFanSensor
+                if isinstance(fan, FanInfo) and fan.device_key
+                else UnraidFanSensor
+            )
             new_entities.append(
-                UnraidFanSensor(coordinator, entry, fan_name, display, key)
+                sensor_class(coordinator, entry, fan_name, display, key)
             )
         if new_entities:
             async_add_entities(new_entities)
