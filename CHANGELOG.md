@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Storage throughput and link utilization sensors**:
+  - Each storage topology controller and enclosure (disk shelf) device gets **Read Throughput**, **Write Throughput** and **Throughput** (read + write) sensors (data rate, B/s shown as MB/s by default) and a **Link Utilization** sensor (%), from the optional `throughput` object the agent adds to `/storage/topology`.
+  - The sensors appear once the agent reports throughput (from its second collection cycle) and become unavailable if it stops. Link Utilization is unknown when the agent cannot work out the link capacity; its attributes include the drive count, the measurement interval and the capacity in B/s.
+  - Older agents without `throughput` are unaffected (no new entities).
+
 - **Entities for every NUT device** ([#181](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/181)):
   Every NUT device other than the primary UPS (a second UPS, an ATS, ...) gets
   `UPS <device> Battery/Load/Runtime/Power/Energy` sensors and a
@@ -20,6 +25,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([ruaan-deysel/unraid-management-agent#206](https://github.com/ruaan-deysel/unraid-management-agent/issues/206));
   older agents get no extra entities. NUT `raw_variables` are redacted in
   diagnostics.
+
+- **Governance parity with unraid-management-agent**:
+  - Added a mandatory **Pre-Submission Governance** section to `.github/PULL_REQUEST_TEMPLATE.md` requiring explicit local verification, lint/test confirmation, duplicate-PR prevention, and human verification for AI-assisted PRs.
+  - Updated `.github/workflows/pr-governance.yml` to enforce completion of every Pre-Submission Governance checkbox.
+  - Added PR workflow concurrency cancellation for `.github/workflows/pr-governance.yml` to stop superseded runs and reduce CI runner waste on rapid PR updates.
+
+- **Structured issue forms for triage and contribution compliance**:
+  - Replaced legacy Markdown issue templates with GitHub Issue Forms in `.github/ISSUE_TEMPLATE/01-bug-report.yml` and `.github/ISSUE_TEMPLATE/02-enhancement-request.yml`.
+  - Enforced required bug/enhancement fields and required confirmation checkboxes to improve report quality and ensure contributors acknowledge repository contribution rules.
+  - Ensured automatic issue labeling at creation by binding form templates to `bug` and `enhancement` labels.
+  - Updated `.github/ISSUE_TEMPLATE/config.yml` to keep blank issues disabled and route support users to Discussions/community channels.
+  - Added `.github/workflows/labels.yml` to sync labels from `.github/labels.yml` so required form labels stay present.
+
 - **Bundled Lovelace Dashboard Cards Suite** ([#150](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/150)):
   - Shipped a complete suite of custom Lovelace cards bundled directly with the integration under `custom_components/unraid_management_agent/frontend/unraid-cards.js` (no separate manual HACS card installation required).
   - Automatically registered via `async_register_frontend` during `async_setup` with cache-busting URLs (`?v={version}-{digest}`) in Lovelace resource storage and YAML mode fallback.
