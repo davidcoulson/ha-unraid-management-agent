@@ -31,7 +31,8 @@ from custom_components.unraid_management_agent.sensor import (
 
 from .const import MOCK_CONFIG, MOCK_OPTIONS
 
-ENTRY_ID = "test_entry_id"
+# Real entry IDs are upper-case ULIDs; only the fan part of a key is lowered
+ENTRY_ID = "01TESTENTRYID"
 TEMP = f"{ENTRY_ID}_temperature_"
 FAN = f"{ENTRY_ID}_fan_"
 SERIAL_A = "07274-50017"
