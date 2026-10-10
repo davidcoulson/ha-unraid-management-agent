@@ -299,8 +299,9 @@ def identify_event_type(data: Any) -> EventType | None:
         if "state" in data and "total_disks" in data:
             return EventType.ARRAY_STATUS_UPDATE
 
-        # UPS status: has 'battery_charge_percent' and 'load_percent'
-        if "battery_charge_percent" in data and "load_percent" in data:
+        # UPS status: has the UPS-specific 'battery_charge_percent' (readings
+        # such as 'load_percent' may be null or left out when not reported)
+        if "battery_charge_percent" in data:
             return EventType.UPS_STATUS_UPDATE
 
         # ZFS ARC: has 'hit_ratio_percent' and 'size_bytes'
