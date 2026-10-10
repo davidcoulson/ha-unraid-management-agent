@@ -152,4 +152,4 @@ def fan_legacy_unique_ids(
     if len(_controllers(f"{chip}-hid", readings or [], fans)) > 1:
         return []
     channel = (fan.name or "").rsplit("_", 1)[-1]
-    return [f"{entry_id}_fan_{chip}_{channel}".lower()]
+    return [f"{entry_id}_fan_{f'{chip}_{channel}'.lower()}"]
