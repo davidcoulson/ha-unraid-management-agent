@@ -10,6 +10,8 @@ from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.unraid_management_agent.api.models import (
+    FanControlStatus,
+    FanDevice,
     FanInfo,
     TemperatureInfo,
     fan_sensor_keys,
@@ -263,3 +265,116 @@ async def test_ambiguous_entities_are_not_adopted(
     assert flow is not None
     assert coolant.unique_id == f"{TEMP}octo_hid_temp1"
     assert flow.unique_id == f"{FAN}octo_fan8"
+
+
+OLD_AGENT_FAN = FanInfo(name="octo_fan8", rpm=749)
+OCTO_B_FAN_ONLY = _fan(f"octo-{SERIAL_B}_fan1", 600, "octo-hid-3-14", SERIAL_B)
+FAN_A_SHARED = _fan(f"octo-{SERIAL_A}_fan8", 751, "octo-hid-3-13", SERIAL_A)
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_other_controller_seen_only_by_its_fans(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """A second Octo without temperature readings still blocks adoption."""
+    system = mock_async_unraid_client.get_system_info.return_value
+    system.temperatures = [OCTO_A_RECONNECTED]
+    system.fans = [FAN_A_SHARED, OCTO_B_FAN_ONLY]
+    entry = _entry(hass)
+    _register(entity_registry, entry, f"{TEMP}octo_hid_temp1", "sensor.coolant")
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    coolant = entity_registry.async_get("sensor.coolant")
+    assert coolant is not None
+    assert coolant.unique_id == f"{TEMP}octo_hid_temp1"
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_conflicting_history_is_not_adopted(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """Two enabled entities at old addresses could be two devices: keep both."""
+    system = mock_async_unraid_client.get_system_info.return_value
+    system.temperatures = [OCTO_A_RECONNECTED]
+    system.fans = []
+    entry = _entry(hass)
+    _register(entity_registry, entry, f"{TEMP}octo_hid_3_2_temp1", "sensor.first")
+    _register(entity_registry, entry, f"{TEMP}octo_hid_3_3_temp1", "sensor.second")
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    for entity_id, suffix in (("sensor.first", "3_2"), ("sensor.second", "3_3")):
+        entity = entity_registry.async_get(entity_id)
+        assert entity is not None
+        assert entity.unique_id == f"{TEMP}octo_hid_{suffix}_temp1"
+    assert entity_registry.async_get_entity_id(
+        "sensor", DOMAIN, f"{TEMP}octo_hid_07274_50017_temp1"
+    )
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_agent_upgrade_while_running(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """When the agent starts reporting device_id, the fan keeps its entity."""
+    system = mock_async_unraid_client.get_system_info.return_value
+    system.temperatures = []
+    system.fans = [OLD_AGENT_FAN]
+    entry = _entry(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    flow = entity_registry.async_get_entity_id("sensor", DOMAIN, f"{FAN}octo_fan8")
+    assert flow is not None
+    assert _value(hass, flow) == 749
+
+    system.fans = [FAN_A]
+    await entry.runtime_data.coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+    entity = entity_registry.async_get(flow)
+    assert entity is not None
+    assert entity.unique_id == f"{FAN}octo_07274_50017_fan8"
+    assert _value(hass, flow) == 750
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_two_controllers_fans_with_fan_control(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """Each Octo's fan8 shows its own speed, not a fan_control match by number."""
+    system = mock_async_unraid_client.get_system_info.return_value
+    system.temperatures = []
+    system.fans = [FAN_A]
+    mock_async_unraid_client.get_fan_status.return_value = FanControlStatus(
+        fans=[FanDevice(id="hwmon10_fan8", name="fan8", rpm=1234, hwmon_index=8)]
+    )
+    entry = _entry(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    first = entity_registry.async_get_entity_id(
+        "sensor", DOMAIN, f"{FAN}octo_07274_50017_fan8"
+    )
+    assert first is not None
+
+    system.fans = [FAN_A_SHARED, FAN_B]
+    await entry.runtime_data.coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+    second = entity_registry.async_get_entity_id(
+        "sensor", DOMAIN, f"{FAN}octo_07274_61234_fan8"
+    )
+    assert second is not None
+    assert _value(hass, first) == 751
+    assert _value(hass, second) == 900
+    state = hass.states.get(first)
+    assert state is not None
+    assert "fan_id" not in state.attributes

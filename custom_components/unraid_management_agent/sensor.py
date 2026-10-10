@@ -43,7 +43,12 @@ from . import UnraidConfigEntry, UnraidDataUpdateCoordinator
 from .alerts import ALERT_STATE_FIRING
 from .api import EnergyIntegrator, RateCalculator, parse_timestamp
 from .api.formatting import format_bytes, format_duration
-from .api.models import TemperatureInfo, fan_sensor_keys, hwmon_temperature_keys
+from .api.models import (
+    FanInfo,
+    TemperatureInfo,
+    fan_sensor_keys,
+    hwmon_temperature_keys,
+)
 from .cleanup import async_prune_seen_names
 from .const import (
     ATTR_ARRAY_STATE,
@@ -77,6 +82,7 @@ from .entity import (
 from .hwmon import (
     async_adopt_unique_id,
     fan_legacy_unique_ids,
+    fan_model_is_shared,
     temperature_legacy_unique_ids,
 )
 from .storage import (
@@ -1913,6 +1919,12 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
             if device.name == self._normalized_name:
                 return device
 
+        # The fan number alone cannot tell two controllers of one model apart
+        fans: list[Any] = (data.system.fans or []) if data.system else []
+        current = self._current_fan()
+        if fan_model_is_shared(current, fans):
+            return None
+
         # Match by fan index suffix (e.g., nct6793_fan1 → index 1 → hwmon_index 1)
         match = re.search(r"_fan(\d+)$", self._fan_name)
         if match:
@@ -1923,9 +1935,23 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
 
         return None
 
+    def _current_fan(self) -> Any:
+        """Return this sensor's fan from the latest system data, if present."""
+        data = self.coordinator.data
+        fans: list[Any] = (data.system.fans or []) if data and data.system else []
+        for key, _name, fan in fan_sensor_keys(fans):
+            if key == self._key:
+                return fan
+        return None
+
     @property
     def native_value(self) -> int | None:
         """Return the fan speed."""
+        # A device-keyed fan's own reading is unambiguous; use it first
+        current = self._current_fan()
+        if isinstance(current, FanInfo) and current.device_key:
+            return current.rpm
+
         # Prefer fan_control data (more detailed) over system.fans
         device = self._get_fan_control_device()
         if device is not None:
@@ -1938,9 +1964,10 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
             return None
 
         fans: list[Any] = (data.system.fans or []) or []
-        for key, _name, fan in fan_sensor_keys(fans):
-            if key == self._key and not isinstance(fan, (int, float)):
-                return fan.get("rpm") if isinstance(fan, dict) else fan.rpm
+        if isinstance(current, dict):
+            return current.get("rpm")
+        if current is not None and not isinstance(current, (int, float)):
+            return current.rpm
         for fan in fans:
             if isinstance(fan, dict):
                 if fan.get("name") == self._fan_name:
@@ -4284,22 +4311,6 @@ async def async_setup_entry(
     for description in ARRAY_SENSOR_DESCRIPTIONS:
         entities.append(UnraidSensorEntity(coordinator, description))
 
-    # Fan sensors (dynamic, one per fan, keyed by normalized name for stability)
-    fan_control_enabled = entry.options.get(
-        CONF_ENABLE_FAN_CONTROL, DEFAULT_ENABLE_FAN_CONTROL
-    )
-    if fan_control_enabled and data and data.system:
-        fans: list[Any] = (data.system.fans or []) or []
-        for key, fan_name, fan in fan_sensor_keys(fans):
-            async_adopt_unique_id(
-                hass,
-                "sensor",
-                f"{entry.entry_id}_fan_{key}",
-                fan_legacy_unique_ids(entry.entry_id, fan, fans),
-            )
-            display = getattr(fan, "normalized_name", None) or fan_name
-            entities.append(UnraidFanSensor(coordinator, entry, fan_name, display, key))
-
     # GPU sensors - only if gpu collector is enabled
     if coordinator.is_collector_enabled("gpu") and data and data.gpu:
         for loop_idx, gpu in enumerate(data.gpu):
@@ -4614,6 +4625,43 @@ async def async_setup_entry(
 
     entry.async_on_unload(coordinator.async_add_listener(callback(_add_vm_sensors)))
 
+    # Fan sensors - one per fan, created as fans appear. A fan's earlier entity
+    # (name-based, before the agent reported a device_id) is adopted first.
+    fan_control_enabled = entry.options.get(
+        CONF_ENABLE_FAN_CONTROL, DEFAULT_ENABLE_FAN_CONTROL
+    )
+    seen_fans: set[str] = set()
+
+    def _add_fan_sensors() -> None:
+        current_data = coordinator.data
+        if not fan_control_enabled or not current_data or not current_data.system:
+            return
+        async_prune_seen_names(
+            hass, "sensor", seen_fans, lambda key: f"{entry.entry_id}_fan_{key}"
+        )
+        fans: list[Any] = (current_data.system.fans or []) or []
+        new_entities: list[SensorEntity] = []
+        for key, fan_name, fan in fan_sensor_keys(fans):
+            if key in seen_fans:
+                continue
+            seen_fans.add(key)
+            async_adopt_unique_id(
+                hass,
+                "sensor",
+                f"{entry.entry_id}_fan_{key}",
+                fan_legacy_unique_ids(entry.entry_id, fan, fans),
+            )
+            display = getattr(fan, "normalized_name", None) or fan_name
+            new_entities.append(
+                UnraidFanSensor(coordinator, entry, fan_name, display, key)
+            )
+        if new_entities:
+            async_add_entities(new_entities)
+
+    _add_fan_sensors()
+
+    entry.async_on_unload(coordinator.async_add_listener(callback(_add_fan_sensors)))
+
     # hwmon temperature sensors - one per channel, created as channels appear.
     # Independent of fan control: these are plain lm-sensors readings.
     seen_temperatures: set[str] = set()
@@ -4642,7 +4690,11 @@ async def async_setup_entry(
                     "sensor",
                     f"{entry.entry_id}_temperature_{key}",
                     temperature_legacy_unique_ids(
-                        hass, entry.entry_id, reading, readings
+                        hass,
+                        entry.entry_id,
+                        reading,
+                        readings,
+                        current_data.system.fans or [],
                     ),
                 )
                 new_entities.append(
