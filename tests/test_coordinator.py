@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterator
+from datetime import timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from freezegun.api import FrozenDateTimeFactory
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.update_coordinator import UpdateFailed
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.unraid_management_agent import (
@@ -21,10 +25,17 @@ from custom_components.unraid_management_agent.api.models import (
     NotificationCounts,
     NotificationOverview,
     NotificationsResponse,
+    ParityCheckRecord,
+    ParityHistory,
     SystemInfo,
+    ZFSDataset,
+    ZFSSnapshot,
 )
 from custom_components.unraid_management_agent.const import DOMAIN
-from custom_components.unraid_management_agent.coordinator import UnraidData
+from custom_components.unraid_management_agent.coordinator import (
+    _PARITY_HISTORY_INTERVAL,
+    UnraidData,
+)
 
 from .const import (
     MOCK_CONFIG,
@@ -37,6 +48,14 @@ from .const import (
     mock_system_info,
     mock_ups_info,
     mock_vms,
+)
+
+_PARITY_HISTORY = ParityHistory(
+    records=[
+        ParityCheckRecord(
+            action="Parity-Check", date="2026-10-01T03:00:00Z", status="OK"
+        )
+    ]
 )
 
 
@@ -2269,18 +2288,14 @@ class TestCoordinatorAPIExceptionHandling:
             assert result is True
 
     @pytest.mark.asyncio
-    async def test_api_zfs_datasets_exception(
+    async def test_zfs_datasets_and_snapshots_not_polled(
         self,
         hass: HomeAssistant,
         mock_config_entry,
         mock_async_unraid_client,
         mock_websocket_client,
     ) -> None:
-        """Test coordinator handles ZFS datasets API exception."""
-        mock_async_unraid_client.list_zfs_datasets.side_effect = Exception(
-            "ZFS datasets error"
-        )
-
+        """No entity uses ZFS datasets or snapshots, so they are not polled."""
         with (
             patch(
                 "custom_components.unraid_management_agent.UnraidClient",
@@ -2295,34 +2310,8 @@ class TestCoordinatorAPIExceptionHandling:
             await hass.async_block_till_done()
 
             assert result is True
-
-    @pytest.mark.asyncio
-    async def test_api_zfs_snapshots_exception(
-        self,
-        hass: HomeAssistant,
-        mock_config_entry,
-        mock_async_unraid_client,
-        mock_websocket_client,
-    ) -> None:
-        """Test coordinator handles ZFS snapshots API exception."""
-        mock_async_unraid_client.list_zfs_snapshots.side_effect = Exception(
-            "ZFS snapshots error"
-        )
-
-        with (
-            patch(
-                "custom_components.unraid_management_agent.UnraidClient",
-                return_value=mock_async_unraid_client,
-            ),
-            patch(
-                "custom_components.unraid_management_agent.UnraidWebSocketClient",
-                return_value=mock_websocket_client,
-            ),
-        ):
-            result = await hass.config_entries.async_setup(mock_config_entry.entry_id)
-            await hass.async_block_till_done()
-
-            assert result is True
+            mock_async_unraid_client.list_zfs_datasets.assert_not_called()
+            mock_async_unraid_client.list_zfs_snapshots.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_api_gpu_exception_non_404(
@@ -3327,3 +3316,128 @@ async def test_fetch_404_not_suppressed(hass: HomeAssistant) -> None:
 
     result = await coordinator._fetch("endpoint", not_found_coro, suppress_404=False)
     assert result is None
+
+
+class TestCoordinatorPollCadence:
+    """Tests for data that is not fetched on every poll."""
+
+    @pytest.fixture
+    def coordinator(self, hass: HomeAssistant) -> UnraidDataUpdateCoordinator:
+        """Create a coordinator whose core endpoints respond."""
+        entry = _create_mock_entry(hass)
+        mock_client = MagicMock()
+        mock_client.host = "192.168.1.100"
+        mock_client.port = 8043
+        # Endpoints left as plain MagicMocks fail inside _fetch and give None
+        mock_client.get_system_info = AsyncMock(
+            return_value=SystemInfo(hostname="tower", uptime_seconds=1000)
+        )
+        mock_client.get_array_status = AsyncMock(return_value=mock_array_status())
+        mock_client.get_parity_history = AsyncMock(return_value=_PARITY_HISTORY)
+        return UnraidDataUpdateCoordinator(
+            hass, entry=entry, client=mock_client, enable_websocket=False
+        )
+
+    @pytest.fixture(autouse=True)
+    def mock_repairs(self) -> Iterator[None]:
+        """Skip repair checks during updates."""
+        with patch(
+            "custom_components.unraid_management_agent.repairs.async_check_and_create_issues",
+            new_callable=AsyncMock,
+        ):
+            yield
+
+    async def _poll(self, coordinator: UnraidDataUpdateCoordinator) -> UnraidData:
+        """Run one update and store it as the coordinator data."""
+        coordinator.data = await coordinator._async_update_data()
+        return coordinator.data
+
+    @pytest.mark.asyncio
+    async def test_parity_history_fetched_on_slow_cadence(
+        self, coordinator: UnraidDataUpdateCoordinator, freezer: FrozenDateTimeFactory
+    ) -> None:
+        """Parity history is fetched on the first poll, then every interval."""
+        get_history = coordinator.client.get_parity_history
+
+        data = await self._poll(coordinator)
+        assert data.parity_history == _PARITY_HISTORY
+        assert get_history.await_count == 1
+
+        # Later polls within the interval reuse the previous value
+        freezer.tick(_PARITY_HISTORY_INTERVAL - timedelta(seconds=1))
+        data = await self._poll(coordinator)
+        assert data.parity_history == _PARITY_HISTORY
+        assert get_history.await_count == 1
+
+        # Once the interval has passed it is fetched again
+        newer = ParityHistory(records=[], timestamp="2026-10-09T00:00:00Z")
+        get_history.return_value = newer
+        freezer.tick(timedelta(seconds=1))
+        data = await self._poll(coordinator)
+        assert data.parity_history == newer
+        assert get_history.await_count == 2
+
+    @pytest.mark.asyncio
+    async def test_parity_history_failure_keeps_value_and_retries(
+        self, coordinator: UnraidDataUpdateCoordinator, freezer: FrozenDateTimeFactory
+    ) -> None:
+        """A failed fetch keeps the last value and is retried on the next poll."""
+        get_history = coordinator.client.get_parity_history
+        await self._poll(coordinator)
+
+        freezer.tick(_PARITY_HISTORY_INTERVAL)
+        get_history.side_effect = Exception("Parity history error")
+        data = await self._poll(coordinator)
+        assert data.parity_history == _PARITY_HISTORY
+        assert get_history.await_count == 2
+
+        # Retried on the very next poll, not after another full interval
+        get_history.side_effect = None
+        freezer.tick(timedelta(seconds=30))
+        data = await self._poll(coordinator)
+        assert data.parity_history == _PARITY_HISTORY
+        assert get_history.await_count == 3
+
+    @pytest.mark.asyncio
+    async def test_parity_history_kept_when_poll_fails(
+        self, coordinator: UnraidDataUpdateCoordinator, freezer: FrozenDateTimeFactory
+    ) -> None:
+        """History fetched by a poll that then fails is used by the next poll."""
+        get_history = coordinator.client.get_parity_history
+        coordinator.client.get_system_info.side_effect = Exception("down")
+        coordinator.client.get_array_status.side_effect = Exception("down")
+        with pytest.raises(UpdateFailed):
+            await self._poll(coordinator)
+        assert get_history.await_count == 1
+
+        # The server recovers within the interval: no refetch, history present
+        coordinator.client.get_system_info.side_effect = None
+        coordinator.client.get_array_status.side_effect = None
+        freezer.tick(timedelta(seconds=30))
+        data = await self._poll(coordinator)
+        assert data.parity_history == _PARITY_HISTORY
+        assert get_history.await_count == 1
+
+    @pytest.mark.asyncio
+    async def test_zfs_datasets_and_snapshots_keep_websocket_values(
+        self, coordinator: UnraidDataUpdateCoordinator
+    ) -> None:
+        """Polls neither fetch nor clear ZFS datasets and snapshots."""
+        data = await self._poll(coordinator)
+        assert data.zfs_datasets is None
+        assert data.zfs_snapshots is None
+
+        datasets = [ZFSDataset(name="tank/media")]
+        snapshots = [ZFSSnapshot(name="tank/media@daily", dataset="tank/media")]
+        coordinator._handle_websocket_event(
+            WebSocketEvent(event_type=EventType.ZFS_DATASET_UPDATE, data=datasets)
+        )
+        coordinator._handle_websocket_event(
+            WebSocketEvent(event_type=EventType.ZFS_SNAPSHOT_UPDATE, data=snapshots)
+        )
+
+        data = await self._poll(coordinator)
+        assert data.zfs_datasets == datasets
+        assert data.zfs_snapshots == snapshots
+        coordinator.client.list_zfs_datasets.assert_not_called()
+        coordinator.client.list_zfs_snapshots.assert_not_called()

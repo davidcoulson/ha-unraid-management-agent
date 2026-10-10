@@ -170,6 +170,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Less polling of unused and slow-changing data** ([#183](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/183)): ZFS datasets and snapshots are no longer fetched on every 30-second poll, because no entity uses them (WebSocket updates still fill them). Parity history, used only by the _Last parity check_ sensor, is fetched on the first poll and then at most every 15 minutes; a failed fetch keeps the previous value and is retried on the next poll. This saves 356 requests an hour and, on servers with many ZFS snapshots, megabytes of JSON an hour.
 - **CI test & Codecov workflow** — updated `.github/workflows/test.yml` to target `custom_components/unraid_management_agent`, provision dependencies via `uv pip install -e ".[dev,test]"`, upload coverage reports to Codecov via `codecov/codecov-action@v5`, and added concurrency cancellation.
 - **Codecov configuration** — updated `.codecov.yml` with `auto` coverage targets and clean comment formatting.
 - **WebSocket disconnect log rate limiting** ([#138](https://github.com/ruaan-deysel/ha-unraid-management-agent/pull/138), fixes [#135](https://github.com/ruaan-deysel/ha-unraid-management-agent/issues/135)): Rate-limited disconnect logs to warn once per session with close metadata, demoting repeated disconnects to `DEBUG` until successfully reconnected.
