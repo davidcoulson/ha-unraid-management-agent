@@ -43,7 +43,7 @@ from . import UnraidConfigEntry, UnraidDataUpdateCoordinator
 from .alerts import ALERT_STATE_FIRING
 from .api import EnergyIntegrator, RateCalculator, parse_timestamp
 from .api.formatting import format_bytes, format_duration
-from .api.models import TemperatureInfo, hwmon_temperature_keys
+from .api.models import TemperatureInfo, fan_sensor_keys, hwmon_temperature_keys
 from .cleanup import async_prune_seen_names
 from .const import (
     ATTR_ARRAY_STATE,
@@ -73,6 +73,11 @@ from .entity import (
     container_devices_enabled,
     find_vm,
     vm_devices_enabled,
+)
+from .hwmon import (
+    async_adopt_unique_id,
+    fan_legacy_unique_ids,
+    temperature_legacy_unique_ids,
 )
 from .storage import (
     StorageEntitySpec,
@@ -1814,6 +1819,8 @@ def _hwmon_temperature_channels(
         chip = reading.source or ""
         if counts[(short_chip(reading), reading.hwmon_feature)] == 1:
             chip = short_chip(reading)
+        elif reading.device_id:
+            chip = f"{short_chip(reading)} {reading.device_id}"
         channels.append((key, reading, f"{chip} {reading.label}".strip()))
     return channels
 
@@ -1876,11 +1883,12 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
         entry: UnraidConfigEntry,
         fan_name: str,
         normalized_name: str,
+        key: str | None = None,
     ) -> None:
         """Initialize the sensor."""
         self._original_fan_name = fan_name
-        sanitized = normalized_name.lower().replace(" ", "_")
-        super().__init__(coordinator, f"fan_{sanitized}")
+        self._key = key or normalized_name.lower().replace(" ", "_")
+        super().__init__(coordinator, f"fan_{self._key}")
         self._fan_name = fan_name
         self._normalized_name = normalized_name
         self._attr_translation_key = "fan"
@@ -1930,6 +1938,9 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
             return None
 
         fans: list[Any] = (data.system.fans or []) or []
+        for key, _name, fan in fan_sensor_keys(fans):
+            if key == self._key and not isinstance(fan, (int, float)):
+                return fan.get("rpm") if isinstance(fan, dict) else fan.rpm
         for fan in fans:
             if isinstance(fan, dict):
                 if fan.get("name") == self._fan_name:
@@ -4279,32 +4290,15 @@ async def async_setup_entry(
     )
     if fan_control_enabled and data and data.system:
         fans: list[Any] = (data.system.fans or []) or []
-        seen_names: set[str] = set()
-        for idx, fan in enumerate(fans):
-            if isinstance(fan, dict):
-                fan_name = fan.get("name") or f"fan_{idx}"
-                normalized = fan_name
-            elif isinstance(fan, (int, float)):
-                fan_name = f"fan_{idx}"
-                normalized = fan_name
-            else:
-                fan_name = fan.name or f"fan_{idx}"
-                normalized = fan.normalized_name or fan_name
-            # Ensure uniqueness in case of duplicate normalized names
-            if normalized in seen_names:
-                normalized_key = f"{normalized}_{idx}"
-                _LOGGER.debug(
-                    "Duplicate fan name '%s' (normalized from '%s'), using '%s'",
-                    normalized,
-                    fan_name,
-                    normalized_key,
-                )
-                fan_name = f"{fan_name}_{idx}"
-                normalized = normalized_key
-            else:
-                normalized_key = normalized
-            seen_names.add(normalized_key)
-            entities.append(UnraidFanSensor(coordinator, entry, fan_name, normalized))
+        for key, fan_name, fan in fan_sensor_keys(fans):
+            async_adopt_unique_id(
+                hass,
+                "sensor",
+                f"{entry.entry_id}_fan_{key}",
+                fan_legacy_unique_ids(entry.entry_id, fan, fans),
+            )
+            display = getattr(fan, "normalized_name", None) or fan_name
+            entities.append(UnraidFanSensor(coordinator, entry, fan_name, display, key))
 
     # GPU sensors - only if gpu collector is enabled
     if coordinator.is_collector_enabled("gpu") and data and data.gpu:
@@ -4636,11 +4630,21 @@ async def async_setup_entry(
             lambda key: f"{entry.entry_id}_temperature_{key}",
         )
         new_entities: list[SensorEntity] = []
-        for key, _reading, display_name in _hwmon_temperature_channels(
-            current_data.system
-        ):
+        channels = _hwmon_temperature_channels(current_data.system)
+        readings = [reading for _, reading, _ in channels]
+        for key, reading, display_name in channels:
             if key not in seen_temperatures:
                 seen_temperatures.add(key)
+                # A channel of a USB controller may be stored under an earlier
+                # key (address or model based); keep that entity (see hwmon.py)
+                async_adopt_unique_id(
+                    hass,
+                    "sensor",
+                    f"{entry.entry_id}_temperature_{key}",
+                    temperature_legacy_unique_ids(
+                        hass, entry.entry_id, reading, readings
+                    ),
+                )
                 new_entities.append(
                     UnraidHwmonTemperatureSensor(coordinator, key, display_name)
                 )
