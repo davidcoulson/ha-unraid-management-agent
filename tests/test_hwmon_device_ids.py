@@ -542,3 +542,14 @@ async def test_same_model_chips_without_device_id(
     state = hass.states.get(missing)
     assert state is not None
     assert state.state in ("unknown", "unavailable")
+
+    # All fans disappear: no sensor takes fan_control data by number
+    system.fans = []
+    await entry.runtime_data.coordinator.async_refresh()
+    await hass.async_block_till_done()
+    for key in ("nct6798-isa-0290_fan1", "nct6798-isa-0a20_fan1"):
+        entity_id = entity_registry.async_get_entity_id("sensor", DOMAIN, f"{FAN}{key}")
+        assert entity_id is not None
+        state = hass.states.get(entity_id)
+        assert state is not None
+        assert state.state in ("unknown", "unavailable")

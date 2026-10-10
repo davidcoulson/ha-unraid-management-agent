@@ -1926,7 +1926,7 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
         fans: list[Any] = (data.system.fans or []) if data.system else []
         current = self._current_fan()
         # Nor can it stand in for a fan that is missing from the current data
-        if (current is None and fans) or fan_model_is_shared(current, fans):
+        if current is None or fan_model_is_shared(current, fans):
             return None
 
         # Match by fan index suffix (e.g., nct6793_fan1 → index 1 → hwmon_index 1)
