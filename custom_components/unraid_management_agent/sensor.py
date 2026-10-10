@@ -1939,7 +1939,7 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
         """Return this sensor's fan from the latest system data, if present."""
         data = self.coordinator.data
         fans: list[Any] = (data.system.fans or []) if data and data.system else []
-        for key, _name, fan in fan_sensor_keys(fans):
+        for key, *_, fan in fan_sensor_keys(fans):
             if key == self._key:
                 return fan
         return None
@@ -4641,17 +4641,21 @@ async def async_setup_entry(
         )
         fans: list[Any] = (current_data.system.fans or []) or []
         new_entities: list[SensorEntity] = []
-        for key, fan_name, fan in fan_sensor_keys(fans):
+        prefix = f"{entry.entry_id}_fan_"
+        for key, fan_name, display, fan in fan_sensor_keys(fans):
             if key in seen_fans:
                 continue
             seen_fans.add(key)
-            async_adopt_unique_id(
+            adopted = async_adopt_unique_id(
                 hass,
                 "sensor",
-                f"{entry.entry_id}_fan_{key}",
+                f"{prefix}{key}",
                 fan_legacy_unique_ids(entry.entry_id, fan, fans),
             )
-            display = getattr(fan, "normalized_name", None) or fan_name
+            if adopted and adopted.removeprefix(prefix) in seen_fans:
+                # A loaded sensor moved to this key; reload so it reads by it
+                hass.config_entries.async_schedule_reload(entry.entry_id)
+                return
             new_entities.append(
                 UnraidFanSensor(coordinator, entry, fan_name, display, key)
             )
@@ -4678,6 +4682,7 @@ async def async_setup_entry(
             lambda key: f"{entry.entry_id}_temperature_{key}",
         )
         new_entities: list[SensorEntity] = []
+        prefix = f"{entry.entry_id}_temperature_"
         channels = _hwmon_temperature_channels(current_data.system)
         readings = [reading for _, reading, _ in channels]
         for key, reading, display_name in channels:
@@ -4685,10 +4690,10 @@ async def async_setup_entry(
                 seen_temperatures.add(key)
                 # A channel of a USB controller may be stored under an earlier
                 # key (address or model based); keep that entity (see hwmon.py)
-                async_adopt_unique_id(
+                adopted = async_adopt_unique_id(
                     hass,
                     "sensor",
-                    f"{entry.entry_id}_temperature_{key}",
+                    f"{prefix}{key}",
                     temperature_legacy_unique_ids(
                         hass,
                         entry.entry_id,
@@ -4697,6 +4702,10 @@ async def async_setup_entry(
                         current_data.system.fans or [],
                     ),
                 )
+                if adopted and adopted.removeprefix(prefix) in seen_temperatures:
+                    # A loaded sensor moved to this key; reload so it reads by it
+                    hass.config_entries.async_schedule_reload(entry.entry_id)
+                    return
                 new_entities.append(
                     UnraidHwmonTemperatureSensor(coordinator, key, display_name)
                 )

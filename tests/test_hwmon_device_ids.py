@@ -94,7 +94,7 @@ def test_fan_keys() -> None:
     """Fans with a device_id are keyed by device, so a rename keeps the key."""
     assert FAN_A.device_key == FAN_A_RENAMED.device_key == "octo_07274_50017_fan8"
     assert FAN_A.chip_short == "octo"
-    keys = [key for key, _, _ in fan_sensor_keys([FAN_A_RENAMED, FAN_B])]
+    keys = [key for key, *_ in fan_sensor_keys([FAN_A_RENAMED, FAN_B])]
     assert keys == ["octo_07274_50017_fan8", "octo_07274_61234_fan8"]
     plain = FanInfo(name="nct6798_fan1", rpm=900)
     assert plain.device_key is None
@@ -342,6 +342,67 @@ async def test_agent_upgrade_while_running(
     assert entity is not None
     assert entity.unique_id == f"{FAN}octo_07274_50017_fan8"
     assert _value(hass, flow) == 750
+
+    # A second Octo renames the first one's fans; the sensor reads by device
+    system.fans = [FAN_A_SHARED, FAN_B]
+    await entry.runtime_data.coordinator.async_refresh()
+    await hass.async_block_till_done()
+    assert _value(hass, flow) == 751
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_agent_upgrade_while_running_temperature(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """An enabled temperature sensor follows its channel to the device key."""
+    system = mock_async_unraid_client.get_system_info.return_value
+    system.temperatures = [_temp("octo-hid-3-3", 27.0, None)]
+    system.fans = []
+    entry = _entry(hass)
+    _register(entity_registry, entry, f"{TEMP}octo_hid_temp1", "sensor.coolant")
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert _value(hass, "sensor.coolant") == 27.0
+
+    system.temperatures = [OCTO_A_RECONNECTED]
+    await entry.runtime_data.coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+    coolant = entity_registry.async_get("sensor.coolant")
+    assert coolant is not None
+    assert coolant.unique_id == f"{TEMP}octo_hid_07274_50017_temp1"
+    assert _value(hass, "sensor.coolant") == 28.4
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_duplicate_fan_names_do_not_share_control_data(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """A duplicate fan name is suffixed, so it cannot take another fan's data."""
+    system = mock_async_unraid_client.get_system_info.return_value
+    system.temperatures = []
+    system.fans = [
+        FanInfo(name="hwmon2_fan1", rpm=500),
+        FanInfo(name="hwmon3_fan1", rpm=600),
+    ]
+    mock_async_unraid_client.get_fan_status.return_value = FanControlStatus(
+        fans=[FanDevice(id="hwmon2_fan1", name="fan1", rpm=999, hwmon_index=2)]
+    )
+    entry = _entry(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    second = entity_registry.async_get_entity_id("sensor", DOMAIN, f"{FAN}fan1_1")
+    assert second is not None
+    assert _value(hass, second) == 600
+    assert [display for _, _, display, _ in fan_sensor_keys(system.fans)] == [
+        "fan1",
+        "fan1_1",
+    ]
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")

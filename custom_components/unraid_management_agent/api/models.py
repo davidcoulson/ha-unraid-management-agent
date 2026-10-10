@@ -3526,25 +3526,29 @@ class StorageTopology(BaseModel):
     model_config = ConfigDict(frozen=True, extra="allow")
 
 
-def fan_sensor_keys(fans: Any) -> list[tuple[str, str, Any]]:
+def fan_sensor_keys(fans: Any) -> list[tuple[str, str, str, Any]]:
     """
-    Return (key, name, fan) for each fan, as the fan sensors' unique IDs use it.
+    Return (key, name, display name, fan) for each fan.
 
-    The key is the fan's device_key when the agent reports a device_id, else
-    its normalized name; a key seen before gets the fan's position appended.
-    Fans may be FanInfo models, plain dicts or bare numbers (older agents).
+    The key (used in the fan sensors' unique IDs) is the fan's device_key when
+    the agent reports a device_id, else its normalized name. A key seen before
+    gets the fan's position appended, and so do its name and display name, so
+    a duplicate never matches another fan's control device by name. Fans may
+    be FanInfo models, plain dicts or bare numbers (older agents).
     """
-    keyed: list[tuple[str, str, Any]] = []
+    keyed: list[tuple[str, str, str, Any]] = []
     seen: set[str] = set()
     for idx, fan in enumerate(fans or []):
         if isinstance(fan, dict):
             name = fan.get("name") or f"fan_{idx}"
-            key = name
+            key = display = name
         elif isinstance(fan, int | float):
             name = f"fan_{idx}"
-            key = name
+            key = display = name
         else:
             name = getattr(fan, "name", None) or f"fan_{idx}"
+            normalized = getattr(fan, "normalized_name", None)
+            display = normalized if isinstance(normalized, str) and normalized else name
             key = next(
                 (
                     value
@@ -3557,7 +3561,7 @@ def fan_sensor_keys(fans: Any) -> list[tuple[str, str, Any]]:
                 name,
             )
         if key in seen:
-            key = f"{key}_{idx}"
+            key, name, display = (f"{part}_{idx}" for part in (key, name, display))
         seen.add(key)
-        keyed.append((key.lower().replace(" ", "_"), name, fan))
+        keyed.append((key.lower().replace(" ", "_"), name, display, fan))
     return keyed

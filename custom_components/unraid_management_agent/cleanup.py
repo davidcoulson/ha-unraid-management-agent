@@ -206,7 +206,7 @@ def _build_valid_dynamic_entity_keys(
 
     # ── Fans (RPM sensors from system info) ───────────────────────────────────
     if data.system and data.system.fans:
-        for key, _name, _fan in fan_sensor_keys(data.system.fans):
+        for key, *_ in fan_sensor_keys(data.system.fans):
             keys.add(f"fan_{key}")  # sensor
 
     # ── hwmon temperature channels (from system info) ─────────────────────────

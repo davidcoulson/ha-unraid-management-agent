@@ -28,11 +28,15 @@ _LOGGER = logging.getLogger(__name__)
 @callback
 def async_adopt_unique_id(
     hass: HomeAssistant, domain: str, target: str, candidates: list[str]
-) -> None:
-    """Give the first existing candidate entity the target unique ID, if free."""
+) -> str | None:
+    """
+    Give the first existing candidate entity the target unique ID, if free.
+
+    Returns the candidate's former unique ID when an entity was moved.
+    """
     registry = er.async_get(hass)
     if registry.async_get_entity_id(domain, DOMAIN, target):
-        return
+        return None
     for candidate in candidates:
         if candidate == target:
             continue
@@ -41,7 +45,8 @@ def async_adopt_unique_id(
             continue
         registry.async_update_entity(entity_id, new_unique_id=target)
         _LOGGER.info("Moved %s from unique ID %s to %s", entity_id, candidate, target)
-        return
+        return candidate
+    return None
 
 
 def _registry_match(
