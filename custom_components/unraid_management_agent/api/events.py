@@ -1,8 +1,9 @@
 """
 WebSocket event models and parsing utilities.
 
-This module provides Pydantic models for WebSocket events and automatic
-event type detection based on data structure.
+This module provides Pydantic models for WebSocket events. The agent's
+{"event", "timestamp", "data"} envelope is unwrapped and the event type is
+taken from the topic name, or detected from the data structure.
 
 Example:
     >>> from custom_components.unraid_management_agent.api.events import parse_event, SystemUpdateEvent
@@ -216,8 +217,8 @@ def identify_event_type(data: Any) -> EventType | None:
     """
     Identify the event type from data structure.
 
-    Since the WebSocket server doesn't send a 'type' field, events must
-    be identified by inspecting the data structure.
+    Used for payloads whose topic name doesn't identify them: bare payloads
+    and envelopes named "update" (see resolve_event).
 
     Args:
         data: Raw event data (dict or list)
@@ -333,104 +334,219 @@ def identify_event_type(data: Any) -> EventType | None:
     return None
 
 
+# Envelope event names (agent topic names) mapped to EventType. Most agent
+# topics use the EventType value; these use a different name.
+_EVENT_NAMES: dict[str, EventType] = {
+    **{event_type.value: event_type for event_type in EventType},
+    "gpu_metrics_update": EventType.GPU_UPDATE,
+    "notifications_update": EventType.NOTIFICATIONS_RESPONSE,
+    "zfs_pools_update": EventType.ZFS_POOL_UPDATE,
+    "zfs_datasets_update": EventType.ZFS_DATASET_UPDATE,
+    "zfs_snapshots_update": EventType.ZFS_SNAPSHOT_UPDATE,
+    "zfs_arc_stats_update": EventType.ZFS_ARC_UPDATE,
+}
+
+# Envelope name the agent uses for every event before v2026.03.00, and still
+# for collector_state_change: the payload has to identify itself.
+_GENERIC_EVENT_NAME = "update"
+
+# Events whose payload is a list (the agent sends null for an empty Go slice).
+_LIST_EVENTS = frozenset(
+    {
+        EventType.DISK_LIST_UPDATE,
+        EventType.CONTAINER_LIST_UPDATE,
+        EventType.VM_LIST_UPDATE,
+        EventType.NETWORK_LIST_UPDATE,
+        EventType.SHARE_LIST_UPDATE,
+        EventType.GPU_UPDATE,
+        EventType.NOTIFICATION_UPDATE,
+        EventType.ZFS_POOL_UPDATE,
+        EventType.ZFS_DATASET_UPDATE,
+        EventType.ZFS_SNAPSHOT_UPDATE,
+    }
+)
+
+
+def _is_envelope(data: Any) -> bool:
+    """Return True for the agent's {"event": ..., "timestamp": ..., "data": ...}."""
+    return (
+        isinstance(data, dict) and isinstance(data.get("event"), str) and "data" in data
+    )
+
+
+def _identify_agent_shape(payload: Any) -> EventType | None:
+    """
+    Identify agent payloads that identify_event_type's shape rules miss.
+
+    The agent's ArrayStatus has num_disks (not total_disks), ZFS snapshots
+    have creation_time (not creation), and ZFS datasets have neither
+    mountpoint nor pool. Only reached when identify_event_type found nothing.
+    """
+    if isinstance(payload, dict):
+        if "state" in payload and "num_disks" in payload:
+            return EventType.ARRAY_STATUS_UPDATE
+        return None
+    if not isinstance(payload, list) or not payload:
+        return None
+    first = payload[0]
+    if not isinstance(first, dict):
+        return None
+    if "dataset" in first and "creation_time" in first:
+        return EventType.ZFS_SNAPSHOT_UPDATE
+    if "compress_ratio" in first and "referenced_bytes" in first:
+        return EventType.ZFS_DATASET_UPDATE
+    return None
+
+
+def _identify_payload(payload: Any) -> EventType | None:
+    """Identify a payload by its own "event" field, else by its shape."""
+    if isinstance(payload, dict):
+        named = _EVENT_NAMES.get(str(payload.get("event")))
+        if named is not None:
+            return named
+    return identify_event_type(payload) or _identify_agent_shape(payload)
+
+
+def resolve_event(data: Any) -> tuple[EventType | None, Any]:
+    """
+    Return the event type and payload of a raw websocket message.
+
+    The agent wraps every event as ``{"event": "<topic>", "timestamp": ...,
+    "data": <payload>}``. A known topic name picks the type directly. The
+    generic ``"update"`` name (all events from agents before v2026.03.00,
+    and collector_state_change) falls back to identifying the payload. Other
+    topics (mover_update, registration_update, ...) are not used by the
+    integration and resolve to None. Messages without an envelope are
+    identified from their own shape.
+    """
+    if not _is_envelope(data):
+        return _identify_payload(data), data
+
+    payload = data["data"]
+    name = data["event"]
+    if name == _GENERIC_EVENT_NAME:
+        return _identify_payload(payload), payload
+    return _EVENT_NAMES.get(name), payload
+
+
+def _collector_details(payload: dict[str, Any]) -> CollectorDetails:
+    """
+    Build CollectorDetails from a collector_state_change payload.
+
+    The agent sends ``collector`` and ``interval`` where /collectors/status
+    uses ``name`` and ``interval_seconds``.
+    """
+    fields = dict(payload)
+    if "name" not in fields and "collector" in fields:
+        fields["name"] = fields["collector"]
+    if "interval_seconds" not in fields and "interval" in fields:
+        fields["interval_seconds"] = fields["interval"]
+    return CollectorDetails.model_validate(fields)
+
+
 def parse_event(data: Any) -> WebSocketEvent:
     """
     Parse raw WebSocket data into a typed event.
 
-    This function identifies the event type and returns the appropriate
-    event class with parsed Pydantic models.
+    This function unwraps the agent's event envelope, identifies the event
+    type and returns the appropriate event class with parsed Pydantic models.
 
     Args:
-        data: Raw event data from WebSocket (dict or list)
+        data: Raw message from the WebSocket (an envelope, or a bare payload)
 
     Returns:
         A WebSocketEvent subclass instance with parsed data
 
     Example:
-        >>> data = {"hostname": "unraid", "cpu_usage_percent": 25.5}
-        >>> event = parse_event(data)
+        >>> event = parse_event(
+        ...     {"event": "system_update", "data": {"hostname": "unraid"}}
+        ... )
         >>> isinstance(event, SystemUpdateEvent)
         True
         >>> event.data.hostname
         'unraid'
 
     """
-    event_type = identify_event_type(data)
+    event_type, payload = resolve_event(data)
     if event_type is None:
         return UnknownEvent(data=data)
+    if payload is None and event_type in _LIST_EVENTS:
+        payload = []
 
     match event_type:
         case EventType.SYSTEM_UPDATE:
-            return SystemUpdateEvent(data=SystemInfo.model_validate(data))
+            return SystemUpdateEvent(data=SystemInfo.model_validate(payload))
 
         case EventType.ARRAY_STATUS_UPDATE:
-            return ArrayStatusUpdateEvent(data=ArrayStatus.model_validate(data))
+            return ArrayStatusUpdateEvent(data=ArrayStatus.model_validate(payload))
 
         case EventType.DISK_LIST_UPDATE:
-            disks = [DiskInfo.model_validate(d) for d in data]
+            disks = [DiskInfo.model_validate(d) for d in payload]
             return DiskListUpdateEvent(data=disks)
 
         case EventType.CONTAINER_LIST_UPDATE:
-            containers = [ContainerInfo.model_validate(c) for c in data]
+            containers = [ContainerInfo.model_validate(c) for c in payload]
             return ContainerListUpdateEvent(data=containers)
 
         case EventType.VM_LIST_UPDATE:
-            vms = [VMInfo.model_validate(v) for v in data]
+            vms = [VMInfo.model_validate(v) for v in payload]
             return VMListUpdateEvent(data=vms)
 
         case EventType.NETWORK_LIST_UPDATE:
-            interfaces = [NetworkInterface.model_validate(n) for n in data]
+            interfaces = [NetworkInterface.model_validate(n) for n in payload]
             return NetworkListUpdateEvent(data=interfaces)
 
         case EventType.SHARE_LIST_UPDATE:
-            shares = [ShareInfo.model_validate(s) for s in data]
+            shares = [ShareInfo.model_validate(s) for s in payload]
             return ShareListUpdateEvent(data=shares)
 
         case EventType.UPS_STATUS_UPDATE:
-            return UPSStatusUpdateEvent(data=UPSInfo.model_validate(data))
+            return UPSStatusUpdateEvent(data=UPSInfo.model_validate(payload))
 
         case EventType.GPU_UPDATE:
-            gpus = [GPUInfo.model_validate(g) for g in data]
+            gpus = [GPUInfo.model_validate(g) for g in payload]
             return GPUUpdateEvent(data=gpus)
 
         case EventType.NOTIFICATION_UPDATE:
-            notifications = [Notification.model_validate(n) for n in data]
+            notifications = [Notification.model_validate(n) for n in payload]
             return NotificationUpdateEvent(data=notifications)
 
         case EventType.ZFS_POOL_UPDATE:
-            pools = [ZFSPool.model_validate(p) for p in data]
+            pools = [ZFSPool.model_validate(p) for p in payload]
             return ZFSPoolUpdateEvent(data=pools)
 
         case EventType.ZFS_DATASET_UPDATE:
-            datasets = [ZFSDataset.model_validate(d) for d in data]
+            datasets = [ZFSDataset.model_validate(d) for d in payload]
             return ZFSDatasetUpdateEvent(data=datasets)
 
         case EventType.ZFS_SNAPSHOT_UPDATE:
-            snapshots = [ZFSSnapshot.model_validate(s) for s in data]
+            snapshots = [ZFSSnapshot.model_validate(s) for s in payload]
             return ZFSSnapshotUpdateEvent(data=snapshots)
 
         case EventType.ZFS_ARC_UPDATE:
-            return ZFSArcUpdateEvent(data=ZFSArcStats.model_validate(data))
+            return ZFSArcUpdateEvent(data=ZFSArcStats.model_validate(payload))
 
         case EventType.NUT_STATUS_UPDATE:
-            return NUTStatusUpdateEvent(data=NUTInfo.model_validate(data))
+            return NUTStatusUpdateEvent(data=NUTInfo.model_validate(payload))
 
         case EventType.HARDWARE_UPDATE:
-            return HardwareUpdateEvent(data=HardwareFullInfo.model_validate(data))
+            return HardwareUpdateEvent(data=HardwareFullInfo.model_validate(payload))
 
         case EventType.COLLECTOR_STATE_CHANGE:
-            return CollectorStateChangeEvent(data=CollectorDetails.model_validate(data))
+            return CollectorStateChangeEvent(data=_collector_details(payload))
 
         case EventType.NOTIFICATIONS_RESPONSE:
             return NotificationsResponseEvent(
-                data=NotificationsResponse.model_validate(data)
+                data=NotificationsResponse.model_validate(payload)
             )
 
         case EventType.FAN_CONTROL_UPDATE:
-            return FanControlUpdateEvent(data=FanControlStatus.model_validate(data))
+            return FanControlUpdateEvent(data=FanControlStatus.model_validate(payload))
 
         case EventType.SOURCE_STATUS_CHANGED:
-            return SourceStatusChangedEvent(data=data)
+            return SourceStatusChangedEvent(
+                data=payload if isinstance(payload, dict) else {}
+            )
 
         case _ as unreachable:
             assert_never(unreachable)

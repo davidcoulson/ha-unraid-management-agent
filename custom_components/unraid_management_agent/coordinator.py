@@ -157,13 +157,35 @@ def _merge_collector_state(
 
     A collector_state_change event carries a single CollectorDetails, not the
     full CollectorStatus. Without a full status yet (no successful poll),
-    keep None so collector checks fall back to their defaults.
+    keep None so collector checks fall back to their defaults. The agent's
+    event has no required, error_count or last_run, so those are kept from
+    the polled entry.
     """
     if status is None or not isinstance(details, CollectorDetails):
         return status
-    collectors = [c for c in status.collectors or [] if c.name != details.name]
-    collectors.append(details)
-    return status.model_copy(update={"collectors": collectors})
+    changes = details.model_dump(
+        include=set(CollectorDetails.model_fields), exclude_unset=True
+    )
+    collectors: list[CollectorDetails] = []
+    found = False
+    for collector in status.collectors or []:
+        if collector.name == details.name:
+            collectors.append(collector.model_copy(update=changes))
+            found = True
+        else:
+            collectors.append(collector)
+    if not found:
+        collectors.append(details)
+    # Recount like the agent's /collectors/status (enabled or still running)
+    enabled = sum(1 for c in collectors if c.enabled or c.status == "running")
+    return status.model_copy(
+        update={
+            "collectors": collectors,
+            "total": len(collectors),
+            "enabled_count": enabled,
+            "disabled_count": len(collectors) - enabled,
+        }
+    )
 
 
 class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
@@ -736,7 +758,9 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
 
     def _handle_websocket_event(self, event: WebSocketEvent) -> None:
         """Handle WebSocket event and update coordinator data."""
-        if not self.data:
+        if not self.data or event.event_type is None:
+            # No data yet, or an event the integration does not use
+            # (UnknownEvent): nothing changed, so don't notify entities.
             return
 
         # Update coordinator data based on event type using the vendored EventType enum
