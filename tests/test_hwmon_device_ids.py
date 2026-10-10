@@ -430,6 +430,10 @@ async def test_two_controllers_fans_with_fan_control(
         "sensor", DOMAIN, f"{FAN}octo_07274_50017_fan8"
     )
     assert first is not None
+    state = hass.states.get(first)
+    assert state is not None
+    assert float(state.state) == 750
+    assert "fan_id" not in state.attributes
 
     system.fans = [FAN_A_SHARED, FAN_B]
     await entry.runtime_data.coordinator.async_refresh()
@@ -499,3 +503,30 @@ async def test_missing_controller_fan_is_unavailable(
     state = hass.states.get(first)
     assert state is not None
     assert state.state == "unavailable"
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_same_model_chips_without_device_id(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """Two motherboard chips of one model do not take fan_control by number."""
+    system = mock_async_unraid_client.get_system_info.return_value
+    system.temperatures = []
+    system.fans = [
+        FanInfo(name="nct6798-isa-0290_fan1", rpm=500, source="nct6798-isa-0290"),
+        FanInfo(name="nct6798-isa-0a20_fan1", rpm=600, source="nct6798-isa-0a20"),
+        FanInfo(name="it8688_fan2", rpm=700),
+    ]
+    mock_async_unraid_client.get_fan_status.return_value = FanControlStatus(
+        fans=[FanDevice(id="hwmon2_fan1", name="x", rpm=999, hwmon_index=1)]
+    )
+    entry = _entry(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    for key, rpm in (("nct6798-isa-0290_fan1", 500), ("nct6798-isa-0a20_fan1", 600)):
+        entity_id = entity_registry.async_get_entity_id("sensor", DOMAIN, f"{FAN}{key}")
+        assert entity_id is not None
+        assert _value(hass, entity_id) == rpm

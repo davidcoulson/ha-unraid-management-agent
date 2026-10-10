@@ -1910,7 +1910,9 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
         suffix, so we match on hwmon_index when an exact name match fails.
         """
         data = self.coordinator.data
-        if not data or not data.fan_control:
+        # fan_control does not say which controller a fan is on, so it cannot
+        # be matched to a device-keyed fan (see UnraidDeviceFanSensor)
+        if self._device_keyed or not data or not data.fan_control:
             return None
 
         devices = (data.fan_control.fans or []) or []
@@ -1923,9 +1925,7 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
         # The fan number alone cannot tell two controllers of one model apart
         fans: list[Any] = (data.system.fans or []) if data.system else []
         current = self._current_fan()
-        if (self._device_keyed and current is None) or fan_model_is_shared(
-            current, fans
-        ):
+        if fan_model_is_shared(current, fans):
             return None
 
         # Match by fan index suffix (e.g., nct6793_fan1 → index 1 → hwmon_index 1)
@@ -2029,7 +2029,8 @@ class UnraidDeviceFanSensor(UnraidFanSensor):
     Speed of a fan keyed by its controller's device_id (USB HID controllers).
 
     It only ever reads its own controller: when that controller is missing the
-    sensor is unavailable rather than matching another one's fan by number.
+    sensor is unavailable rather than matching another one's fan by number,
+    and it takes no fan_control data, which cannot be tied to a controller.
     """
 
     _device_keyed = True
