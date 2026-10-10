@@ -530,3 +530,15 @@ async def test_same_model_chips_without_device_id(
         entity_id = entity_registry.async_get_entity_id("sensor", DOMAIN, f"{FAN}{key}")
         assert entity_id is not None
         assert _value(hass, entity_id) == rpm
+
+    # The 0290 chip disappears: its sensor does not take the other's data
+    system.fans = [system.fans[1], system.fans[2]]
+    await entry.runtime_data.coordinator.async_refresh()
+    await hass.async_block_till_done()
+    missing = entity_registry.async_get_entity_id(
+        "sensor", DOMAIN, f"{FAN}nct6798-isa-0290_fan1"
+    )
+    assert missing is not None
+    state = hass.states.get(missing)
+    assert state is not None
+    assert state.state in ("unknown", "unavailable")

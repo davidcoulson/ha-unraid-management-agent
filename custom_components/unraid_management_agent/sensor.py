@@ -1925,7 +1925,8 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
         # The fan number alone cannot tell two controllers of one model apart
         fans: list[Any] = (data.system.fans or []) if data.system else []
         current = self._current_fan()
-        if fan_model_is_shared(current, fans):
+        # Nor can it stand in for a fan that is missing from the current data
+        if (current is None and fans) or fan_model_is_shared(current, fans):
             return None
 
         # Match by fan index suffix (e.g., nct6793_fan1 → index 1 → hwmon_index 1)
