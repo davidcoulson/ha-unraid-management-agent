@@ -42,10 +42,9 @@ from custom_components.unraid_management_agent.api.events import (
     VMListUpdateEvent,
     WebSocketEvent,
     ZFSArcUpdateEvent,
-    ZFSDatasetUpdateEvent,
     ZFSPoolUpdateEvent,
-    ZFSSnapshotUpdateEvent,
     parse_event,
+    resolve_event,
 )
 from custom_components.unraid_management_agent.api.models import (
     CollectorDetails,
@@ -77,8 +76,8 @@ EXPECTED: list[tuple[str, type[WebSocketEvent]]] = [
     ("hardware_update", HardwareUpdateEvent),
     ("notifications_update", NotificationsResponseEvent),
     ("zfs_pools_update", ZFSPoolUpdateEvent),
-    ("zfs_datasets_update", ZFSDatasetUpdateEvent),
-    ("zfs_snapshots_update", ZFSSnapshotUpdateEvent),
+    ("zfs_datasets_update", UnknownEvent),  # identified, but no entity uses it
+    ("zfs_snapshots_update", UnknownEvent),  # identified, but no entity uses it
     ("zfs_arc_stats_update", ZFSArcUpdateEvent),
     ("fan_control_update", FanControlUpdateEvent),
     ("update", CollectorStateChangeEvent),  # collector_state_change
@@ -168,17 +167,23 @@ def test_older_agent_generic_update_envelope() -> None:
 @pytest.mark.parametrize(
     ("topic", "expected"),
     [
-        ("array_status_update", ArrayStatusUpdateEvent),
-        ("zfs_datasets_update", ZFSDatasetUpdateEvent),
-        ("zfs_snapshots_update", ZFSSnapshotUpdateEvent),
+        ("array_status_update", EventType.ARRAY_STATUS_UPDATE),
+        ("zfs_datasets_update", EventType.ZFS_DATASET_UPDATE),
+        ("zfs_snapshots_update", EventType.ZFS_SNAPSHOT_UPDATE),
     ],
 )
 def test_generic_update_with_agent_payload_shapes(
-    topic: str, expected: type[WebSocketEvent]
+    topic: str, expected: EventType
 ) -> None:
     """Recorded payloads that the older shape rules miss are still identified."""
     frame = {**_frame(topic), "event": "update"}
-    assert type(parse_event(frame)) is expected
+    assert resolve_event(frame)[0] is expected
+
+
+@pytest.mark.parametrize("topic", ["zfs_datasets_update", "zfs_snapshots_update"])
+def test_unused_zfs_topics_not_parsed(topic: str) -> None:
+    """ZFS dataset and snapshot pushes feed no entity, so they are not parsed."""
+    assert isinstance(parse_event(_frame(topic)), UnknownEvent)
 
 
 @pytest.mark.parametrize(
@@ -279,8 +284,9 @@ async def test_recorded_frames_update_coordinator(
     assert [n.name for n in data.network] == ["eth0"]
     assert [n.subject for n in data.notifications.notifications] == ["Test"]
     assert [p.name for p in data.zfs_pools] == ["tank"]
-    assert [d.name for d in data.zfs_datasets] == ["tank/data"]
-    assert [s.name for s in data.zfs_snapshots] == ["tank/data@s1"]
+    # Not parsed (no entity uses them), so coordinator data keeps None
+    assert data.zfs_datasets is None
+    assert data.zfs_snapshots is None
     assert data.zfs_arc is not None
     assert data.fan_control is not None
 

@@ -28,8 +28,6 @@ from custom_components.unraid_management_agent.api.models import (
     ParityCheckRecord,
     ParityHistory,
     SystemInfo,
-    ZFSDataset,
-    ZFSSnapshot,
 )
 from custom_components.unraid_management_agent.const import DOMAIN
 from custom_components.unraid_management_agent.coordinator import (
@@ -146,16 +144,16 @@ class TestCoordinatorWebSocketEvents:
 
         assert coordinator.data.disks == new_disks
 
-    def test_handle_websocket_event_disk_single_update(self, coordinator) -> None:
-        """Test handling single disk update WebSocket event."""
+    def test_handle_websocket_event_disk_list_replaces_field(self, coordinator) -> None:
+        """A disk list event replaces the disks with the event's full list."""
         coordinator.data = MagicMock()
-        single_disk = mock_disks()[0]
-        event = WebSocketEvent(event_type=EventType.DISK_LIST_UPDATE, data=single_disk)
+        disks = mock_disks()
+        event = WebSocketEvent(event_type=EventType.DISK_LIST_UPDATE, data=disks)
 
         with patch.object(coordinator, "async_set_updated_data"):
             coordinator._handle_websocket_event(event)
 
-        assert coordinator.data.disks == [single_disk]
+        assert coordinator.data.disks is disks
 
     def test_handle_websocket_event_ups_status_update(self, coordinator) -> None:
         """Test handling UPS status update WebSocket event."""
@@ -179,16 +177,16 @@ class TestCoordinatorWebSocketEvents:
 
         assert coordinator.data.gpu == new_gpu
 
-    def test_handle_websocket_event_gpu_single_update(self, coordinator) -> None:
-        """Test handling single GPU update WebSocket event."""
+    def test_handle_websocket_event_gpu_list_replaces_field(self, coordinator) -> None:
+        """A GPU event replaces the GPUs with the event's full list."""
         coordinator.data = MagicMock()
-        single_gpu = mock_gpu_list()[0]
-        event = WebSocketEvent(event_type=EventType.GPU_UPDATE, data=single_gpu)
+        gpus = mock_gpu_list()
+        event = WebSocketEvent(event_type=EventType.GPU_UPDATE, data=gpus)
 
         with patch.object(coordinator, "async_set_updated_data"):
             coordinator._handle_websocket_event(event)
 
-        assert coordinator.data.gpu == [single_gpu]
+        assert coordinator.data.gpu is gpus
 
     def test_handle_websocket_event_network_list_update(self, coordinator) -> None:
         """Test handling network list update WebSocket event."""
@@ -268,31 +266,22 @@ class TestCoordinatorWebSocketEvents:
 
         assert coordinator.data.zfs_pools == new_pools
 
-    def test_handle_websocket_event_zfs_dataset_update(self, coordinator) -> None:
-        """Test handling ZFS dataset update WebSocket event."""
-        coordinator.data = MagicMock()
-        new_datasets = [MagicMock()]
-        event = WebSocketEvent(
-            event_type=EventType.ZFS_DATASET_UPDATE, data=new_datasets
-        )
+    @pytest.mark.parametrize(
+        "event_type", [EventType.ZFS_DATASET_UPDATE, EventType.ZFS_SNAPSHOT_UPDATE]
+    )
+    def test_handle_websocket_event_zfs_datasets_snapshots_ignored(
+        self, coordinator, event_type
+    ) -> None:
+        """ZFS dataset and snapshot events feed no entity and are ignored."""
+        coordinator.data = UnraidData()
+        with patch.object(coordinator, "async_update_listeners") as notify:
+            coordinator._handle_websocket_event(
+                WebSocketEvent(event_type=event_type, data=[MagicMock()])
+            )
 
-        with patch.object(coordinator, "async_set_updated_data"):
-            coordinator._handle_websocket_event(event)
-
-        assert coordinator.data.zfs_datasets == new_datasets
-
-    def test_handle_websocket_event_zfs_snapshot_update(self, coordinator) -> None:
-        """Test handling ZFS snapshot update WebSocket event."""
-        coordinator.data = MagicMock()
-        new_snapshots = [MagicMock()]
-        event = WebSocketEvent(
-            event_type=EventType.ZFS_SNAPSHOT_UPDATE, data=new_snapshots
-        )
-
-        with patch.object(coordinator, "async_set_updated_data"):
-            coordinator._handle_websocket_event(event)
-
-        assert coordinator.data.zfs_snapshots == new_snapshots
+        assert coordinator.data.zfs_datasets is None
+        assert coordinator.data.zfs_snapshots is None
+        notify.assert_not_called()
 
     def test_handle_websocket_event_zfs_arc_update(self, coordinator) -> None:
         """Test handling ZFS ARC update WebSocket event."""
@@ -563,10 +552,10 @@ class TestCoordinatorWebSocketManagement:
 
     @pytest.mark.asyncio
     async def test_async_start_websocket_already_running(self, coordinator) -> None:
-        """Test starting WebSocket when already connected."""
+        """Test starting WebSocket while its task is still running."""
         mock_ws = MagicMock()
-        mock_ws.is_connected = True
         coordinator._ws_client = mock_ws
+        coordinator._ws_task = MagicMock(done=MagicMock(return_value=False))
 
         await coordinator.async_start_websocket()
 
@@ -591,6 +580,7 @@ class TestCoordinatorWebSocketManagement:
             on_message=coordinator._handle_raw_message,
             on_connect=coordinator._handle_ws_connect,
             on_disconnect=coordinator._handle_ws_disconnect,
+            on_reconnect_failed=coordinator._handle_ws_reconnect_failed,
             auto_reconnect=True,
             reconnect_delays=[1, 2, 5, 10, 30],
             max_retries=10,
@@ -2752,7 +2742,7 @@ class TestCoordinatorAPIErrorHandling:
             await coordinator._async_update_data()
 
         assert coordinator._unavailable_logged is True
-        assert coordinator.update_success is False
+        assert coordinator.consecutive_failed_updates == 1
 
     @pytest.mark.asyncio
     async def test_disk_settings_error_continues(
@@ -3256,7 +3246,7 @@ class TestCoordinatorAPIErrorHandling:
 
         # Unavailable flag should be reset
         assert coordinator._unavailable_logged is False
-        assert coordinator.update_success is True
+        assert coordinator.consecutive_failed_updates == 0
         assert data is not None
 
 
@@ -3419,25 +3409,46 @@ class TestCoordinatorPollCadence:
         assert get_history.await_count == 1
 
     @pytest.mark.asyncio
-    async def test_zfs_datasets_and_snapshots_keep_websocket_values(
+    async def test_zfs_datasets_and_snapshots_not_polled(
         self, coordinator: UnraidDataUpdateCoordinator
     ) -> None:
-        """Polls neither fetch nor clear ZFS datasets and snapshots."""
+        """Polls do not fetch ZFS datasets and snapshots."""
         data = await self._poll(coordinator)
         assert data.zfs_datasets is None
         assert data.zfs_snapshots is None
-
-        datasets = [ZFSDataset(name="tank/media")]
-        snapshots = [ZFSSnapshot(name="tank/media@daily", dataset="tank/media")]
-        coordinator._handle_websocket_event(
-            WebSocketEvent(event_type=EventType.ZFS_DATASET_UPDATE, data=datasets)
-        )
-        coordinator._handle_websocket_event(
-            WebSocketEvent(event_type=EventType.ZFS_SNAPSHOT_UPDATE, data=snapshots)
-        )
-
-        data = await self._poll(coordinator)
-        assert data.zfs_datasets == datasets
-        assert data.zfs_snapshots == snapshots
         coordinator.client.list_zfs_datasets.assert_not_called()
         coordinator.client.list_zfs_snapshots.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_websocket_update_during_poll_is_kept(
+        self, coordinator: UnraidDataUpdateCoordinator
+    ) -> None:
+        """A websocket event applied while a poll is in flight beats its REST data."""
+        await self._poll(coordinator)
+        pushed = [MagicMock(name="pushed")]
+        polled = [MagicMock(name="polled")]
+
+        async def list_containers_then_push() -> list[MagicMock]:
+            # The event arrives after the poll fetched containers
+            coordinator._handle_websocket_event(
+                WebSocketEvent(event_type=EventType.CONTAINER_LIST_UPDATE, data=pushed)
+            )
+            return polled
+
+        coordinator.client.list_containers = list_containers_then_push
+        data = await self._poll(coordinator)
+        assert data.containers is pushed
+        # The next poll uses its own result again
+        coordinator.client.list_containers = AsyncMock(return_value=polled)
+        data = await self._poll(coordinator)
+        assert data.containers is polled
+
+    @pytest.mark.asyncio
+    async def test_gave_up_websocket_restarted_on_poll(
+        self, coordinator: UnraidDataUpdateCoordinator
+    ) -> None:
+        """A WebSocket client that gave up is restarted by the next good poll."""
+        coordinator._ws_task = MagicMock(done=MagicMock(return_value=True))
+        with patch.object(coordinator, "async_start_websocket", AsyncMock()) as start:
+            await self._poll(coordinator)
+        start.assert_awaited_once()

@@ -408,6 +408,12 @@ def _identify_payload(payload: Any) -> EventType | None:
     return identify_event_type(payload) or _identify_agent_shape(payload)
 
 
+# Topics the integration receives but does not use (see parse_event).
+_UNUSED_EVENTS: frozenset[EventType] = frozenset(
+    {EventType.ZFS_DATASET_UPDATE, EventType.ZFS_SNAPSHOT_UPDATE}
+)
+
+
 def resolve_event(data: Any) -> tuple[EventType | None, Any]:
     """
     Return the event type and payload of a raw websocket message.
@@ -469,7 +475,9 @@ def parse_event(data: Any) -> WebSocketEvent:
 
     """
     event_type, payload = resolve_event(data)
-    if event_type is None:
+    # ZFS datasets and snapshots feed no entity (and the snapshot list can be
+    # large), so their pushes are not parsed into models.
+    if event_type is None or event_type in _UNUSED_EVENTS:
         return UnknownEvent(data=data)
     if payload is None and event_type in _LIST_EVENTS:
         payload = []

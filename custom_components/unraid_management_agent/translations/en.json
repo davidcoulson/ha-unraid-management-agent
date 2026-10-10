@@ -811,6 +811,12 @@
     },
     "container_update_failed": {
       "message": "Failed to update container {name}"
+    },
+    "unknown_config_entry": {
+      "message": "No Unraid Management Agent server with config entry ID {entry_id}."
+    },
+    "multiple_config_entries": {
+      "message": "More than one Unraid server is configured: choose the server (config_entry_id) this action should act on."
     }
   },
   "services": {
@@ -821,6 +827,10 @@
         "container_id": {
           "name": "Container ID",
           "description": "The ID or name of the container to start"
+        },
+        "config_entry_id": {
+          "name": "Unraid server",
+          "description": "The Unraid server to act on. Required when more than one server is configured."
         }
       }
     },
@@ -831,6 +841,10 @@
         "container_id": {
           "name": "Container ID",
           "description": "The ID or name of the container to stop"
+        },
+        "config_entry_id": {
+          "name": "Unraid server",
+          "description": "The Unraid server to act on. Required when more than one server is configured."
         }
       }
     },
@@ -841,6 +855,10 @@
         "container_id": {
           "name": "Container ID",
           "description": "The ID or name of the container to restart"
+        },
+        "config_entry_id": {
+          "name": "Unraid server",
+          "description": "The Unraid server to act on. Required when more than one server is configured."
         }
       }
     },
@@ -851,6 +869,10 @@
         "container_id": {
           "name": "Container ID",
           "description": "The ID or name of the container to pause"
+        },
+        "config_entry_id": {
+          "name": "Unraid server",
+          "description": "The Unraid server to act on. Required when more than one server is configured."
         }
       }
     },
@@ -861,6 +883,10 @@
         "container_id": {
           "name": "Container ID",
           "description": "The ID or name of the container to resume"
+        },
+        "config_entry_id": {
+          "name": "Unraid server",
+          "description": "The Unraid server to act on. Required when more than one server is configured."
         }
       }
     },
@@ -875,6 +901,10 @@
         "remove_image": {
           "name": "Remove Image",
           "description": "Also remove the container image"
+        },
+        "config_entry_id": {
+          "name": "Unraid server",
+          "description": "The Unraid server to act on. Required when more than one server is configured."
         }
       }
     },
@@ -889,6 +919,10 @@
         "enabled": {
           "name": "Enabled",
           "description": "Whether container autostart should be enabled"
+        },
+        "config_entry_id": {
+          "name": "Unraid server",
+          "description": "The Unraid server to act on. Required when more than one server is configured."
         }
       }
     },
@@ -899,6 +933,10 @@
         "vm_id": {
           "name": "VM ID",
           "description": "The ID or name of the VM to start"
+        },
+        "config_entry_id": {
+          "name": "Unraid server",
+          "description": "The Unraid server to act on. Required when more than one server is configured."
         }
       }
     },
@@ -909,6 +947,10 @@
         "vm_id": {
           "name": "VM ID",
           "description": "The ID or name of the VM to stop"
+        },
+        "config_entry_id": {
+          "name": "Unraid server",
+          "description": "The Unraid server to act on. Required when more than one server is configured."
         }
       }
     },
@@ -919,6 +961,10 @@
         "vm_id": {
           "name": "VM ID",
           "description": "The ID or name of the VM to restart"
+        },
+        "config_entry_id": {
+          "name": "Unraid server",
+          "description": "The Unraid server to act on. Required when more than one server is configured."
         }
       }
     },
@@ -929,6 +975,10 @@
         "vm_id": {
           "name": "VM ID",
           "description": "The ID or name of the VM to pause"
+        },
+        "config_entry_id": {
+          "name": "Unraid server",
+          "description": "The Unraid server to act on. Required when more than one server is configured."
         }
       }
     },
@@ -939,6 +989,10 @@
         "vm_id": {
           "name": "VM ID",
           "description": "The ID or name of the VM to resume"
+        },
+        "config_entry_id": {
+          "name": "Unraid server",
+          "description": "The Unraid server to act on. Required when more than one server is configured."
         }
       }
     },
@@ -949,6 +1003,10 @@
         "vm_id": {
           "name": "VM ID",
           "description": "The ID or name of the VM to hibernate"
+        },
+        "config_entry_id": {
+          "name": "Unraid server",
+          "description": "The Unraid server to act on. Required when more than one server is configured."
         }
       }
     },
@@ -959,6 +1017,10 @@
         "vm_id": {
           "name": "VM ID",
           "description": "The ID or name of the VM to force stop"
+        },
+        "config_entry_id": {
+          "name": "Unraid server",
+          "description": "The Unraid server to act on. Required when more than one server is configured."
         }
       }
     },
@@ -969,36 +1031,82 @@
         "vm_id": {
           "name": "VM ID",
           "description": "The ID or name of the VM to reset"
+        },
+        "config_entry_id": {
+          "name": "Unraid server",
+          "description": "The Unraid server to act on. Required when more than one server is configured."
         }
       }
     },
     "array_start": {
       "name": "Start Array",
-      "description": "Start the Unraid array"
+      "description": "Start the Unraid array",
+      "fields": {
+        "config_entry_id": {
+          "name": "Unraid server",
+          "description": "The Unraid server to act on. Required when more than one server is configured."
+        }
+      }
     },
     "array_stop": {
       "name": "Stop Array",
-      "description": "Stop the Unraid array"
+      "description": "Stop the Unraid array",
+      "fields": {
+        "config_entry_id": {
+          "name": "Unraid server",
+          "description": "The Unraid server to act on. Required when more than one server is configured."
+        }
+      }
     },
     "array_clear_disk_stats": {
       "name": "Clear Array Disk Stats",
-      "description": "Clear array disk read/write statistics"
+      "description": "Clear array disk read/write statistics",
+      "fields": {
+        "config_entry_id": {
+          "name": "Unraid server",
+          "description": "The Unraid server to act on. Required when more than one server is configured."
+        }
+      }
     },
     "parity_check_start": {
       "name": "Start Parity Check",
-      "description": "Start a parity check"
+      "description": "Start a parity check",
+      "fields": {
+        "config_entry_id": {
+          "name": "Unraid server",
+          "description": "The Unraid server to act on. Required when more than one server is configured."
+        }
+      }
     },
     "parity_check_stop": {
       "name": "Stop Parity Check",
-      "description": "Stop the running parity check"
+      "description": "Stop the running parity check",
+      "fields": {
+        "config_entry_id": {
+          "name": "Unraid server",
+          "description": "The Unraid server to act on. Required when more than one server is configured."
+        }
+      }
     },
     "parity_check_pause": {
       "name": "Pause Parity Check",
-      "description": "Pause the running parity check"
+      "description": "Pause the running parity check",
+      "fields": {
+        "config_entry_id": {
+          "name": "Unraid server",
+          "description": "The Unraid server to act on. Required when more than one server is configured."
+        }
+      }
     },
     "parity_check_resume": {
       "name": "Resume Parity Check",
-      "description": "Resume a paused parity check"
+      "description": "Resume a paused parity check",
+      "fields": {
+        "config_entry_id": {
+          "name": "Unraid server",
+          "description": "The Unraid server to act on. Required when more than one server is configured."
+        }
+      }
     }
   },
   "issues": {

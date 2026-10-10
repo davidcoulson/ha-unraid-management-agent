@@ -191,11 +191,30 @@ def _merge_collector_state(
     )
 
 
+# Websocket events whose payload replaces one UnraidData field as is.
+_EVENT_FIELDS: dict[EventType, str] = {
+    EventType.SYSTEM_UPDATE: "system",
+    EventType.ARRAY_STATUS_UPDATE: "array",
+    EventType.DISK_LIST_UPDATE: "disks",
+    EventType.UPS_STATUS_UPDATE: "ups",
+    EventType.GPU_UPDATE: "gpu",
+    EventType.NETWORK_LIST_UPDATE: "network",
+    EventType.CONTAINER_LIST_UPDATE: "containers",
+    EventType.VM_LIST_UPDATE: "vms",
+    EventType.SHARE_LIST_UPDATE: "shares",
+    EventType.NOTIFICATIONS_RESPONSE: "notifications",
+    EventType.ZFS_POOL_UPDATE: "zfs_pools",
+    EventType.ZFS_ARC_UPDATE: "zfs_arc",
+    # NUTInfo feeds the per-device NUT entities; data.ups comes from ups_status_update
+    EventType.NUT_STATUS_UPDATE: "nut",
+    EventType.FAN_CONTROL_UPDATE: "fan_control",
+}
+
+
 class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
     """Class to manage fetching Unraid data from the API."""
 
     config_entry: UnraidConfigEntry
-    update_success: bool = False
 
     def __init__(
         self,
@@ -229,6 +248,9 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
         # Last successfully fetched parity history and when it was fetched
         self._parity_history: ParityHistory | None = None
         self._parity_history_fetched_at: datetime | None = None
+        # UnraidData fields updated by websocket events since the current poll
+        # started; the poll keeps those (newer) values instead of its own.
+        self._ws_updated_fields: set[str] = set()
 
         super().__init__(
             hass,
@@ -476,8 +498,8 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
         (the snapshot list can be large), and parity history is fetched on a
         slower cadence (see _fetch_parity_history).
         """
+        self._ws_updated_fields.clear()
         try:
-            # Fetch all data concurrently - each method returns typed Pydantic models
             # Fetch all data concurrently - each method returns typed Pydantic models
             results: list[Any] = await asyncio.gather(
                 self._fetch("system info", self.client.get_system_info),
@@ -645,7 +667,6 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                 self._clear_pending_system_action()
 
             # Mark update as successful
-            self.update_success = True
             self._consecutive_failed_updates = 0
             self._last_successful_update = dt_util.utcnow()
 
@@ -718,6 +739,18 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                 else None,
                 storage_topology=storage_topology,
             )
+            # Websocket events that arrived while this poll was in flight are
+            # newer than its REST results: keep them.
+            if self.data is not None:
+                for field in self._ws_updated_fields:
+                    setattr(data, field, getattr(self.data, field))
+            self._ws_updated_fields.clear()
+
+            # A websocket client that gave up reconnecting (server down longer
+            # than its retries) is started again once the server answers.
+            if self._ws_task is not None and self._ws_task.done():
+                _LOGGER.info("Restarting the WebSocket client")
+                await self.async_start_websocket()
 
             # Check for issues and create repair flows
             from . import repairs
@@ -752,7 +785,6 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
         """Track a failed update cycle and warn on sustained failures."""
         if self._pending_system_action:
             self._pending_system_action_disconnected = True
-        self.update_success = False
         self._consecutive_failed_updates += 1
         if self._consecutive_failed_updates == _FAILED_UPDATE_WARN_THRESHOLD:
             _LOGGER.warning(
@@ -769,34 +801,12 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
             # (UnknownEvent): nothing changed, so don't notify entities.
             return
 
-        # Update coordinator data based on event type using the vendored EventType enum
-        if event.event_type == EventType.SYSTEM_UPDATE:
-            self.data.system = event.data
-        elif event.event_type == EventType.ARRAY_STATUS_UPDATE:
-            self.data.array = event.data
-        elif event.event_type == EventType.DISK_LIST_UPDATE:
-            self.data.disks = (
-                event.data if isinstance(event.data, list) else [event.data]
-            )
-        elif event.event_type == EventType.UPS_STATUS_UPDATE:
-            self.data.ups = event.data
-        elif event.event_type == EventType.GPU_UPDATE:
-            self.data.gpu = event.data if isinstance(event.data, list) else [event.data]
-        elif event.event_type == EventType.NETWORK_LIST_UPDATE:
-            self.data.network = (
-                event.data if isinstance(event.data, list) else [event.data]
-            )
-        elif event.event_type == EventType.CONTAINER_LIST_UPDATE:
-            self.data.containers = (
-                event.data if isinstance(event.data, list) else [event.data]
-            )
-        elif event.event_type == EventType.VM_LIST_UPDATE:
-            self.data.vms = event.data if isinstance(event.data, list) else [event.data]
-        elif event.event_type == EventType.SHARE_LIST_UPDATE:
-            self.data.shares = (
-                event.data if isinstance(event.data, list) else [event.data]
-            )
+        field = _EVENT_FIELDS.get(event.event_type)
+        if field is not None:
+            # parse_event returns full lists for the list topics
+            setattr(self.data, field, event.data)
         elif event.event_type == EventType.NOTIFICATION_UPDATE:
+            field = "notifications"
             current_notifications = self.data.notifications
             if isinstance(current_notifications, NotificationsResponse):
                 self.data.notifications = current_notifications.model_copy(
@@ -808,44 +818,22 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                     overview=None,
                     timestamp=None,
                 )
-        elif event.event_type == EventType.NOTIFICATIONS_RESPONSE:
-            # Full notifications response with overview and counts
-            self.data.notifications = event.data
-        elif event.event_type == EventType.ZFS_POOL_UPDATE:
-            self.data.zfs_pools = (
-                event.data if isinstance(event.data, list) else [event.data]
-            )
-        elif event.event_type == EventType.ZFS_DATASET_UPDATE:
-            self.data.zfs_datasets = (
-                event.data if isinstance(event.data, list) else [event.data]
-            )
-        elif event.event_type == EventType.ZFS_SNAPSHOT_UPDATE:
-            self.data.zfs_snapshots = (
-                event.data if isinstance(event.data, list) else [event.data]
-            )
-        elif event.event_type == EventType.ZFS_ARC_UPDATE:
-            self.data.zfs_arc = event.data
-        elif event.event_type == EventType.NUT_STATUS_UPDATE:
-            # NUTInfo feeds the per-device NUT entities; data.ups (UPSInfo)
-            # comes from ups_status_update and is left alone.
-            self.data.nut = event.data
-        elif event.event_type == EventType.HARDWARE_UPDATE:
-            # HardwareFullInfo is a different model from data.system
-            # (SystemInfo) and is not used by any entity. Storing it there
-            # replaced system data until the next poll, so ignore it.
-            return
         elif event.event_type == EventType.COLLECTOR_STATE_CHANGE:
             # One collector changed: update it within the full status
+            field = "collectors"
             self.data.collectors = _merge_collector_state(
                 self.data.collectors, event.data
             )
-        elif event.event_type == EventType.FAN_CONTROL_UPDATE:
-            self.data.fan_control = event.data
         elif event.event_type == EventType.SOURCE_STATUS_CHANGED:
             # Source status changes can affect unassigned devices and remote shares.
             # Schedule a full refresh so all related entities stay in sync.
             self.hass.async_create_task(self.async_request_refresh())
             return
+        else:
+            # HARDWARE_UPDATE carries HardwareFullInfo, which no entity uses
+            # (it is not SystemInfo), and other types need no handling.
+            return
+        self._ws_updated_fields.add(field)
 
         # Notify listeners of data update without resetting the polling timer.
         # Using async_set_updated_data would cancel and reschedule the poll
@@ -908,13 +896,21 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
 
         _LOGGER.debug(message)
 
+    @callback
+    def _handle_ws_reconnect_failed(self) -> None:
+        """Log that the WebSocket client gave up; the next good poll restarts it."""
+        _LOGGER.warning(
+            "WebSocket reconnection attempts exhausted; polling continues and the "
+            "WebSocket is restarted once the server answers again"
+        )
+
     async def async_start_websocket(self) -> None:
         """Start WebSocket connection for real-time updates."""
         if not self.enable_websocket:
             _LOGGER.debug("WebSocket disabled in configuration")
             return
 
-        if self._ws_client and self._ws_client.is_connected:
+        if self._ws_task is not None and not self._ws_task.done():
             _LOGGER.debug("WebSocket already running")
             return
 
@@ -928,6 +924,7 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                 on_message=self._handle_raw_message,
                 on_connect=self._handle_ws_connect,
                 on_disconnect=self._handle_ws_disconnect,
+                on_reconnect_failed=self._handle_ws_reconnect_failed,
                 auto_reconnect=True,
                 reconnect_delays=[1, 2, 5, 10, 30],
                 max_retries=10,

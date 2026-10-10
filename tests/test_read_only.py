@@ -124,19 +124,24 @@ async def test_read_only_checks_entry_used_by_services(
     assert first.state is ConfigEntryState.LOADED
     assert second.state is ConfigEntryState.LOADED
 
+    # The call targets the first server; only its read-only setting matters
+    data = {"vm_id": "Windows 10", "config_entry_id": first.entry_id}
     if blocked:
         with pytest.raises(ServiceValidationError) as err:
-            await hass.services.async_call(
-                DOMAIN, "vm_stop", {"vm_id": "Windows 10"}, blocking=True
-            )
+            await hass.services.async_call(DOMAIN, "vm_stop", data, blocking=True)
         assert err.value.translation_key == "read_only_mode"
         assert err.value.translation_placeholders == {"title": first.title}
         mock_async_unraid_client.stop_vm.assert_not_called()
     else:
+        await hass.services.async_call(DOMAIN, "vm_stop", data, blocking=True)
+        mock_async_unraid_client.stop_vm.assert_awaited_once_with("Windows 10")
+
+    # Without a target, two loaded servers are ambiguous
+    with pytest.raises(ServiceValidationError) as err:
         await hass.services.async_call(
             DOMAIN, "vm_stop", {"vm_id": "Windows 10"}, blocking=True
         )
-        mock_async_unraid_client.stop_vm.assert_awaited_once_with("Windows 10")
+    assert err.value.translation_key == "multiple_config_entries"
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
@@ -157,8 +162,22 @@ async def test_services_refuse_when_entry_not_loaded(
     assert disabled.state is ConfigEntryState.NOT_LOADED
     assert loaded.state is ConfigEntryState.LOADED
 
+    # Targeting the server that is not loaded fails
     with pytest.raises(ServiceValidationError) as err:
-        await hass.services.async_call(DOMAIN, "array_stop", {}, blocking=True)
+        await hass.services.async_call(
+            DOMAIN, "array_stop", {"config_entry_id": disabled.entry_id}, blocking=True
+        )
     assert err.value.translation_key == "entry_not_loaded"
     assert err.value.translation_placeholders == {"title": disabled.title}
     mock_async_unraid_client.stop_array.assert_not_called()
+
+    # An unknown target fails
+    with pytest.raises(ServiceValidationError) as err:
+        await hass.services.async_call(
+            DOMAIN, "array_stop", {"config_entry_id": "nope"}, blocking=True
+        )
+    assert err.value.translation_key == "unknown_config_entry"
+
+    # Without a target, the only loaded server is used
+    await hass.services.async_call(DOMAIN, "array_stop", {}, blocking=True)
+    mock_async_unraid_client.stop_array.assert_awaited_once()

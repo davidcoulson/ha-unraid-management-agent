@@ -411,6 +411,11 @@ def _unavailable_data_prefixes(data: UnraidData) -> set[str]:
     reflects a fetch failure rather than intentional removal from Unraid.
     """
     prefixes: set[str] = set()
+    # While the array is stopped (or its state is unknown) Docker, VMs, user
+    # shares and pools report empty lists; that is not removal from Unraid.
+    array_state = str(getattr(data.array, "state", "") or "").lower()
+    if array_state != "started":
+        prefixes.update(("container_", "vm_", "share_", "zfs_"))
     if data.containers is None:
         prefixes.add("container_")
     if data.vms is None:

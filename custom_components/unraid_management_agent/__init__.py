@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import logging
 from collections.abc import Callable, Coroutine
+from datetime import datetime
 from typing import Any, Final
 
 import voluptuous as vol
@@ -52,28 +53,36 @@ ATTR_CONTAINER_ID: Final = "container_id"
 ATTR_VM_ID: Final = "vm_id"
 ATTR_ENABLED: Final = "enabled"
 ATTR_REMOVE_IMAGE: Final = "remove_image"
+# Which Unraid server a service acts on; optional when only one is loaded
+ATTR_CONFIG_ENTRY_ID: Final = "config_entry_id"
 
 # Service schemas
-SERVICE_CONTAINER_SCHEMA = vol.Schema(
+SERVICE_SERVER_SCHEMA = vol.Schema(
+    {
+        vol.Optional(ATTR_CONFIG_ENTRY_ID): cv.string,
+    }
+)
+
+SERVICE_CONTAINER_SCHEMA = SERVICE_SERVER_SCHEMA.extend(
     {
         vol.Required(ATTR_CONTAINER_ID): cv.string,
     }
 )
 
-SERVICE_VM_SCHEMA = vol.Schema(
+SERVICE_VM_SCHEMA = SERVICE_SERVER_SCHEMA.extend(
     {
         vol.Required(ATTR_VM_ID): cv.string,
     }
 )
 
-SERVICE_CONTAINER_AUTOSTART_SCHEMA = vol.Schema(
+SERVICE_CONTAINER_AUTOSTART_SCHEMA = SERVICE_SERVER_SCHEMA.extend(
     {
         vol.Required(ATTR_CONTAINER_ID): cv.string,
         vol.Required(ATTR_ENABLED): cv.boolean,
     }
 )
 
-SERVICE_CONTAINER_REMOVE_SCHEMA = vol.Schema(
+SERVICE_CONTAINER_REMOVE_SCHEMA = SERVICE_SERVER_SCHEMA.extend(
     {
         vol.Required(ATTR_CONTAINER_ID): cv.string,
         vol.Optional(ATTR_REMOVE_IMAGE, default=False): cv.boolean,
@@ -397,10 +406,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
     if enable_websocket:
         await coordinator.async_start_websocket()
 
-    # Register stale entity cleanup: runs on every successful coordinator update
-    # and removes entity registry entries for items no longer returned by the API.
+    # Register stale entity cleanup: runs after every successful REST poll (not
+    # after each websocket event, which also notifies listeners) and removes
+    # entity registry entries for items no longer returned by the API.
+    last_cleanup_poll: list[datetime | None] = [None]
+
     @callback
     def _on_coordinator_update() -> None:
+        polled_at = coordinator.last_successful_update
+        if polled_at is None or polled_at == last_cleanup_poll[0]:
+            return
+        last_cleanup_poll[0] = polled_at
         async_cleanup_stale_entities(hass, entry, coordinator)
 
     entry.async_on_unload(coordinator.async_add_listener(_on_coordinator_update))
@@ -474,15 +490,33 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         return
 
     def _get_coordinator(call: ServiceCall) -> UnraidDataUpdateCoordinator:
-        """Get coordinator from any config entry."""
+        """Get the coordinator of the server the call targets."""
         entries = hass.config_entries.async_entries(DOMAIN)
         if not entries:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="no_config_entries",
             )
-        # Use the first entry's coordinator (services are domain-wide)
-        entry: UnraidConfigEntry = entries[0]
+        entry: UnraidConfigEntry
+        if entry_id := call.data.get(ATTR_CONFIG_ENTRY_ID):
+            matches = [e for e in entries if e.entry_id == entry_id]
+            if not matches:
+                raise ServiceValidationError(
+                    translation_domain=DOMAIN,
+                    translation_key="unknown_config_entry",
+                    translation_placeholders={"entry_id": entry_id},
+                )
+            entry = matches[0]
+        else:
+            # Without a target, act on the only loaded server; with several,
+            # the caller has to say which one.
+            loaded = [e for e in entries if e.state is ConfigEntryState.LOADED]
+            if len(loaded) > 1:
+                raise ServiceValidationError(
+                    translation_domain=DOMAIN,
+                    translation_key="multiple_config_entries",
+                )
+            entry = loaded[0] if loaded else entries[0]
         # Only a loaded entry has runtime data (and a coordinator) to act on
         if entry.state is not ConfigEntryState.LOADED:
             raise ServiceValidationError(
@@ -606,6 +640,7 @@ async def async_setup_services(hass: HomeAssistant) -> None:
             DOMAIN,
             svc_name,
             _make_handler(method, tkey),
+            schema=SERVICE_SERVER_SCHEMA,
         )
 
     async def _handle_container_remove(call: ServiceCall) -> None:

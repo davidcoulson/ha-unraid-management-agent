@@ -25,6 +25,9 @@ from custom_components.unraid_management_agent.coordinator import (
 
 from .const import mock_system_info
 
+# A started array: only then do empty container/VM/share/pool lists mean removal
+_STARTED = MagicMock(state="Started")
+
 
 def _make_coordinator(data: UnraidData | None) -> MagicMock:
     """Create a minimal coordinator stub for cleanup tests."""
@@ -65,12 +68,25 @@ def test_unavailable_prefixes_all_none() -> None:
 
 def test_unavailable_prefixes_empty_list_not_protected() -> None:
     """An empty list means the fetch succeeded, so the category is not protected."""
-    data = UnraidData(containers=[], remote_shares=[])
+    data = UnraidData(array=_STARTED, containers=[], remote_shares=[])
     prefixes = _unavailable_data_prefixes(data)
     assert "container_" not in prefixes
     assert "remote_share_" not in prefixes
     # Other categories are still None and stay protected
     assert "vm_" in prefixes
+
+
+@pytest.mark.parametrize("state", ["Stopped", "Starting", None])
+def test_unavailable_prefixes_array_not_started(state: str | None) -> None:
+    """With the array not started, empty containers/VMs/shares/pools are not removals."""
+    array = None if state is None else MagicMock(state=state)
+    data = UnraidData(
+        array=array, containers=[], vms=[], shares=[], zfs_pools=[], remote_shares=[]
+    )
+    prefixes = _unavailable_data_prefixes(data)
+    assert {"container_", "vm_", "share_", "zfs_"} <= prefixes
+    # Categories that do not depend on the array are unaffected
+    assert "remote_share_" not in prefixes
 
 
 def test_unavailable_prefixes_fan_requires_both_sources() -> None:
@@ -130,8 +146,8 @@ async def test_removal_deferred_until_grace_elapsed(
     _register_entity(hass, entry, "switch", "container_ghost_abc123")
     unique_id = f"{entry.entry_id}_container_ghost_abc123"
 
-    # containers == [] -> docker responded and the container is genuinely gone
-    coordinator = _make_coordinator(UnraidData(containers=[]))
+    # containers == [] with the array started -> the container is genuinely gone
+    coordinator = _make_coordinator(UnraidData(array=_STARTED, containers=[]))
 
     # First pass: tracked as candidate but NOT removed
     async_cleanup_stale_entities(hass, entry, coordinator)

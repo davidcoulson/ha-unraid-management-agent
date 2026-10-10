@@ -90,6 +90,7 @@ class UnraidWebSocketClient:
         max_retries: int = 10,
         *,
         api_token: str | None = None,
+        receive_timeout: float = 90.0,
     ):
         self.host = host
         self._headers: dict[str, str] = (
@@ -113,6 +114,9 @@ class UnraidWebSocketClient:
         self.auto_reconnect = auto_reconnect
         self.reconnect_delays = reconnect_delays or [1, 2, 4, 8, 16, 32, 60]
         self.max_retries = max_retries
+        # With client pings disabled, an idle connection is probed after this
+        # many seconds without a message; no pong within it means it is dead.
+        self.receive_timeout = receive_timeout
 
         # Internal state
         self._websocket: Any = None  # Type varies by websockets version
@@ -259,7 +263,23 @@ class UnraidWebSocketClient:
 
                     while self._running:
                         try:
-                            message = await websocket.recv()
+                            try:
+                                message = await asyncio.wait_for(
+                                    websocket.recv(), self.receive_timeout
+                                )
+                            except TimeoutError:
+                                # Nothing received: a half-open connection
+                                # (dropped without FIN/RST) never answers a ping.
+                                try:
+                                    pong = await websocket.ping()
+                                    await asyncio.wait_for(pong, self.receive_timeout)
+                                except Exception:
+                                    disconnect_reason = (
+                                        "no message or pong for "
+                                        f"{self.receive_timeout:.0f}s"
+                                    )
+                                    break
+                                continue
                             # Successfully received a message - reset retry count
                             if not received_message:
                                 received_message = True

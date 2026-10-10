@@ -12,6 +12,11 @@ container_start:
       example: "nginx"
       selector:
         text:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: unraid_management_agent
 
 container_stop:
   name: Stop Container
@@ -24,6 +29,11 @@ container_stop:
       example: "nginx"
       selector:
         text:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: unraid_management_agent
 
 container_restart:
   name: Restart Container
@@ -36,6 +46,11 @@ container_restart:
       example: "nginx"
       selector:
         text:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: unraid_management_agent
 
 container_pause:
   name: Pause Container
@@ -48,6 +63,11 @@ container_pause:
       example: "nginx"
       selector:
         text:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: unraid_management_agent
 
 container_resume:
   name: Resume Container
@@ -60,6 +80,11 @@ container_resume:
       example: "nginx"
       selector:
         text:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: unraid_management_agent
 
 container_remove:
   name: Remove Container
@@ -79,6 +104,11 @@ container_remove:
       example: false
       selector:
         boolean:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: unraid_management_agent
 
 container_set_autostart:
   name: Set Container Autostart
@@ -100,6 +130,12 @@ container_set_autostart:
         boolean:
 
 # Virtual Machine Services
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: unraid_management_agent
+
 vm_start:
   name: Start VM
   description: Start a virtual machine
@@ -111,6 +147,11 @@ vm_start:
       example: "Ubuntu"
       selector:
         text:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: unraid_management_agent
 
 vm_stop:
   name: Stop VM
@@ -123,6 +164,11 @@ vm_stop:
       example: "Ubuntu"
       selector:
         text:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: unraid_management_agent
 
 vm_restart:
   name: Restart VM
@@ -135,6 +181,11 @@ vm_restart:
       example: "Ubuntu"
       selector:
         text:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: unraid_management_agent
 
 vm_pause:
   name: Pause VM
@@ -147,6 +198,11 @@ vm_pause:
       example: "Ubuntu"
       selector:
         text:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: unraid_management_agent
 
 vm_resume:
   name: Resume VM
@@ -159,6 +215,11 @@ vm_resume:
       example: "Ubuntu"
       selector:
         text:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: unraid_management_agent
 
 vm_hibernate:
   name: Hibernate VM
@@ -171,6 +232,11 @@ vm_hibernate:
       example: "Ubuntu"
       selector:
         text:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: unraid_management_agent
 
 vm_force_stop:
   name: Force Stop VM
@@ -183,6 +249,11 @@ vm_force_stop:
       example: "Ubuntu"
       selector:
         text:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: unraid_management_agent
 
 vm_reset:
   name: Reset VM
@@ -197,31 +268,80 @@ vm_reset:
         text:
 
 # Array Control Services
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: unraid_management_agent
+
 array_start:
   name: Start Array
   description: Start the Unraid array
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: unraid_management_agent
 
 array_stop:
   name: Stop Array
   description: Stop the Unraid array
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: unraid_management_agent
 
 array_clear_disk_stats:
   name: Clear Array Disk Stats
   description: Clear array disk read/write statistics
 
 # Parity Check Services
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: unraid_management_agent
+
 parity_check_start:
   name: Start Parity Check
   description: Start a parity check
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: unraid_management_agent
 
 parity_check_stop:
   name: Stop Parity Check
   description: Stop the running parity check
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: unraid_management_agent
 
 parity_check_pause:
   name: Pause Parity Check
   description: Pause the running parity check
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: unraid_management_agent
 
 parity_check_resume:
   name: Resume Parity Check
   description: Resume a paused parity check
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: unraid_management_agent
