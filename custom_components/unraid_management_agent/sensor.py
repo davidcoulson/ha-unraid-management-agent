@@ -72,8 +72,10 @@ from .const import (
 )
 from .coordinator import UnraidData
 from .entity import (
+    DOCKER_DEVICE,
     UnraidBaseEntity,
     build_container_device_info,
+    build_group_device_info,
     build_vm_device_info,
     container_devices_enabled,
     find_vm,
@@ -119,6 +121,8 @@ class UnraidSensorEntityDescription(SensorEntityDescription):
     extra_state_attributes_fn: Callable[[UnraidData], dict[str, Any]] | None = None
     available_fn: Callable[[UnraidData], bool] = lambda data: data is not None
     supported_fn: Callable[[UnraidData], bool] = lambda _: True
+    # DOCKER_DEVICE or VMS_DEVICE to put the sensor on that device
+    device_group: str | None = None
 
 
 @dataclass
@@ -1556,6 +1560,7 @@ VIRTUAL_DISK_SENSOR_DESCRIPTIONS: tuple[UnraidSensorEntityDescription, ...] = (
     UnraidSensorEntityDescription(
         key="docker_vdisk_usage",
         translation_key="docker_vdisk_usage",
+        device_group=DOCKER_DEVICE,
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:docker",
@@ -1647,6 +1652,10 @@ class UnraidSensorEntity(UnraidBaseEntity, SensorEntity):
         """Initialize the sensor."""
         super().__init__(coordinator, description.key)
         self.entity_description = description
+        if description.device_group:
+            self._attr_device_info = build_group_device_info(
+                coordinator, description.device_group
+            )
 
     @property
     def native_value(self) -> Any:
@@ -3810,6 +3819,7 @@ DOCKER_AGGREGATE_SENSOR_DESCRIPTIONS: tuple[UnraidSensorEntityDescription, ...] 
     UnraidSensorEntityDescription(
         key="docker_cpu_usage",
         translation_key="docker_cpu_usage",
+        device_group=DOCKER_DEVICE,
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:docker",
@@ -3820,6 +3830,7 @@ DOCKER_AGGREGATE_SENSOR_DESCRIPTIONS: tuple[UnraidSensorEntityDescription, ...] 
     UnraidSensorEntityDescription(
         key="docker_memory_usage",
         translation_key="docker_memory_usage",
+        device_group=DOCKER_DEVICE,
         native_unit_of_measurement=UnitOfInformation.MEGABYTES,
         device_class=SensorDeviceClass.DATA_SIZE,
         state_class=SensorStateClass.MEASUREMENT,

@@ -803,6 +803,44 @@ describe("Unraid Custom Cards", () => {
     document.body.removeChild(editor);
   });
 
+  it("does not offer the Docker and VMs devices or their children as servers", async () => {
+    const hass = createMockHass();
+    // Listed before the server: the Docker device links to it, containers and
+    // VMs are child devices of the Docker and VMs devices
+    hass.devices = {
+      docker: {
+        id: "docker",
+        name: "CUBE Docker",
+        identifiers: [["unraid_management_agent", "uuid-1234_docker"]],
+        via_device_id: "dev_1",
+      },
+      plex: {
+        id: "plex",
+        name: "plex",
+        identifiers: [["unraid_management_agent", "uuid-1234_container_plex"]],
+        parent_device_id: "docker",
+      },
+      ...hass.devices,
+    };
+    const editor = new UnraidServerCardEditor();
+    editor.setConfig({ type: "custom:unraid-server-card" });
+    editor.hass = hass;
+    document.body.appendChild(editor);
+    await editor.updateComplete;
+    const options = Array.from(editor.shadowRoot?.querySelectorAll("option") ?? []);
+    expect(options.map((o) => o.value)).toEqual(["dev_1"]);
+    document.body.removeChild(editor);
+
+    const card = new UnraidServerCard();
+    card.setConfig({ type: "custom:unraid-server-card" });
+    card.hass = hass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+    expect(card.shadowRoot?.innerHTML).toContain("CUBE");
+    expect(card.shadowRoot?.innerHTML).not.toContain("CUBE Docker");
+    document.body.removeChild(card);
+  });
+
   it("renders UnraidSharesCardEditor", async () => {
     const editor = new UnraidSharesCardEditor();
     editor.setConfig({ type: "custom:unraid-shares-card", title: "My Shares" });

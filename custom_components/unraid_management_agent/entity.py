@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 
 from homeassistant.const import CONF_HOST
+from homeassistant.core import callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import ChildDeviceInfo, DeviceInfo
 from homeassistant.helpers.entity import EntityDescription
@@ -27,12 +28,23 @@ if TYPE_CHECKING:
     from .coordinator import UnraidDataUpdateCoordinator
 
 
+# Devices grouping everything about Docker and about VMs, linked to the server
+# device. Container and VM devices are child devices of these, so the server
+# device lists two devices instead of dozens of containers and VMs.
+DOCKER_DEVICE: Final = "docker"
+VMS_DEVICE: Final = "vms"
+_GROUP_DEVICE_MODELS: Final = {DOCKER_DEVICE: "Docker", VMS_DEVICE: "VM Manager"}
+_GROUP_DEVICE_PAGES: Final = {DOCKER_DEVICE: "Docker", VMS_DEVICE: "VMs"}
+
+
 @dataclass(frozen=True, kw_only=True)
 class UnraidEntityDescription(EntityDescription):
     """Base description for all Unraid entities."""
 
     available_fn: Callable[[UnraidDataUpdateCoordinator], bool] = lambda _: True
     supported_fn: Callable[[UnraidDataUpdateCoordinator], bool] = lambda _: True
+    # DOCKER_DEVICE or VMS_DEVICE to put the entity on that device
+    device_group: str | None = None
 
 
 class UnraidBaseEntity(CoordinatorEntity["UnraidDataUpdateCoordinator"]):
@@ -94,6 +106,60 @@ def vm_devices_enabled(coordinator: UnraidDataUpdateCoordinator) -> bool:
     )
 
 
+def group_device_identifier(entry_id: str, group: str) -> str:
+    """Return the device registry identifier of the Docker or VMs device."""
+    return f"{entry_id}_{group}"
+
+
+@callback
+def async_get_or_create_group_device(
+    coordinator: UnraidDataUpdateCoordinator, group: str
+) -> dr.DeviceEntry | None:
+    """
+    Register the Docker or VMs device of the server and return it.
+
+    It is a regular device linked to the server device, created the first time
+    an entity or child device needs it, so a server without Docker or VMs gets
+    no empty device. It is named after the server ("<hostname> Docker"), which
+    keeps it apart from another server's and keeps the friendly names of the
+    entities moved to it from the server device. Returns None if the server
+    device is missing.
+    """
+    entry = coordinator.config_entry
+    registry = dr.async_get(coordinator.hass)
+    # The server device is registered during setup, before the platforms load.
+    server = registry.async_get_device_by_identifier(
+        (DOMAIN, entry.entry_id), entry.entry_id
+    )
+    if server is None:
+        return None
+    data = coordinator.data
+    system = data.system if data else None
+    hostname = (system.hostname if system else None) or "Unraid"
+    host = entry.data.get(CONF_HOST, "")
+    return registry.async_get_or_create(
+        config_entry_id=entry.entry_id,
+        identifiers={(DOMAIN, group_device_identifier(entry.entry_id, group))},
+        manufacturer=MANUFACTURER,
+        model=_GROUP_DEVICE_MODELS[group],
+        configuration_url=f"http://{host}/{_GROUP_DEVICE_PAGES[group]}",
+        translation_key=group,
+        translation_placeholders={"hostname": hostname},
+        via_device_id=server.id,
+    )
+
+
+def build_group_device_info(
+    coordinator: UnraidDataUpdateCoordinator, group: str
+) -> DeviceInfo:
+    """Build device info putting an entity on the Docker or VMs device."""
+    entry_id = coordinator.config_entry.entry_id
+    if async_get_or_create_group_device(coordinator, group) is None:
+        # Keep the entity on the server device if it is somehow missing.
+        return DeviceInfo(identifiers={(DOMAIN, entry_id)})
+    return DeviceInfo(identifiers={(DOMAIN, group_device_identifier(entry_id, group))})
+
+
 def build_vm_device_info(
     coordinator: UnraidDataUpdateCoordinator,
     vm_identifier: str,
@@ -102,28 +168,25 @@ def build_vm_device_info(
     """
     Build device info for a virtual machine.
 
-    VMs are child devices of the Unraid server: they run on it, so they are
-    grouped under the server rather than listed as separate devices. The
+    VMs are child devices of the server's VMs device, so they are grouped
+    there rather than listed as separate devices or under the server. The
     libvirt UUID is used as the identifier so renaming a VM keeps the device.
 
-    Child devices can't carry a model or icon, so the device name is
-    translated ("VM · <name>") to tell VMs apart from containers in the
-    device list. The registry resolves the name each time the entities are
-    set up, so existing VM devices and renamed VMs are updated as well.
+    The device is named after the VM. Home Assistant puts the parent device's
+    name ("<hostname> VMs") in front of it in entity names, which tells VMs
+    apart from containers, so the "VM · " prefix VM devices had under the
+    server is no longer used. The registry updates the name each time the
+    entities are set up, so existing VM devices and renamed VMs follow.
     """
     entry_id = coordinator.config_entry.entry_id
-    # The server device is registered during setup, before the platforms load.
-    server = dr.async_get(coordinator.hass).async_get_device_by_identifier(
-        (DOMAIN, entry_id), entry_id
-    )
-    if server is None:
+    parent = async_get_or_create_group_device(coordinator, VMS_DEVICE)
+    if parent is None:
         # Keep the entity on the server device if it is somehow missing.
         return DeviceInfo(identifiers={(DOMAIN, entry_id)})
     return ChildDeviceInfo(
         identifiers={(DOMAIN, f"{entry_id}_vm_{vm_identifier}")},
-        parent_device_id=server.id,
-        translation_key="vm",
-        translation_placeholders={"name": vm_name},
+        name=vm_name,
+        parent_device_id=parent.id,
     )
 
 
@@ -169,23 +232,20 @@ def build_container_device_info(
     """
     Build device info for a Docker container.
 
-    Containers are child devices of the Unraid server: they run on it and
-    there can be dozens, so they are grouped under the server instead of
-    being listed as separate devices. Keyed by name because container IDs
-    change whenever a container is recreated.
+    Containers are child devices of the server's Docker device: there can be
+    dozens, so they are grouped there instead of being listed as separate
+    devices or under the server. Keyed by name because container IDs change
+    whenever a container is recreated.
     """
     entry_id = coordinator.config_entry.entry_id
-    # The server device is registered during setup, before the platforms load.
-    server = dr.async_get(coordinator.hass).async_get_device_by_identifier(
-        (DOMAIN, entry_id), entry_id
-    )
-    if server is None:
+    parent = async_get_or_create_group_device(coordinator, DOCKER_DEVICE)
+    if parent is None:
         # Keep the entity on the server device if it is somehow missing.
         return DeviceInfo(identifiers={(DOMAIN, entry_id)})
     return ChildDeviceInfo(
         identifiers={(DOMAIN, f"{entry_id}_container_{container_name}")},
         name=container_name,
-        parent_device_id=server.id,
+        parent_device_id=parent.id,
     )
 
 
@@ -218,13 +278,18 @@ class UnraidEntity(UnraidBaseEntity):
 
 # Export these for external use
 __all__ = [
+    "DOCKER_DEVICE",
+    "VMS_DEVICE",
     "UnraidBaseEntity",
     "UnraidEntity",
     "UnraidEntityDescription",
+    "async_get_or_create_group_device",
     "build_container_device_info",
+    "build_group_device_info",
     "build_vm_device_info",
     "container_devices_enabled",
     "find_vm",
+    "group_device_identifier",
     "read_only_enabled",
     "vm_devices_enabled",
 ]

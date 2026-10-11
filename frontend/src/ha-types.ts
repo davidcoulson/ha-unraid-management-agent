@@ -17,6 +17,10 @@ export interface DeviceRegistryEntry {
   model?: string | null;
   sw_version?: string | null;
   hw_version?: string | null;
+  /** Set on the Docker and VMs devices, linking them to their server device */
+  via_device_id?: string | null;
+  /** Set on child devices (containers, VMs, storage) of another device */
+  parent_device_id?: string | null;
 }
 
 export interface EntityRegistryEntry {

@@ -29,7 +29,13 @@ from .alerts import (
 from .api.models import SystemService
 from .cleanup import async_prune_seen_names
 from .const import ATTR_PARITY_CHECK_STATUS
-from .entity import UnraidBaseEntity, UnraidEntityDescription
+from .entity import (
+    DOCKER_DEVICE,
+    VMS_DEVICE,
+    UnraidBaseEntity,
+    UnraidEntityDescription,
+    build_group_device_info,
+)
 from .storage import (
     StorageEntitySpec,
     UnraidStorageBinarySensorEntityDescription,
@@ -54,14 +60,13 @@ _NETWORK_SERVICE_DUPLICATES: Final = frozenset(
 # Manager back containers and VMs. Others (nginx, later additions) start
 # disabled like the network service sensors.
 _SYSTEM_SERVICES_ENABLED_BY_DEFAULT: Final = frozenset({"docker", "libvirt"})
+# Services shown on the Docker or VMs device instead of the server device
+_SYSTEM_SERVICE_DEVICE_GROUPS: Final = {"docker": DOCKER_DEVICE, "libvirt": VMS_DEVICE}
 
-# Display names for the services that get a system service binary sensor;
-# services added to the agent later fall back to their raw name.
-_SYSTEM_SERVICE_DISPLAY_NAMES: Final[dict[str, str]] = {
-    "docker": "Docker",
-    "libvirt": "Libvirt",
-    "nginx": "Nginx",
-}
+# Display names for the services named in their sensor (the Docker and VMs
+# devices name the docker and libvirt services); services added to the agent
+# later fall back to their raw name.
+_SYSTEM_SERVICE_DISPLAY_NAMES: Final[dict[str, str]] = {"nginx": "Nginx"}
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -440,6 +445,7 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[UnraidBinarySensorEntityDescription, ...] = (
     UnraidBinarySensorEntityDescription(
         key="container_updates_available",
         translation_key="container_updates_available",
+        device_group=DOCKER_DEVICE,
         device_class=BinarySensorDeviceClass.UPDATE,
         icon="mdi:update",
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -673,6 +679,10 @@ class UnraidBinarySensorEntity(UnraidBaseEntity, BinarySensorEntity):
         """Initialize the binary sensor entity."""
         super().__init__(coordinator, entity_description.key)
         self.entity_description = entity_description
+        if entity_description.device_group:
+            self._attr_device_info = build_group_device_info(
+                coordinator, entity_description.device_group
+            )
 
     @property
     def is_on(self) -> bool:
@@ -791,11 +801,16 @@ class UnraidSystemServiceBinarySensor(UnraidBaseEntity, BinarySensorEntity):
         self._attr_entity_registry_enabled_default = (
             service_name in _SYSTEM_SERVICES_ENABLED_BY_DEFAULT
         )
-        self._attr_translation_placeholders = {
-            "service_name": _SYSTEM_SERVICE_DISPLAY_NAMES.get(
-                service_name, service_name
-            )
-        }
+        if group := _SYSTEM_SERVICE_DEVICE_GROUPS.get(service_name):
+            # The Docker or VMs device already names the service
+            self._attr_translation_key = "group_service"
+            self._attr_device_info = build_group_device_info(coordinator, group)
+        else:
+            self._attr_translation_placeholders = {
+                "service_name": _SYSTEM_SERVICE_DISPLAY_NAMES.get(
+                    service_name, service_name
+                )
+            }
 
     def _get_service(self) -> SystemService | None:
         """Return this service from the latest coordinator data, if present."""
