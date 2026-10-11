@@ -69,11 +69,12 @@ export class UnraidGpuCard extends BaseUnraidCard {
 
       // A GPU device's sensors are told apart by translation key: their entity
       // IDs can carry another GPU's name, or a "_2" suffix, after GPUs swap
-      // indexes. Other sensors are recognized by entity ID.
+      // indexes. Other sensors are recognized by entity ID; one with a "_2"
+      // suffix belongs to another GPU than the one without it.
       const match = gpuDevice
         ? undefined
         : entityId.match(
-            /_gpu_(?:(.+?)_)?(utilization|temperature|power|energy|memory_utilization|vram_usage)$/i
+            /_gpu_(?:(.+?)_)?(utilization|temperature|power|energy|memory_utilization|vram_usage)(?:_(\d+))?$/i
           );
       const metric = gpuDevice
         ? GPU_DEVICE_METRICS[ent?.translation_key ?? ""]
@@ -81,7 +82,9 @@ export class UnraidGpuCard extends BaseUnraidCard {
       if (!metric) continue;
 
       const rawKey = gpuDevice ? gpuDevice.id : match?.[1] || "0";
-      const gpuKey = gpuDevice ? `device:${gpuDevice.id}` : rawKey.toLowerCase();
+      const gpuKey = gpuDevice
+        ? `device:${gpuDevice.id}`
+        : `${rawKey.toLowerCase()}${match?.[3] ? `#${match[3]}` : ""}`;
 
       if (!gpuMap.has(gpuKey)) {
         const parsedIndex = parseInt(rawKey, 10);
