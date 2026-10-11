@@ -60,7 +60,8 @@ def test_temperature_info_feature_and_label() -> None:
     """Channel, label and identity are parsed from the agent's reading name."""
     assert COOLANT.hwmon_feature == "temp1"
     assert COOLANT.label == "Coolant Temp"
-    assert COOLANT.hwmon_key == "octo-hid-3-3_temp1"
+    assert COOLANT.hwmon_key == "octo-hid_temp1"
+    assert COOLANT.hwmon_address_key == "octo-hid-3-3_temp1"
     assert VOLTAGE.hwmon_feature is None
     assert POWER.hwmon_feature is None
     assert VOLTAGE.label is None
@@ -85,7 +86,7 @@ def test_display_name_uses_short_chip_only_when_unique() -> None:
         key: name for key, _, name in _hwmon_temperature_channels(_system(READINGS))
     }
     assert names == {
-        "octo_hid_3_3_temp1": "octo Coolant Temp",
+        "octo_hid_temp1": "octo Coolant Temp",
         "nvme_pci_2800_temp1": "nvme-pci-2800 Composite",
         "nvme_pci_2700_temp1": "nvme-pci-2700 Composite",
     }
@@ -105,7 +106,7 @@ def test_duplicate_channel_creates_one_sensor() -> None:
     """A channel the agent lists twice yields a single sensor, not a key clash."""
     duplicate = _reading("octo-hid-3-3_Coolant_Temp_temp1_input", 28.1, "octo-hid-3-3")
     channels = _hwmon_temperature_channels(_system([COOLANT, duplicate]))
-    assert [key for key, _, _ in channels] == ["octo_hid_3_3_temp1"]
+    assert [key for key, _, _ in channels] == ["octo_hid_temp1"]
 
 
 def _entry(hass: HomeAssistant, **options: object) -> MockConfigEntry:
@@ -142,11 +143,11 @@ async def test_hwmon_temperature_sensors(
 
     temps = _temperature_entities(entity_registry)
     assert set(temps) == {
-        f"{PREFIX}octo_hid_3_3_temp1",
+        f"{PREFIX}octo_hid_temp1",
         f"{PREFIX}nvme_pci_2800_temp1",
         f"{PREFIX}nvme_pci_2700_temp1",
     }
-    coolant = temps[f"{PREFIX}octo_hid_3_3_temp1"]
+    coolant = temps[f"{PREFIX}octo_hid_temp1"]
     assert coolant.entity_id == "sensor.unraid_test_temperature_octo_coolant_temp"
     assert coolant.disabled_by is er.RegistryEntryDisabler.INTEGRATION
 
@@ -174,9 +175,7 @@ async def test_created_without_fan_control(
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
-    assert set(_temperature_entities(entity_registry)) == {
-        f"{PREFIX}octo_hid_3_3_temp1"
-    }
+    assert set(_temperature_entities(entity_registry)) == {f"{PREFIX}octo_hid_temp1"}
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
@@ -202,7 +201,7 @@ async def test_channel_added_after_setup(
 
     assert set(_temperature_entities(entity_registry)) == {
         f"{PREFIX}nvme_pci_2800_temp1",
-        f"{PREFIX}octo_hid_3_3_temp1",
+        f"{PREFIX}octo_hid_temp1",
     }
 
 
@@ -211,11 +210,11 @@ def test_cleanup_knows_temperature_keys() -> None:
     data = UnraidData(system=_system(READINGS))
     keys = _build_valid_dynamic_entity_keys(data)
     assert {
-        "temperature_octo_hid_3_3_temp1",
+        "temperature_octo_hid_temp1",
         "temperature_nvme_pci_2800_temp1",
         "temperature_nvme_pci_2700_temp1",
     } <= keys
-    assert not any(k.startswith("temperature_octo_hid_3_3_in") for k in keys)
+    assert not any(k.startswith("temperature_octo_hid_in") for k in keys)
     assert "temperature_" in _unavailable_data_prefixes(UnraidData())
     assert "temperature_" not in _unavailable_data_prefixes(data)
 
@@ -229,7 +228,7 @@ async def _setup_enabled_coolant(
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
     entity_id = _temperature_entities(entity_registry)[
-        f"{PREFIX}octo_hid_3_3_temp1"
+        f"{PREFIX}octo_hid_temp1"
     ].entity_id
     entity_registry.async_update_entity(entity_id, disabled_by=None)
     await hass.config_entries.async_reload(entry.entry_id)
@@ -287,6 +286,139 @@ async def test_reading_matched_by_channel_not_label(
     assert state is not None
     assert float(state.state) == 31.5
     assert state.attributes["sensor"] == "octo-hid-3-3_Loop_Inlet_temp1_input"
-    assert set(_temperature_entities(entity_registry)) == {
-        f"{PREFIX}octo_hid_3_3_temp1"
+    assert set(_temperature_entities(entity_registry)) == {f"{PREFIX}octo_hid_temp1"}
+
+
+# The same Octo after a USB reconnect: lm-sensors gives it a new HID device id.
+COOLANT_RECONNECTED = _reading(
+    "octo-hid-3-13_Coolant_Temp_temp1_input", 28.4, "octo-hid-3-13"
+)
+
+
+def test_hid_chip_drops_its_device_id() -> None:
+    """USB HID chips are keyed without the device id; other chips keep theirs."""
+    assert COOLANT.hwmon_chip == "octo-hid"
+    assert COOLANT_RECONNECTED.hwmon_key == COOLANT.hwmon_key == "octo-hid_temp1"
+    assert NVME_2800.hwmon_chip == "nvme-pci-2800"
+    no_source = _reading("chip-a_Inlet_temp1_input", 25.0, None)
+    assert no_source.hwmon_chip is None
+    assert no_source.hwmon_address_key == "chip-a_Inlet_temp1"
+    assert VOLTAGE.hwmon_address_key is None
+
+
+def test_two_identical_hid_chips_keep_their_addresses() -> None:
+    """Two Octos cannot share a key, so both fall back to their full names."""
+    assert _keys([COOLANT, COOLANT_RECONNECTED, NVME_2800]) == {
+        "octo_hid_3_3_temp1",
+        "octo_hid_3_13_temp1",
+        "nvme_pci_2800_temp1",
     }
+    data = UnraidData(system=_system([COOLANT, COOLANT_RECONNECTED]))
+    keys = _build_valid_dynamic_entity_keys(data)
+    assert {"temperature_octo_hid_3_3_temp1", "temperature_octo_hid_3_13_temp1"} <= (
+        keys
+    )
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_sensor_survives_usb_reconnect(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """A HID chip that comes back with a new device id feeds the same sensor."""
+    system = mock_async_unraid_client.get_system_info.return_value
+    system.temperatures = [COOLANT]
+    entry, entity_id = await _setup_enabled_coolant(hass, entity_registry)
+
+    system.temperatures = [COOLANT_RECONNECTED]
+    await entry.runtime_data.coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+    state = hass.states.get(entity_id)
+    assert state is not None
+    assert float(state.state) == 28.4
+    assert set(_temperature_entities(entity_registry)) == {f"{PREFIX}octo_hid_temp1"}
+
+
+def _register_legacy(
+    entity_registry: er.EntityRegistry,
+    entry: MockConfigEntry,
+    suffix: str,
+    entity_id: str,
+    *,
+    disabled: bool,
+) -> None:
+    """Register a temperature entity under a pre-fix (address-based) unique ID."""
+    entity_registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        f"{PREFIX}{suffix}",
+        config_entry=entry,
+        suggested_object_id=entity_id.removeprefix("sensor."),
+        disabled_by=er.RegistryEntryDisabler.INTEGRATION if disabled else None,
+    )
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_legacy_unique_id_migrated(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """An address-based entity moves to the new key and keeps its entity ID."""
+    mock_async_unraid_client.get_system_info.return_value.temperatures = [COOLANT]
+    entry = _entry(hass)
+    _register_legacy(
+        entity_registry,
+        entry,
+        "octo_hid_3_3_temp1",
+        "sensor.unraid_coolant_temp",
+        disabled=False,
+    )
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    temps = _temperature_entities(entity_registry)
+    assert set(temps) == {f"{PREFIX}octo_hid_temp1"}
+    assert temps[f"{PREFIX}octo_hid_temp1"].entity_id == "sensor.unraid_coolant_temp"
+    assert temps[f"{PREFIX}octo_hid_temp1"].disabled_by is None
+    state = hass.states.get("sensor.unraid_coolant_temp")
+    assert state is not None
+    assert float(state.state) == 27.8
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_legacy_unique_id_migrated_after_reconnect(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """When the device id changed before the upgrade, the enabled entity wins."""
+    mock_async_unraid_client.get_system_info.return_value.temperatures = [
+        COOLANT_RECONNECTED
+    ]
+    entry = _entry(hass)
+    _register_legacy(
+        entity_registry,
+        entry,
+        "octo_hid_3_2_temp1",
+        "sensor.octo_old_disabled",
+        disabled=True,
+    )
+    _register_legacy(
+        entity_registry,
+        entry,
+        "octo_hid_3_3_temp1",
+        "sensor.unraid_coolant_temp",
+        disabled=False,
+    )
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    migrated = entity_registry.async_get("sensor.unraid_coolant_temp")
+    assert migrated is not None
+    assert migrated.unique_id == f"{PREFIX}octo_hid_temp1"
+    state = hass.states.get("sensor.unraid_coolant_temp")
+    assert state is not None
+    assert float(state.state) == 28.4

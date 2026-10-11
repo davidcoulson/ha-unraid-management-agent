@@ -8,6 +8,8 @@ UPS, an ATS, ...) gets its own ``nut_<device>_*`` entities.
 
 from __future__ import annotations
 
+import hashlib
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Final
 
 from homeassistant.util import slugify
@@ -24,8 +26,39 @@ NUT_BINARY_SENSOR_SUFFIXES: Final = ("connected",)
 
 
 def nut_device_key(device_name: str) -> str:
-    """Return the entity key prefix for a NUT device, e.g. ``nut_ups_gpu``."""
-    return f"{NUT_KEY_PREFIX}{slugify(device_name)}"
+    """
+    Return the entity key prefix for a NUT device, e.g. ``nut_ups``.
+
+    NUT device names are case-sensitive and may contain ``-`` and ``.``, which
+    slugify folds together (``UPS`` and ``ups``, ``ups-gpu`` and ``ups_gpu``).
+    A name that is already its own slug keeps the readable key. Any other name
+    gets its slug plus a hash of the exact name after a ``-``, which a slug
+    never contains, so two different names never share a key.
+    """
+    slug = slugify(device_name)
+    if slug == device_name:
+        return f"{NUT_KEY_PREFIX}{slug}"
+    digest = hashlib.sha256(device_name.encode()).hexdigest()[:8]
+    return f"{NUT_KEY_PREFIX}{slug}-{digest}"
+
+
+def nut_legacy_unique_ids(
+    entry_id: str, device_name: str, suffix: str, device_names: Iterable[str]
+) -> list[str]:
+    """
+    Return the unique ID an entity had under the slug-only key used before.
+
+    Earlier versions keyed a device by ``nut_<slug>`` alone. That old ID is
+    only offered when no other current device has the same slug, since it
+    cannot say which of them it was; empty when the key has not changed.
+    """
+    slug = slugify(device_name)
+    old_key = f"{NUT_KEY_PREFIX}{slug}"
+    if nut_device_key(device_name) == old_key or any(
+        other != device_name and slugify(other) == slug for other in device_names
+    ):
+        return []
+    return [f"{entry_id}_{old_key}_{suffix}"]
 
 
 def _primary_nut_device_name(data: UnraidData) -> str | None:

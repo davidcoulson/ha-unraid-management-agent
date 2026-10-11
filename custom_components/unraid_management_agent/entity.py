@@ -105,6 +105,11 @@ def build_vm_device_info(
     VMs are child devices of the Unraid server: they run on it, so they are
     grouped under the server rather than listed as separate devices. The
     libvirt UUID is used as the identifier so renaming a VM keeps the device.
+
+    Child devices can't carry a model or icon, so the device name is
+    translated ("VM · <name>") to tell VMs apart from containers in the
+    device list. The registry resolves the name each time the entities are
+    set up, so existing VM devices and renamed VMs are updated as well.
     """
     entry_id = coordinator.config_entry.entry_id
     # The server device is registered during setup, before the platforms load.
@@ -116,8 +121,9 @@ def build_vm_device_info(
         return DeviceInfo(identifiers={(DOMAIN, entry_id)})
     return ChildDeviceInfo(
         identifiers={(DOMAIN, f"{entry_id}_vm_{vm_identifier}")},
-        name=vm_name,
         parent_device_id=server.id,
+        translation_key="vm",
+        translation_placeholders={"name": vm_name},
     )
 
 
