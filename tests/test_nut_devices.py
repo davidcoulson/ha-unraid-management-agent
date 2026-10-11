@@ -15,6 +15,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.unraid_management_agent import UnraidDataUpdateCoordinator
 from custom_components.unraid_management_agent.api.constants import EventType
 from custom_components.unraid_management_agent.api.events import (
+    WebSocketEvent,
     identify_event_type,
     parse_event,
 )
@@ -29,13 +30,20 @@ from custom_components.unraid_management_agent.diagnostics import (
     async_get_config_entry_diagnostics,
 )
 from custom_components.unraid_management_agent.nut import (
+    async_move_legacy_nut_entities,
     find_nut_status,
+    listed_secondary_nut_devices,
+    nut_device_key,
     secondary_nut_device_names,
     secondary_nut_statuses,
 )
 
 from .const import MOCK_CONFIG, MOCK_OPTIONS, mock_collectors_status
 
+# NUT device keys carry a hash of the exact device name
+GPU = nut_device_key("ups-gpu")
+UPS = nut_device_key("ups")
+ATS = nut_device_key("ats")
 ENTRY_ID = "test_entry_id"
 
 # /api/v1/ups from an agent with multi-device support: the first NUT device,
@@ -164,15 +172,13 @@ async def test_entities_per_nut_device(
     )
     # ups-gpu: battery and runtime only; the ATS: connected only.
     assert _nut_keys(entity_registry) == {
-        "nut_ups_gpu_battery",
-        "nut_ups_gpu_runtime",
-        "nut_ups_gpu_connected",
-        "nut_ats_connected",
+        f"{GPU}_battery",
+        f"{GPU}_runtime",
+        f"{GPU}_connected",
+        f"{ATS}_connected",
     }
 
-    battery = hass.states.get(
-        _entity_id(entity_registry, "sensor", "nut_ups_gpu_battery")
-    )
+    battery = hass.states.get(_entity_id(entity_registry, "sensor", f"{GPU}_battery"))
     assert battery is not None
     assert battery.entity_id == "sensor.unraid_test_ups_ups_gpu_battery"
     assert battery.name == "unraid-test UPS ups-gpu Battery"
@@ -182,15 +188,13 @@ async def test_entities_per_nut_device(
     assert battery.attributes["ups_status"] == "OL"
     assert battery.attributes["ups_model"] == "Smart-UPS X 3000"
 
-    runtime = hass.states.get(
-        _entity_id(entity_registry, "sensor", "nut_ups_gpu_runtime")
-    )
+    runtime = hass.states.get(_entity_id(entity_registry, "sensor", f"{GPU}_runtime"))
     assert runtime is not None
     assert float(runtime.state) == 8  # 508 s
     assert "ups_status" not in runtime.attributes
 
     ats = hass.states.get(
-        _entity_id(entity_registry, "binary_sensor", "nut_ats_connected")
+        _entity_id(entity_registry, "binary_sensor", f"{ATS}_connected")
     )
     assert ats is not None
     assert ats.entity_id == "binary_sensor.unraid_test_ups_ats_connected"
@@ -202,7 +206,7 @@ async def test_entities_per_nut_device(
     server = entity_registry.async_get(
         _entity_id(entity_registry, "sensor", "ups_battery")
     ).device_id
-    for key in ("nut_ups_gpu_battery", "nut_ats_connected"):
+    for key in (f"{GPU}_battery", f"{ATS}_connected"):
         platform = "binary_sensor" if key.endswith("connected") else "sensor"
         entity = entity_registry.async_get(_entity_id(entity_registry, platform, key))
         assert entity is not None
@@ -237,15 +241,13 @@ async def test_readings_and_devices_that_appear_later(
     )
     await hass.async_block_till_done()
 
-    assert {"nut_ups_gpu_load", "nut_ups_gpu_power", "nut_ups_gpu_energy"} <= (
+    assert {f"{GPU}_load", f"{GPU}_power", f"{GPU}_energy"} <= (
         _nut_keys(entity_registry)
     )
-    power = hass.states.get(_entity_id(entity_registry, "sensor", "nut_ups_gpu_power"))
+    power = hass.states.get(_entity_id(entity_registry, "sensor", f"{GPU}_power"))
     assert power is not None
     assert float(power.state) == 630
-    energy = hass.states.get(
-        _entity_id(entity_registry, "sensor", "nut_ups_gpu_energy")
-    )
+    energy = hass.states.get(_entity_id(entity_registry, "sensor", f"{GPU}_energy"))
     assert energy is not None
     assert energy.name == "unraid-test UPS ups-gpu Energy"
     assert float(energy.state) == 0
@@ -263,17 +265,17 @@ async def test_readings_and_devices_that_appear_later(
     )
     await hass.async_block_till_done()
 
-    for key in ("nut_ups_gpu_battery", "nut_ups_gpu_power", "nut_ups_gpu_energy"):
+    for key in (f"{GPU}_battery", f"{GPU}_power", f"{GPU}_energy"):
         state = hass.states.get(_entity_id(entity_registry, "sensor", key))
         assert state is not None
         assert state.state == STATE_UNAVAILABLE, key
     ats = hass.states.get(
-        _entity_id(entity_registry, "binary_sensor", "nut_ats_connected")
+        _entity_id(entity_registry, "binary_sensor", f"{ATS}_connected")
     )
     assert ats is not None
     assert ats.state == STATE_OFF
     gpu_connected = hass.states.get(
-        _entity_id(entity_registry, "binary_sensor", "nut_ups_gpu_connected")
+        _entity_id(entity_registry, "binary_sensor", f"{GPU}_connected")
     )
     assert gpu_connected is not None
     assert gpu_connected.state == STATE_OFF
@@ -305,9 +307,7 @@ async def test_nut_device_energy_unknown_while_power_unknown(
     )
     await hass.async_block_till_done()
 
-    energy = hass.states.get(
-        _entity_id(entity_registry, "sensor", "nut_ups_gpu_energy")
-    )
+    energy = hass.states.get(_entity_id(entity_registry, "sensor", f"{GPU}_energy"))
     assert energy is not None
     assert energy.state == STATE_UNKNOWN
 
@@ -328,17 +328,44 @@ _SOURCE_CASES: dict[str, tuple[UPSInfo | None, NUTInfo | None, set[str]]] = {
         _APCUPSD_UPS,
         _nut(_ups_status("ups", 623), ATS_STATUS),
         {
-            "nut_ups_battery",
-            "nut_ups_runtime",
-            "nut_ups_connected",
-            "nut_ats_connected",
+            f"{UPS}_battery",
+            f"{UPS}_runtime",
+            f"{UPS}_connected",
+            f"{ATS}_connected",
         },
     ),
     # No /ups data: the first NUT device is taken as the primary.
     "no-ups-data": (
         None,
         _nut(_ups_status("ups", 623), ATS_STATUS),
-        {"nut_ats_connected"},
+        {f"{ATS}_connected"},
+    ),
+    # No /ups data and the first device did not answer: the first listed
+    # device is still the primary, so ups-gpu keeps its entities and ups gets
+    # none.
+    "no-ups-data-first-silent": (
+        None,
+        _nut(
+            _ups_status("ups-gpu", 508), ATS_STATUS, devices=["ups", "ups-gpu", "ats"]
+        ),
+        {
+            f"{GPU}_battery",
+            f"{GPU}_runtime",
+            f"{GPU}_connected",
+            f"{ATS}_connected",
+        },
+    ),
+    # A listed device that never answered still gets a connected sensor.
+    "listed-silent-device": (
+        UPSInfo.model_validate(UPS_PAYLOAD),
+        _nut(_ups_status("ups", 623), ATS_STATUS, devices=["ups", "ups-gpu", "ats"]),
+        {f"{GPU}_connected", f"{ATS}_connected"},
+    ),
+    # Every device failed its query: listed devices are still connected-off.
+    "no-statuses-answered": (
+        UPSInfo.model_validate(UPS_PAYLOAD),
+        _nut(devices=["ups", "ats"]),
+        {f"{ATS}_connected"},
     ),
     # /nut fetch failed.
     "no-nut-data": (UPSInfo.model_validate(UPS_PAYLOAD), None, set()),
@@ -358,6 +385,30 @@ async def test_which_nut_devices_get_entities(
     await _setup(hass, mock_async_unraid_client, ups, nut)
 
     assert _nut_keys(entity_registry) == expected
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_first_device_added_once_apcupsd_ups_answers(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """With /ups down at setup, the first NUT device waits for /ups (apcupsd)."""
+    entry = await _setup(
+        hass, mock_async_unraid_client, None, _nut(_ups_status("ups", 623), ATS_STATUS)
+    )
+    assert _nut_keys(entity_registry) == {f"{ATS}_connected"}
+
+    coordinator = entry.runtime_data.coordinator
+    coordinator.async_set_updated_data(replace(coordinator.data, ups=_APCUPSD_UPS))
+    await hass.async_block_till_done()
+
+    assert _nut_keys(entity_registry) == {
+        f"{UPS}_battery",
+        f"{UPS}_runtime",
+        f"{UPS}_connected",
+        f"{ATS}_connected",
+    }
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
@@ -394,18 +445,91 @@ async def test_removed_entity_is_recreated(
         THREE_DEVICES,
     )
     for platform, key in (
-        ("sensor", "nut_ups_gpu_battery"),
-        ("binary_sensor", "nut_ats_connected"),
+        ("sensor", f"{GPU}_battery"),
+        ("binary_sensor", f"{ATS}_connected"),
     ):
         entity_registry.async_remove(_entity_id(entity_registry, platform, key))
     await hass.async_block_till_done()
-    assert "nut_ups_gpu_battery" not in _nut_keys(entity_registry)
+    assert f"{GPU}_battery" not in _nut_keys(entity_registry)
 
     coordinator = entry.runtime_data.coordinator
     coordinator.async_set_updated_data(coordinator.data)
     await hass.async_block_till_done()
 
-    assert {"nut_ups_gpu_battery", "nut_ats_connected"} <= _nut_keys(entity_registry)
+    assert {f"{GPU}_battery", f"{ATS}_connected"} <= _nut_keys(entity_registry)
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_silent_listed_device_is_disconnected(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """A listed device that never answered shows as disconnected, not missing."""
+    await _setup(
+        hass,
+        mock_async_unraid_client,
+        UPSInfo.model_validate(UPS_PAYLOAD),
+        _nut(_ups_status("ups", 623), devices=["ups", "ups-gpu"]),
+    )
+
+    state = hass.states.get(
+        _entity_id(entity_registry, "binary_sensor", f"{GPU}_connected")
+    )
+    assert state is not None
+    assert state.state == STATE_OFF
+    assert listed_secondary_nut_devices(None) == []
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_secondaries_kept_while_ups_data_and_first_device_missing(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """/ups failing while the first device is silent changes no NUT entity."""
+    entry = await _setup(
+        hass,
+        mock_async_unraid_client,
+        UPSInfo.model_validate(UPS_PAYLOAD),
+        THREE_DEVICES,
+    )
+    coordinator = entry.runtime_data.coordinator
+    before = _nut_keys(entity_registry)
+
+    coordinator.async_set_updated_data(
+        replace(
+            coordinator.data,
+            ups=None,
+            nut=_nut(
+                _ups_status("ups-gpu", 508),
+                ATS_STATUS,
+                devices=["ups", "ups-gpu", "ats"],
+            ),
+        )
+    )
+    await hass.async_block_till_done()
+
+    assert _nut_keys(entity_registry) == before
+    battery = hass.states.get(_entity_id(entity_registry, "sensor", f"{GPU}_battery"))
+    assert battery is not None
+    assert float(battery.state) == 100
+    # Cleanup keeps every listed device while the primary is not certain.
+    keys = _build_valid_dynamic_entity_keys(coordinator.data)
+    assert {f"{GPU}_battery", f"{GPU}_connected", f"{ATS}_connected"} <= keys
+    assert f"{UPS}_connected" in keys
+
+    coordinator.async_set_updated_data(
+        replace(
+            coordinator.data, ups=UPSInfo.model_validate(UPS_PAYLOAD), nut=THREE_DEVICES
+        )
+    )
+    await hass.async_block_till_done()
+
+    assert _nut_keys(entity_registry) == before
+    keys = _build_valid_dynamic_entity_keys(coordinator.data)
+    assert f"{GPU}_battery" in keys
+    assert not any(k.startswith(UPS) for k in keys)
 
 
 def test_cleanup_keeps_listed_devices() -> None:
@@ -418,12 +542,12 @@ def test_cleanup_keeps_listed_devices() -> None:
     keys = _build_valid_dynamic_entity_keys(data)
 
     assert {
-        "nut_ups_gpu_battery",
-        "nut_ups_gpu_energy",
-        "nut_ups_gpu_connected",
-        "nut_ats_connected",
+        f"{GPU}_battery",
+        f"{GPU}_energy",
+        f"{GPU}_connected",
+        f"{ATS}_connected",
     } <= keys
-    assert not any(k.startswith("nut_ups_") and "gpu" not in k for k in keys)
+    assert not any(k.startswith(UPS) for k in keys)
     assert secondary_nut_device_names(data) == {"ups-gpu", "ats"}
     assert "nut_" not in _unavailable_data_prefixes(data)
     assert "nut_" in _unavailable_data_prefixes(UnraidData())
@@ -437,6 +561,13 @@ def test_cleanup_keeps_listed_devices() -> None:
         nut=NUTInfo.model_validate({"devices": [{"name": "ups"}, {"name": "ats"}]})
     )
     assert secondary_nut_device_names(listed_only) == {"ups", "ats"}
+    # Statuses without a device list: the first status is the primary.
+    statuses_only = UnraidData(
+        nut=NUTInfo.model_validate({"statuses": [_ups_status("ups", 623), ATS_STATUS]})
+    )
+    assert listed_secondary_nut_devices(statuses_only) == ["ats"]
+    no_devices = UnraidData(nut=NUTInfo.model_validate({"statuses": []}))
+    assert listed_secondary_nut_devices(no_devices) == []
 
 
 def test_nut_websocket_payload_is_classified() -> None:
@@ -501,3 +632,258 @@ async def test_diagnostics_redact_nut_raw_variables(
     assert nut["statuses"][1]["device_name"] == "ats"
     assert nut["statuses"][1]["raw_variables"] == "**REDACTED**"
     assert nut["statuses"][1]["serial"] == "**REDACTED**"
+
+
+def test_device_keys_do_not_collide() -> None:
+    """Names that slugify alike get different keys, none equal to the old key."""
+    keys = {nut_device_key(n) for n in ("ups", "UPS", "ups_gpu", "ups-gpu", "ups.gpu")}
+    assert len(keys) == 5
+    assert UPS.startswith("nut_ups-")
+    assert GPU.startswith("nut_ups_gpu-")
+    # Never the slug-only key of earlier versions
+    assert nut_device_key("ups_gpu") != "nut_ups_gpu"
+
+
+def _register_legacy(
+    entity_registry: er.EntityRegistry,
+    entry: MockConfigEntry,
+    platform: str,
+    unique_id: str,
+    entity_id: str,
+) -> None:
+    entity_registry.async_get_or_create(
+        platform,
+        DOMAIN,
+        unique_id,
+        config_entry=entry,
+        suggested_object_id=entity_id.split(".", 1)[1],
+    )
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_slug_keyed_entities_move_to_the_new_key(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """Entities keyed by the old slug-only key keep their entity IDs."""
+    mock_async_unraid_client.get_ups_info.return_value = UPSInfo.model_validate(
+        UPS_PAYLOAD
+    )
+    mock_async_unraid_client.get_nut_info.return_value = THREE_DEVICES
+    entry = _entry(hass)
+    _register_legacy(
+        entity_registry,
+        entry,
+        "sensor",
+        f"{ENTRY_ID}_nut_ups_gpu_battery",
+        "sensor.gpu_ups_battery",
+    )
+    _register_legacy(
+        entity_registry,
+        entry,
+        "binary_sensor",
+        f"{ENTRY_ID}_nut_ups_gpu_connected",
+        "binary_sensor.gpu_ups_connected",
+    )
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    battery = entity_registry.async_get("sensor.gpu_ups_battery")
+    connected = entity_registry.async_get("binary_sensor.gpu_ups_connected")
+    assert battery is not None
+    assert connected is not None
+    assert battery.unique_id == f"{ENTRY_ID}_{GPU}_battery"
+    assert connected.unique_id == f"{ENTRY_ID}_{GPU}_connected"
+    state = hass.states.get("sensor.gpu_ups_battery")
+    assert state is not None
+    assert state.state == "100.0"
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_slug_keyed_entity_of_silent_device_is_moved(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """An old entity moves even while its device is silent, so cleanup keeps it."""
+    mock_async_unraid_client.get_ups_info.return_value = UPSInfo.model_validate(
+        UPS_PAYLOAD
+    )
+    mock_async_unraid_client.get_nut_info.return_value = _nut(
+        _ups_status("ups", 623), ATS_STATUS, devices=["ups", "ups-gpu", "ats"]
+    )
+    entry = _entry(hass)
+    _register_legacy(
+        entity_registry,
+        entry,
+        "sensor",
+        f"{ENTRY_ID}_nut_ups_gpu_battery",
+        "sensor.gpu_ups_battery",
+    )
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    battery = entity_registry.async_get("sensor.gpu_ups_battery")
+    assert battery is not None
+    assert battery.unique_id == f"{ENTRY_ID}_{GPU}_battery"
+    coordinator = entry.runtime_data.coordinator
+    assert f"{GPU}_battery" in _build_valid_dynamic_entity_keys(coordinator.data)
+
+    # ups-gpu answers again: its battery sensor keeps the old entity ID.
+    coordinator.async_set_updated_data(replace(coordinator.data, nut=THREE_DEVICES))
+    await hass.async_block_till_done()
+
+    state = hass.states.get("sensor.gpu_ups_battery")
+    assert state is not None
+    assert state.state == "100.0"
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_slug_keyed_entity_of_first_device_moved_while_ups_missing(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """With apcupsd /ups down at setup, the first device's old entities move too."""
+    mock_async_unraid_client.get_ups_info.return_value = None
+    mock_async_unraid_client.get_nut_info.return_value = _nut(
+        _ups_status("ups", 623), ATS_STATUS
+    )
+    entry = _entry(hass)
+    for platform, suffix, entity_id in (
+        ("sensor", "battery", "sensor.first_ups_battery"),
+        ("binary_sensor", "connected", "binary_sensor.first_ups_connected"),
+    ):
+        _register_legacy(
+            entity_registry, entry, platform, f"{ENTRY_ID}_nut_ups_{suffix}", entity_id
+        )
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    # Moved but not created yet: ups is taken as the primary without /ups.
+    battery = entity_registry.async_get("sensor.first_ups_battery")
+    assert battery is not None
+    assert battery.unique_id == f"{ENTRY_ID}_{UPS}_battery"
+    assert hass.states.get("sensor.first_ups_battery") is None
+    coordinator = entry.runtime_data.coordinator
+    keys = _build_valid_dynamic_entity_keys(coordinator.data)
+    assert {f"{UPS}_battery", f"{UPS}_connected"} <= keys
+
+    # /ups answers from apcupsd: the entities come back with their entity IDs.
+    coordinator.async_set_updated_data(replace(coordinator.data, ups=_APCUPSD_UPS))
+    await hass.async_block_till_done()
+
+    state = hass.states.get("sensor.first_ups_battery")
+    assert state is not None
+    assert state.state == "100.0"
+    connected = hass.states.get("binary_sensor.first_ups_connected")
+    assert connected is not None
+    assert connected.state == STATE_ON
+    async_move_legacy_nut_entities(hass, ENTRY_ID, None)
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_ambiguous_slug_keyed_entity_is_not_moved(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """With "ups-gpu" and "ups_gpu" both present, neither takes the old entity."""
+    mock_async_unraid_client.get_ups_info.return_value = UPSInfo.model_validate(
+        UPS_PAYLOAD
+    )
+    mock_async_unraid_client.get_nut_info.return_value = _nut(
+        _ups_status("ups", 623),
+        _ups_status("ups-gpu", 508),
+        _ups_status("ups_gpu", 400),
+    )
+    entry = _entry(hass)
+    _register_legacy(
+        entity_registry,
+        entry,
+        "sensor",
+        f"{ENTRY_ID}_nut_ups_gpu_battery",
+        "sensor.old_battery",
+    )
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    old = entity_registry.async_get("sensor.old_battery")
+    assert old is not None
+    assert old.unique_id == f"{ENTRY_ID}_nut_ups_gpu_battery"
+    assert {
+        f"{GPU}_battery",
+        f"{nut_device_key('ups_gpu')}_battery",
+        "nut_ups_gpu_battery",
+    } <= _nut_keys(entity_registry)
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_partial_nut_event_keeps_device_lists(
+    hass: HomeAssistant,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """A nut_status_update without statuses or devices keeps the known ones."""
+    entry = await _setup(
+        hass,
+        mock_async_unraid_client,
+        UPSInfo.model_validate(UPS_PAYLOAD),
+        THREE_DEVICES,
+    )
+    coordinator: UnraidDataUpdateCoordinator = entry.runtime_data.coordinator
+    partial = NUTInfo.model_validate({"installed": True, "running": True})
+    coordinator._handle_websocket_event(
+        WebSocketEvent(event_type=EventType.NUT_STATUS_UPDATE, data=partial)
+    )
+    assert coordinator.data.nut is not None
+    assert coordinator.data.nut.statuses == THREE_DEVICES.statuses
+    assert coordinator.data.nut.devices == THREE_DEVICES.devices
+
+    # A full event still replaces the lists
+    single = _nut(_ups_status("ups", 600))
+    coordinator._handle_websocket_event(
+        WebSocketEvent(event_type=EventType.NUT_STATUS_UPDATE, data=single)
+    )
+    assert coordinator.data.nut.statuses == single.statuses
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_primary_device_counts_for_legacy_ambiguity(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """A secondary "ups_gpu" does not take an old entity when the primary is "ups-gpu"."""
+    mock_async_unraid_client.get_ups_info.return_value = UPSInfo.model_validate(
+        {**UPS_PAYLOAD, "device_name": "ups-gpu"}
+    )
+    mock_async_unraid_client.get_nut_info.return_value = _nut(
+        _ups_status("ups-gpu", 623), _ups_status("ups_gpu", 400)
+    )
+    entry = _entry(hass)
+    _register_legacy(
+        entity_registry,
+        entry,
+        "sensor",
+        f"{ENTRY_ID}_nut_ups_gpu_battery",
+        "sensor.old_battery",
+    )
+    _register_legacy(
+        entity_registry,
+        entry,
+        "binary_sensor",
+        f"{ENTRY_ID}_nut_ups_gpu_connected",
+        "binary_sensor.old_connected",
+    )
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    for entity_id, key in (
+        ("sensor.old_battery", "nut_ups_gpu_battery"),
+        ("binary_sensor.old_connected", "nut_ups_gpu_connected"),
+    ):
+        entity = entity_registry.async_get(entity_id)
+        assert entity is not None
+        assert entity.unique_id == f"{ENTRY_ID}_{key}"
+    assert f"{nut_device_key('ups_gpu')}_battery" in _nut_keys(entity_registry)

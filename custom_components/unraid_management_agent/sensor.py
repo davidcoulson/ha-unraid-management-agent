@@ -94,7 +94,12 @@ from .hwmon import (
     fan_model_is_shared,
     temperature_legacy_unique_ids,
 )
-from .nut import find_nut_status, nut_device_key, secondary_nut_statuses
+from .nut import (
+    async_move_legacy_nut_entities,
+    find_nut_status,
+    nut_device_key,
+    secondary_nut_statuses,
+)
 from .storage import (
     StorageEntitySpec,
     UnraidStorageEntity,
@@ -3628,8 +3633,11 @@ def _new_nut_device_sensors(
     a battery gets no battery, load, runtime, power or energy sensor. ``seen``
     holds the keys already created and is updated in place.
     """
+    data = coordinator.data
+    async_move_legacy_nut_entities(coordinator.hass, entry.entry_id, data)
+
     new_entities: list[SensorEntity] = []
-    for name, status in secondary_nut_statuses(coordinator.data):
+    for name, status in secondary_nut_statuses(data):
         prefix = nut_device_key(name)
         for description in NUT_DEVICE_SENSOR_DESCRIPTIONS:
             key = f"{prefix}_{description.key}"

@@ -36,7 +36,12 @@ from .entity import (
     UnraidEntityDescription,
     build_group_device_info,
 )
-from .nut import find_nut_status, nut_device_key, secondary_nut_statuses
+from .nut import (
+    async_move_legacy_nut_entities,
+    find_nut_status,
+    listed_secondary_nut_devices,
+    nut_device_key,
+)
 from .storage import (
     StorageEntitySpec,
     UnraidStorageBinarySensorEntityDescription,
@@ -640,8 +645,9 @@ async def async_setup_entry(
             seen_nut_devices,
             lambda name: f"{entry.entry_id}_{nut_device_key(name)}_connected",
         )
+        async_move_legacy_nut_entities(hass, entry.entry_id, coordinator.data)
         new_entities: list[BinarySensorEntity] = []
-        for name, _status in secondary_nut_statuses(coordinator.data):
+        for name in listed_secondary_nut_devices(coordinator.data):
             if name not in seen_nut_devices:
                 seen_nut_devices.add(name)
                 new_entities.append(UnraidNUTConnectedBinarySensor(coordinator, name))

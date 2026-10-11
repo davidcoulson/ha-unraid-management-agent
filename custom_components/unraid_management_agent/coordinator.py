@@ -205,8 +205,6 @@ _EVENT_FIELDS: dict[EventType, str] = {
     EventType.NOTIFICATIONS_RESPONSE: "notifications",
     EventType.ZFS_POOL_UPDATE: "zfs_pools",
     EventType.ZFS_ARC_UPDATE: "zfs_arc",
-    # NUTInfo feeds the per-device NUT entities; data.ups comes from ups_status_update
-    EventType.NUT_STATUS_UPDATE: "nut",
     EventType.FAN_CONTROL_UPDATE: "fan_control",
 }
 
@@ -818,6 +816,23 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                     overview=None,
                     timestamp=None,
                 )
+        elif event.event_type == EventType.NUT_STATUS_UPDATE:
+            # NUTInfo feeds the per-device NUT entities; data.ups (UPSInfo)
+            # comes from ups_status_update and is left alone. An event without
+            # the per-device lists (older agents) keeps the ones already known.
+            field = "nut"
+            nut = event.data
+            current = self.data.nut
+            if current is not None and isinstance(nut, NUTInfo):
+                keep = {
+                    name: getattr(current, name)
+                    for name in ("statuses", "devices")
+                    if getattr(nut, name) is None
+                    and getattr(current, name) is not None
+                }
+                if keep:
+                    nut = nut.model_copy(update=keep)
+            self.data.nut = nut
         elif event.event_type == EventType.COLLECTOR_STATE_CHANGE:
             # One collector changed: update it within the full status
             field = "collectors"
