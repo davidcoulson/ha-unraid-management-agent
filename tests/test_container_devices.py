@@ -30,16 +30,6 @@ ENTRY_ID = "test_entry_id"
 PLEX = (DOMAIN, f"{ENTRY_ID}_container_plex")
 
 
-def _non_gpu_children(devices: dr.DeviceRegistry) -> list[dr.ChildDeviceEntry]:
-    """Return the child devices of the entry that are not GPUs."""
-    gpu_prefix = f"{ENTRY_ID}_gpu_"
-    return [
-        device
-        for device in dr.async_child_entries_for_config_entry(devices, ENTRY_ID)
-        if not any(ident.startswith(gpu_prefix) for _, ident in device.identifiers)
-    ]
-
-
 def _entry(hass: HomeAssistant, *, container_devices: bool) -> MockConfigEntry:
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -117,8 +107,7 @@ async def test_option_off_keeps_containers_on_the_server_device(
     await _setup(hass, container_devices=False)
 
     devices = dr.async_get(hass)
-    # GPUs are always child devices; containers only with the option
-    assert not _non_gpu_children(devices)
+    assert not dr.async_child_entries_for_config_entry(devices, ENTRY_ID)
     server = devices.async_get_device_by_identifier((DOMAIN, ENTRY_ID), ENTRY_ID)
     entities = er.async_get(hass)
     switch = entities.async_get("switch.unraid_test_container_plex")
