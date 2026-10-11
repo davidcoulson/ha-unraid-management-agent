@@ -136,6 +136,24 @@ export abstract class BaseUnraidCard extends LitElement {
   }
 
   /**
+   * IDs of the server device and the devices under it: its Docker and VMs
+   * devices (linked to it) and their child devices (containers and VMs).
+   */
+  protected getServerDeviceIds(serverId: string): Set<string> {
+    const ids = new Set([serverId]);
+    const devices = Object.values(this.hass?.devices ?? {});
+    for (const device of devices) {
+      if (device.via_device_id === serverId) ids.add(device.id);
+    }
+    for (const device of devices) {
+      if (device.parent_device_id && ids.has(device.parent_device_id)) {
+        ids.add(device.id);
+      }
+    }
+    return ids;
+  }
+
+  /**
    * Find an entity by translation key or entity_id suffix.
    */
   protected getEntity(
@@ -146,16 +164,23 @@ export abstract class BaseUnraidCard extends LitElement {
     const device = this.getActiveDevice();
     const deviceId = device?.id;
 
-    // Check entity registry if available
+    // Check entity registry if available: the server device first, then the
+    // devices under it (e.g. the Docker device's Container Updates Available)
     if (this.hass.entities && deviceId) {
-      for (const ent of Object.values(this.hass.entities)) {
-        if (
-          ent.device_id === deviceId &&
-          ent.translation_key === translationKey &&
-          (!domain || ent.entity_id.startsWith(`${domain}.`))
-        ) {
-          const stateObj = this.hass.states[ent.entity_id];
-          if (stateObj) return stateObj;
+      const serverDeviceIds = this.getServerDeviceIds(deviceId);
+      for (const onServer of [true, false]) {
+        for (const ent of Object.values(this.hass.entities)) {
+          if (
+            ent.device_id &&
+            (onServer
+              ? ent.device_id === deviceId
+              : serverDeviceIds.has(ent.device_id)) &&
+            ent.translation_key === translationKey &&
+            (!domain || ent.entity_id.startsWith(`${domain}.`))
+          ) {
+            const stateObj = this.hass.states[ent.entity_id];
+            if (stateObj) return stateObj;
+          }
         }
       }
     }
@@ -304,6 +329,8 @@ export abstract class BaseUnraidCard extends LitElement {
     const deviceId = device?.id;
 
     if (this.hass.entities && deviceId) {
+      // Containers and VMs may be on their own devices under the server
+      const serverDeviceIds = this.getServerDeviceIds(deviceId);
       const matches: HassEntity[] = [];
       for (const ent of Object.values(this.hass.entities)) {
         const keyMatch =
@@ -325,7 +352,8 @@ export abstract class BaseUnraidCard extends LitElement {
             (ent.translation_key === "vm_restart" || ent.translation_key === "vm_reboot"));
 
         if (
-          ent.device_id === deviceId &&
+          ent.device_id &&
+          serverDeviceIds.has(ent.device_id) &&
           keyMatch &&
           (!domain || ent.entity_id.startsWith(`${domain}.`))
         ) {

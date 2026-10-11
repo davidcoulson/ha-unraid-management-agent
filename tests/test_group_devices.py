@@ -181,6 +181,11 @@ async def test_upgrade_moves_devices_keeping_entities_and_settings(
     old_ids = {
         identifier: _child(hass, identifier).id for identifier in (PLEX, SONARR, WIN10)
     }
+    office = ar.async_get(hass).async_create("Office").id
+    unraid_label = lr.async_get(hass).async_create("Unraid").label_id
+    devices.async_update_device(
+        _device(hass, SERVER).id, area_id=office, labels={unraid_label}
+    )
 
     await _setup(hass, entry)
 
@@ -193,6 +198,11 @@ async def test_upgrade_moves_devices_keeping_entities_and_settings(
     assert vms.name == "unraid-test VMs"
     assert docker.configuration_url == "http://192.168.1.100/Docker"
     assert vms.configuration_url == "http://192.168.1.100/VMs"
+    # They start where the server is, so area and label targets keep reaching
+    # the Docker sensors and the container and VM devices inheriting from them
+    for group in (docker, vms):
+        assert group.area_id == office
+        assert group.labels == {unraid_label}
 
     # Same device IDs (device automations keep working) and user settings
     plex = _child(hass, PLEX)
@@ -208,6 +218,7 @@ async def test_upgrade_moves_devices_keeping_entities_and_settings(
         lr.async_get(hass).async_get_label_by_name("Streaming").label_id
     }
     assert sonarr.disabled_by is dr.DeviceEntryDisabler.USER
+    assert dr.async_get_effective_area_id(hass, sonarr) == office
     assert win10.name == "Windows 10"
 
     # Every entity kept its entity ID, unique ID and user settings
@@ -248,6 +259,29 @@ async def test_upgrade_moves_devices_keeping_entities_and_settings(
     assert _child(hass, PLEX).parent_device_id == docker.id
     assert devices.async_get_device_by_identifier(DOCKER, ENTRY_ID).id == docker.id
     assert not entities.deleted_entities
+
+
+@pytest.mark.usefixtures(
+    "mock_unraid_client_class", "mock_unraid_websocket_client_class"
+)
+async def test_restored_group_device_keeps_its_own_area(hass: HomeAssistant) -> None:
+    """A Docker device removed earlier comes back with the user's area."""
+    entry = _entry(hass)
+    devices = dr.async_get(hass)
+    areas = ar.async_get(hass)
+    server = devices.async_get_or_create(
+        config_entry_id=ENTRY_ID, identifiers={SERVER}, name="unraid-test"
+    )
+    devices.async_update_device(server.id, area_id=areas.async_create("Office").id)
+    docker = devices.async_get_or_create(config_entry_id=ENTRY_ID, identifiers={DOCKER})
+    devices.async_update_device(docker.id, area_id=areas.async_create("Rack").id)
+    devices.async_remove_device(docker.id)
+
+    await _setup(hass, entry)
+
+    restored = _device(hass, DOCKER)
+    assert restored.id == docker.id
+    assert restored.area_id == areas.async_get_area_by_name("Rack").id
 
 
 @pytest.mark.usefixtures(
