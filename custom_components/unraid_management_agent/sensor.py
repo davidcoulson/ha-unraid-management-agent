@@ -34,6 +34,7 @@ from homeassistant.const import (
     UnitOfTime,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
@@ -70,14 +71,18 @@ from .const import (
     ATTR_UPS_STATUS,
     CONF_ENABLE_FAN_CONTROL,
     DEFAULT_ENABLE_FAN_CONTROL,
+    DOMAIN,
 )
 from .coordinator import UnraidData
 from .entity import (
     UnraidBaseEntity,
     build_container_device_info,
+    build_gpu_device_info,
     build_vm_device_info,
     container_devices_enabled,
     find_vm,
+    gpu_device_key,
+    gpu_device_keys,
     vm_devices_enabled,
 )
 from .hwmon import (
@@ -231,6 +236,38 @@ class UnraidEnergySensorExtraStoredData(SensorExtraStoredData):
             last_power_watts,
             last_timestamp,
             last_uptime_seconds,
+        )
+
+
+@dataclass
+class UnraidGPUEnergySensorExtraStoredData(UnraidEnergySensorExtraStoredData):
+    """Extra restore-state data for GPU energy sensors."""
+
+    # Device key of the GPU the energy was measured on (None before 2026.10.x)
+    gpu_key: str | None = None
+
+    def as_dict(self) -> dict[str, Any]:
+        """Return a dict representation of the GPU energy restore data."""
+        data = super().as_dict()
+        data["gpu_key"] = self.gpu_key
+        return data
+
+    @classmethod
+    def from_dict(
+        cls, restored: dict[str, Any]
+    ) -> UnraidGPUEnergySensorExtraStoredData | None:
+        """Create restore data from a persisted dict."""
+        extra = UnraidEnergySensorExtraStoredData.from_dict(restored)
+        if extra is None:
+            return None
+        gpu_key = restored.get("gpu_key")
+        return cls(
+            extra.native_value,
+            extra.native_unit_of_measurement,
+            extra.last_power_watts,
+            extra.last_timestamp,
+            extra.last_uptime_seconds,
+            gpu_key if isinstance(gpu_key, str) else None,
         )
 
 
@@ -3060,6 +3097,7 @@ class UnraidGPUSensorBase(UnraidBaseEntity, SensorEntity):
         super().__init__(coordinator, f"gpu_{gpu_index}_{sensor_type}")
         self._gpu_index = gpu_index
         self._gpu_name = gpu_name
+        self._attr_device_info = build_gpu_device_info(coordinator, gpu_index, gpu_name)
 
     def _find_gpu(self) -> Any | None:
         """Find a GPU by its stable index."""
@@ -3087,7 +3125,6 @@ class UnraidGPUUtilizationSensor(UnraidGPUSensorBase):
         """Initialize the sensor."""
         super().__init__(coordinator, entry, gpu_index, gpu_name, "utilization")
         self._attr_translation_key = "gpu_utilization"
-        self._attr_translation_placeholders = {"gpu_name": gpu_name}
 
     @property
     def native_value(self) -> float | None:
@@ -3129,7 +3166,6 @@ class UnraidGPUTemperatureSensor(UnraidGPUSensorBase):
         """Initialize the sensor."""
         super().__init__(coordinator, entry, gpu_index, gpu_name, "temperature")
         self._attr_translation_key = "gpu_temperature"
-        self._attr_translation_placeholders = {"gpu_name": gpu_name}
 
     @property
     def native_value(self) -> float | None:
@@ -3159,7 +3195,6 @@ class UnraidGPUPowerSensor(UnraidGPUSensorBase):
         """Initialize the sensor."""
         super().__init__(coordinator, entry, gpu_index, gpu_name, "power")
         self._attr_translation_key = "gpu_power"
-        self._attr_translation_placeholders = {"gpu_name": gpu_name}
 
     @property
     def native_value(self) -> float | None:
@@ -3204,7 +3239,6 @@ class UnraidGPUVramUsedSensor(UnraidGPUSensorBase):
         """Initialize the sensor."""
         super().__init__(coordinator, entry, gpu_index, gpu_name, "vram_used")
         self._attr_translation_key = "gpu_vram_used"
-        self._attr_translation_placeholders = {"gpu_name": gpu_name}
 
     @property
     def native_value(self) -> int | None:
@@ -3235,7 +3269,6 @@ class UnraidGPUVramTotalSensor(UnraidGPUSensorBase):
         """Initialize the sensor."""
         super().__init__(coordinator, entry, gpu_index, gpu_name, "vram_total")
         self._attr_translation_key = "gpu_vram_total"
-        self._attr_translation_placeholders = {"gpu_name": gpu_name}
 
     @property
     def native_value(self) -> int | None:
@@ -3263,7 +3296,6 @@ class UnraidGPUVramUsageSensor(UnraidGPUSensorBase):
         """Initialize the sensor."""
         super().__init__(coordinator, entry, gpu_index, gpu_name, "vram_usage")
         self._attr_translation_key = "gpu_vram_usage"
-        self._attr_translation_placeholders = {"gpu_name": gpu_name}
 
     @property
     def native_value(self) -> float | None:
@@ -3623,8 +3655,10 @@ class UnraidGPUEnergySensor(UnraidBaseEntity, RestoreEntity, SensorEntity):
         super().__init__(coordinator, f"gpu_{gpu_index}_energy")
         self._gpu_index = gpu_index
         self._gpu_name = gpu_name
+        self._attr_device_info = build_gpu_device_info(coordinator, gpu_index, gpu_name)
+        # The GPU this sensor measures: another GPU can take its index later
+        self._gpu_key = gpu_device_key(coordinator, gpu_index)
         self._attr_translation_key = "gpu_energy"
-        self._attr_translation_placeholders = {"gpu_name": gpu_name}
         self._energy_integrator = EnergyIntegrator()
         self._total_energy: float = 0.0
         self._last_power: float | None = None
@@ -3643,7 +3677,21 @@ class UnraidGPUEnergySensor(UnraidBaseEntity, RestoreEntity, SensorEntity):
         await self._async_restore_energy_state()
 
     async def _async_restore_energy_state(self) -> None:
-        """Restore the accumulated energy total and integration baseline."""
+        """
+        Restore the accumulated energy total and integration baseline.
+
+        Nothing is restored when the energy was measured on another GPU, which
+        had this index before (GPU indexes shift when a GPU appears in front).
+        """
+        extra_data = await self.async_get_last_extra_data()
+        restored = (
+            UnraidGPUEnergySensorExtraStoredData.from_dict(extra_data.as_dict())
+            if extra_data is not None
+            else None
+        )
+        if restored is not None and restored.gpu_key not in (None, self._gpu_key):
+            return
+
         if (
             last_state := await self.async_get_last_state()
         ) is not None and last_state.state not in (None, "unknown", "unavailable"):
@@ -3652,10 +3700,6 @@ class UnraidGPUEnergySensor(UnraidBaseEntity, RestoreEntity, SensorEntity):
             except (TypeError, ValueError):  # fmt: skip
                 self._total_energy = 0.0
 
-        if (extra_data := await self.async_get_last_extra_data()) is None:
-            return
-
-        restored = UnraidEnergySensorExtraStoredData.from_dict(extra_data.as_dict())
         if restored is None:
             return
 
@@ -3673,14 +3717,15 @@ class UnraidGPUEnergySensor(UnraidBaseEntity, RestoreEntity, SensorEntity):
         )
 
     @property
-    def extra_restore_state_data(self) -> UnraidEnergySensorExtraStoredData:
+    def extra_restore_state_data(self) -> UnraidGPUEnergySensorExtraStoredData:
         """Return energy sensor state data that should survive restarts."""
-        return UnraidEnergySensorExtraStoredData(
+        return UnraidGPUEnergySensorExtraStoredData(
             self.native_value,
             self.native_unit_of_measurement,
             self._last_power,
             self._energy_integrator.last_timestamp,
             self._last_uptime_seconds,
+            self._gpu_key,
         )
 
     @callback
@@ -3696,6 +3741,9 @@ class UnraidGPUEnergySensor(UnraidBaseEntity, RestoreEntity, SensorEntity):
 
         gpu = self._find_gpu()
         if gpu is None:
+            return
+        # Until the entry reloads, ignore another GPU that took this index
+        if gpu_device_key(self.coordinator, self._gpu_index) != self._gpu_key:
             return
 
         current_power = gpu.power_draw_watts
@@ -4474,6 +4522,57 @@ def _vm_identity(vm: Any) -> tuple[str | None, str | None]:
     )
 
 
+def _async_watch_gpus(
+    hass: HomeAssistant,
+    entry: UnraidConfigEntry,
+    setup_gpus: list[Any] | None,
+) -> None:
+    """
+    Reload the entry when the GPU sensors set up no longer match the GPUs.
+
+    GPU sensors are created at setup, one set per GPU index, on the device of
+    the GPU at that index. Reload when a GPU appears at an index without
+    sensors (a GPU added, or GPUs that were unavailable at setup), when
+    another GPU takes an index (e.g. one given back to the host by a VM shifts
+    the others), or when a GPU comes back after stale cleanup removed its
+    sensors. Unavailable GPU data and missing GPUs never trigger a reload.
+    """
+    coordinator = entry.runtime_data.coordinator
+    setup_keys = gpu_device_keys(setup_gpus)
+    registry = er.async_get(hass)
+    # Indexes set up whose GPU has since been missing: stale cleanup may have
+    # removed their sensors by the time the GPU comes back
+    missed: set[int] = set()
+    reload_scheduled = False
+
+    def _sensors_removed(index: int) -> bool:
+        unique_id = f"{entry.entry_id}_gpu_{index}_utilization"
+        return registry.async_get_entity_id("sensor", DOMAIN, unique_id) is None
+
+    def _needs_reload(current_keys: dict[int, str]) -> bool:
+        missed.update(setup_keys.keys() - current_keys.keys())
+        for index, key in current_keys.items():
+            if setup_keys.get(index) != key:
+                return True
+            if index in missed:
+                if _sensors_removed(index):
+                    return True
+                missed.discard(index)
+        return False
+
+    @callback
+    def _reload_on_gpu_change() -> None:
+        nonlocal reload_scheduled
+        current = coordinator.data.gpu if coordinator.data else None
+        if reload_scheduled or current is None:
+            return
+        if _needs_reload(gpu_device_keys(current)):
+            reload_scheduled = True
+            hass.config_entries.async_schedule_reload(entry.entry_id)
+
+    entry.async_on_unload(coordinator.async_add_listener(_reload_on_gpu_change))
+
+
 # =============================================================================
 # Setup Entry
 # =============================================================================
@@ -4536,6 +4635,9 @@ async def async_setup_entry(
                         ),
                     ]
                 )
+
+    if coordinator.is_collector_enabled("gpu"):
+        _async_watch_gpus(hass, entry, data.gpu if data else None)
 
     # UPS sensors - only if ups collector is enabled
     if (
