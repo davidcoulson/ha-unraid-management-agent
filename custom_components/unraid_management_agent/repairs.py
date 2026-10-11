@@ -368,8 +368,9 @@ def _check_share_fuse_fallback(
         if not share.name:
             continue
         issue_id = f"{prefix}{share.name}"
-        if share.exclusive is None:
-            # State unknown (array stopped or older agent): leave as is
+        if not share.exclusive_state_known:
+            # State unknown (array stopped, older agent, unreadable config):
+            # leave any issue as is
             keep.add(issue_id)
             continue
         if not share.fuse_fallback:

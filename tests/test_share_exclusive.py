@@ -112,6 +112,11 @@ def test_share_model_properties() -> None:
     assert EXCLUSIVE.stray_locations == []
     assert INELIGIBLE.fuse_fallback is False
     assert OLD_AGENT.fuse_fallback is False
+    assert OLD_AGENT.exclusive_state_known is False
+    assert _share("x", exclusive=False).exclusive_state_known is False
+    assert EXCLUSIVE.exclusive_state_known is True
+    assert FALLBACK.exclusive_state_known is True
+    assert INELIGIBLE.exclusive_state_known is True
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
@@ -184,6 +189,14 @@ async def test_sensor_follows_updates(
     assert state is not None
     assert state.state == STATE_OFF
     assert "exclusive_pool" not in state.attributes
+
+    # Eligibility unknown (share config unreadable)
+    await _refresh(
+        hass, entry, mock_async_unraid_client, [_share("isos", exclusive=False)]
+    )
+    state = hass.states.get(entity_id)
+    assert state is not None
+    assert state.state == STATE_UNAVAILABLE
 
     # Array stopped: state unknown
     await _refresh(hass, entry, mock_async_unraid_client, [OLD_AGENT])
@@ -294,6 +307,15 @@ async def test_repair_issue_lifecycle(
     await _refresh(hass, entry, mock_async_unraid_client, None)
     assert set(_issues(hass)) == {f"{ISSUE_PREFIX}system", f"{ISSUE_PREFIX}domains"}
 
+    # Eligibility unknown keeps both issues
+    await _refresh(
+        hass,
+        entry,
+        mock_async_unraid_client,
+        [_share("domains", exclusive=False), _share("system", exclusive=False)],
+    )
+    assert set(_issues(hass)) == {f"{ISSUE_PREFIX}system", f"{ISSUE_PREFIX}domains"}
+
     # Array stopped (state unknown) keeps domains; system was deleted
     await _refresh(
         hass,
@@ -352,6 +374,12 @@ async def test_repair_issue_locations_unknown(
 
     issue = _issues(hass)[f"{ISSUE_PREFIX}downloads"]
     assert issue.translation_key == "share_fuse_fallback_unknown"
+    state = hass.states.get("binary_sensor.unraid_test_share_downloads_fuse_fallback")
+    assert state is not None
+    assert state.state == STATE_ON
+    assert state.attributes["exclusive_pool"] == "cache"
+    assert "locations" not in state.attributes
+    assert "stray_locations" not in state.attributes
     assert issue.translation_placeholders == {
         "share_name": "downloads",
         "pool": "cache",
