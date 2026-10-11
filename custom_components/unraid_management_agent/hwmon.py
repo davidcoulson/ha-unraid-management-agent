@@ -189,6 +189,25 @@ def hwmon_controller_of(item: Any) -> tuple[str, str] | None:
     return None
 
 
+def hid_drivers_without_ids(items: Any) -> set[str]:
+    """
+    Return the USB HID drivers ('octo') with a fan or temperature lacking a device_id.
+
+    That happens with agents from before device_id was reported (or after a
+    downgrade): those controllers can't be told apart, so their device-keyed
+    entities and devices must not be treated as gone.
+    """
+    drivers: set[str] = set()
+    for item in items or []:
+        if getattr(item, "device_id", None):
+            continue
+        if isinstance(item, FanInfo) and "-hid-" in (item.source or ""):
+            drivers.add(item.chip_short or "")
+        elif isinstance(item, TemperatureInfo) and item.hwmon_hid_chip:
+            drivers.add(item.hwmon_hid_chip.removesuffix("-hid"))
+    return drivers
+
+
 def hwmon_controller_names(
     entry_id: str,
     fans: list[Any],

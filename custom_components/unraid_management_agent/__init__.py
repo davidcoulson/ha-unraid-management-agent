@@ -25,8 +25,6 @@ from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import slugify
 
 from .api import (
-    FanInfo,
-    TemperatureInfo,
     UnraidAuthenticationError,
     UnraidClient,
     UnraidConnectionError,
@@ -55,7 +53,7 @@ from .entity import (
     hwmon_controller_identifier,
 )
 from .frontend import async_register_frontend
-from .hwmon import hwmon_controller_of
+from .hwmon import hid_drivers_without_ids, hwmon_controller_of
 from .storage import CONTROLLER, ENCLOSURE, current_storage_ids, device_identifier
 
 # Service field constants
@@ -499,18 +497,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
     return True
 
 
-def _hwmon_ids_missing(system: Any) -> bool:
-    """Return True when a USB HID fan or temperature comes without a device_id."""
-    return any(
-        not item.device_id
-        and (
-            (isinstance(item, FanInfo) and "-hid-" in (item.source or ""))
-            or (isinstance(item, TemperatureInfo) and item.hwmon_hid_chip)
-        )
-        for item in [*system.fans, *system.temperatures]
-    )
-
-
 async def async_remove_config_entry_device(
     hass: HomeAssistant,
     entry: UnraidConfigEntry,
@@ -563,7 +549,7 @@ async def async_remove_config_entry_device(
                 system is None
                 or system.fans is None
                 or system.temperatures is None
-                or _hwmon_ids_missing(system)
+                or hid_drivers_without_ids([*system.fans, *system.temperatures])
             ):
                 # Not a complete inventory: the controller may still be there.
                 return False

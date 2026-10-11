@@ -9,6 +9,7 @@ import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
+from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.unraid_management_agent import (
@@ -19,6 +20,7 @@ from custom_components.unraid_management_agent.api.models import (
     TemperatureInfo,
 )
 from custom_components.unraid_management_agent.cleanup import (
+    STALE_REMOVAL_GRACE,
     async_cleanup_stale_entities,
 )
 from custom_components.unraid_management_agent.const import (
@@ -420,3 +422,57 @@ def test_controller_helpers() -> None:
     assert FanInfo(name="octo_fan8", label="Coolant FLOW").is_flow
     assert not FanInfo(name="octo_fan1", label="Array Fan1").is_flow
     assert not FanInfo(name="octo_fan1").is_flow
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_partial_inventory_never_removes_controller(
+    hass: HomeAssistant, mock_async_unraid_client: MagicMock
+) -> None:
+    """Missing lists or device IDs (agent downgrade) keep the controller's sensors."""
+    entry = await _setup(
+        hass,
+        mock_async_unraid_client,
+        [*_octo_fans("octo-hid-3-13", SERIAL_A), MOTHERBOARD_FAN],
+        [_coolant("octo-hid-3-13", SERIAL_A), CPU_TEMP],
+    )
+    coordinator = entry.runtime_data.coordinator
+    system = coordinator.data.system
+    long_ago = dt_util.utcnow() - STALE_REMOVAL_GRACE * 2
+
+    def cleanup_past_grace() -> None:
+        async_cleanup_stale_entities(hass, entry, coordinator)
+        for unique_id in list(coordinator.stale_entity_candidates):
+            coordinator.stale_entity_candidates[unique_id] = long_ago
+        async_cleanup_stale_entities(hass, entry, coordinator)
+
+    # Lists missing from the agent's response.
+    system.fans = None
+    system.temperatures = None
+    cleanup_past_grace()
+    # An older agent: the same Octo without a device_id.
+    system.fans = [FanInfo(name="octo_fan8", rpm=742, source="octo-hid-3-13")]
+    system.temperatures = [_coolant("octo-hid-3-13", None)]
+    cleanup_past_grace()
+
+    assert _entity(hass, f"{FAN}octo_00000_00001_fan8").entity_id == (
+        "sensor.unraid_fan_octo_fan8"
+    )
+    assert _entity(hass, f"{TEMP}octo_hid_00000_00001_temp1").entity_id == (
+        "sensor.unraid_coolant_temp"
+    )
+    assert _controller(hass, CONTROLLER_A)
+
+    # The Octo really is gone (complete inventory without it): removed.
+    system.fans = [MOTHERBOARD_FAN]
+    system.temperatures = [CPU_TEMP]
+    coordinator.data.fan_control = MagicMock(fans=[])
+    cleanup_past_grace()
+    registry = er.async_get(hass)
+    assert (
+        registry.async_get_entity_id("sensor", DOMAIN, f"{FAN}octo_00000_00001_fan8")
+        is None
+    )
+    assert (
+        dr.async_get(hass).async_get_child_device_by_identifier(CONTROLLER_A, ENTRY_ID)
+        is None
+    )
