@@ -240,6 +240,7 @@ Click **Configure** on an active integration entry to adjust operational options
 | **Show Docker containers as separate devices** | `false` | Creates a child device for each container under the server's Docker device, with short entity names. |
 | **Show virtual machines as separate devices**  | `false` | Creates a child device for each VM under the server's VMs device, keyed by libvirt UUID.             |
 | **Show GPUs as separate devices**              | `false` | Creates a `GPU · <name>` child device for each GPU, keyed by its UUID or PCI address.                |
+| **Show ZFS pools as separate devices**         | `false` | Creates a child device for each ZFS pool holding its sensors, plus drive health roll-ups (hottest drive, worst NVMe wear, media errors, failing drives). |
 | **Enable container update checks**             | `false` | Tracks container image digest updates and adds an `update` entity per container.                     |
 | **Read-only (sensors only)**                   | `false` | Restricts the integration to monitoring only, disabling all switches, buttons, and control actions.  |
 
