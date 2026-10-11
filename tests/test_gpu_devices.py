@@ -560,6 +560,22 @@ def test_gpu_energy_restore_data_parsing() -> None:
     assert restored.native_value == 5.0
 
 
+def test_gpu_energy_restore_data_round_trips_the_gpu_key() -> None:
+    """The sensor stores its GPU's key, and it survives as_dict/from_dict."""
+    coordinator = MagicMock()
+    coordinator.config_entry.options = {CONF_ENABLE_GPU_DEVICES: True}
+    coordinator.data = UnraidData(gpu=[_rtx_3070()])
+    energy = UnraidGPUEnergySensor(coordinator, MagicMock(), 0, "RTX 3070")
+
+    stored = energy.extra_restore_state_data
+    assert stored.gpu_key == f"uuid_{RTX_3070_UUID.lower()}"
+    data = stored.as_dict()
+    assert data["gpu_key"] == stored.gpu_key
+
+    restored = UnraidGPUEnergySensorExtraStoredData.from_dict(data)
+    assert restored == stored
+
+
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
 async def test_option_off_keeps_gpu_sensors_on_the_server_device(
     hass: HomeAssistant, mock_async_unraid_client: MagicMock
