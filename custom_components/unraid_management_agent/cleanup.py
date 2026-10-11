@@ -49,7 +49,7 @@ from .nut import (
     nut_device_key,
     secondary_nut_device_names,
 )
-from .zfs_drives import roll_up_keys
+from .zfs_drives import retained_roll_up_keys
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -327,7 +327,7 @@ def _build_valid_dynamic_entity_keys(
             keys.add(f"zfs_{name}_problem")  # binary sensor
             if zfs_pool_devices:
                 # Drive health roll-ups, only on pool devices
-                for suffix in roll_up_keys(pool):
+                for suffix in retained_roll_up_keys(pool):
                     keys.add(f"zfs_{name}_{suffix}")  # sensor
 
     # ── Remote shares ─────────────────────────────────────────────────────────

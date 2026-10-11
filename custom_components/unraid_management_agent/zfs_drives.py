@@ -100,17 +100,42 @@ ROLL_UP_KEYS: tuple[str, ...] = (
 
 def roll_up_keys(pool: ZFSPool) -> list[str]:
     """
-    Return the roll-up sensors a pool should have.
+    Return the roll-up sensors to create for a pool.
 
     None without member drives (an agent older than 2026.10), and no wear
-    sensor for a pool without NVMe members. Setup creates exactly these and
-    stale cleanup keeps exactly these, so a roll-up that no longer applies
-    (agent rollback, NVMe members replaced by hard drives) is removed after
-    the usual grace period.
+    sensor until a member reports NVMe wear.
     """
     if pool.drives is None:
         return []
     return [key for key in ROLL_UP_KEYS if key != "drive_max_wear" or has_wear(pool)]
+
+
+def _has_nvme(pool: ZFSPool) -> bool:
+    """Return True when any member is an NVMe drive, with or without a reading."""
+    return any(
+        (d.disk or "").startswith("nvme")
+        or (d.health is not None and d.health.media_type == "nvme")
+        for d in pool.drives or []
+    )
+
+
+def retained_roll_up_keys(pool: ZFSPool) -> list[str]:
+    """
+    Return the roll-up sensors stale cleanup must keep for a pool.
+
+    Wider than roll_up_keys(), so a gap in SMART data never deletes an entity
+    (and its customizations): the wear sensor stays while the pool has NVMe
+    members, and every roll-up stays while the pool's status could not be
+    read (no vdevs and no drives). They go when they no longer apply: the
+    agent stops reporting members (rollback), the NVMe members are replaced,
+    the pool is removed or the option is turned off.
+    """
+    if pool.drives is None:
+        return list(ROLL_UP_KEYS) if pool.vdevs is None else []
+    keys = roll_up_keys(pool)
+    if "drive_max_wear" not in keys and _has_nvme(pool):
+        keys.append("drive_max_wear")
+    return keys
 
 
 def drive_locations(

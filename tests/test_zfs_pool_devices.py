@@ -40,6 +40,7 @@ from custom_components.unraid_management_agent.zfs_drives import (
     failing_drives,
     hottest_drive,
     media_errors,
+    retained_roll_up_keys,
     roll_up_keys,
     worst_wear,
 )
@@ -419,10 +420,61 @@ def test_valid_keys_include_roll_ups_only_with_option() -> None:
 
 
 def test_roll_up_keys() -> None:
-    """Which roll-ups a pool gets."""
+    """Which roll-ups a pool gets, and which cleanup keeps."""
     assert roll_up_keys(_pool("flash")) == list(DRIVE_KEYS)
     assert "drive_max_wear" not in roll_up_keys(_pool("exos24tb"))
     assert roll_up_keys(mock_zfs_pools()[0]) == []
+    assert retained_roll_up_keys(_pool("flash")) == list(DRIVE_KEYS)
+    assert "drive_max_wear" not in retained_roll_up_keys(_pool("exos24tb"))
+    # Agent without member drives (it reports vdevs): nothing to keep.
+    assert retained_roll_up_keys(mock_zfs_pools()[0]) == []
+
+    # NVMe members without SMART readings (a telemetry gap): the wear sensor
+    # is not created, but an existing one is kept.
+    gap = ZFSPool.model_validate(
+        {
+            "name": "p",
+            "drives": [
+                {"name": "nvme0n1p1", "disk": "nvme0n1"},
+                {"name": "x", "health": {"media_type": "nvme"}},
+            ],
+        }
+    )
+    assert "drive_max_wear" not in roll_up_keys(gap)
+    assert "drive_max_wear" in retained_roll_up_keys(gap)
+    # Pool status unreadable this cycle (no vdevs, no drives): keep everything.
+    assert retained_roll_up_keys(ZFSPool.model_validate({"name": "p"})) == list(
+        DRIVE_KEYS
+    )
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_wear_sensor_survives_smart_gap(
+    hass: HomeAssistant, mock_async_unraid_client: MagicMock
+) -> None:
+    """A customized wear sensor is not deleted while SMART data is missing."""
+    entry = await _setup(hass, mock_async_unraid_client, _pools())
+    registry = er.async_get(hass)
+    wear = _entity(hass, "sensor", "zfs_flash_drive_max_wear")
+    registry.async_update_entity(wear.entity_id, new_entity_id="sensor.my_wear")
+
+    coordinator = entry.runtime_data.coordinator
+    raw = json.loads((FIXTURES / "zfs_pools_drives.json").read_text())
+    for pool in raw:
+        for drive in pool["drives"]:
+            drive.pop("health", None)
+    coordinator.data.zfs_pools = [ZFSPool.model_validate(p) for p in raw]
+    coordinator.async_set_updated_data(coordinator.data)
+    await hass.async_block_till_done()
+    async_cleanup_stale_entities(hass, entry, coordinator)
+    for unique_id in list(coordinator.stale_entity_candidates):
+        coordinator.stale_entity_candidates[unique_id] = dt_util.utcnow() - (
+            STALE_REMOVAL_GRACE * 2
+        )
+    async_cleanup_stale_entities(hass, entry, coordinator)
+
+    assert registry.async_get("sensor.my_wear") is not None
+    assert hass.states.get("sensor.my_wear").state == "unknown"
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
