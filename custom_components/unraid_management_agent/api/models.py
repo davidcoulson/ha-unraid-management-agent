@@ -3756,6 +3756,7 @@ class NICModule(BaseModel):
     vendor_oui: str | None = Field(None, description="Vendor IEEE company ID")
     wavelength_nm: CoercedFloat = Field(None, description="Laser wavelength (nm)")
     ddm_supported: bool = Field(False, description="Module reports diagnostics")
+    data_not_ready: bool = Field(False, description="Monitors not ready yet")
     temperature_celsius: CoercedFloat = Field(None, description="Module temperature")
     voltage_volts: CoercedFloat = Field(None, description="Supply voltage")
     rx_power_type: str | None = Field(None, description="average or oma")

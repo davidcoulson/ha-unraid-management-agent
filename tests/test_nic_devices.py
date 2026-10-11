@@ -278,13 +278,27 @@ async def test_optic_flags_turn_the_problem_sensor_on(
             warnings=[],
         )
 
+    # Invalid diagnostics do not clear the raised flag: the state is unknown.
     await _push(hass, mock_config_entry, _cards(not_ready))
     problem = _state(hass, "binary_sensor", f"{ETH0}_module_problem")
-    assert problem.state == STATE_OFF
+    assert problem.state == STATE_UNKNOWN
     assert problem.attributes["data_not_ready"] is True
     assert _state(hass, "sensor", f"{ETH0}_module_temperature").state == STATE_UNKNOWN
     # Without lane readings the power sensors have nothing to show.
     assert _state(hass, "sensor", f"{ETH0}_rx_power").state == STATE_UNAVAILABLE
+
+    def decode_error(data: dict[str, Any]) -> None:
+        module = _card(data, "0000:41:00")["ports"][0]["module"]
+        module.update(error="invalid external calibration constants", alarms=[])
+
+    await _push(hass, mock_config_entry, _cards(decode_error))
+    problem = _state(hass, "binary_sensor", f"{ETH0}_module_problem")
+    assert problem.state == STATE_UNKNOWN
+    assert problem.attributes["error"] == "invalid external calibration constants"
+
+    # Valid diagnostics without flags: recovered.
+    await _push(hass, mock_config_entry, _cards())
+    assert _state(hass, "binary_sensor", f"{ETH0}_module_problem").state == STATE_OFF
 
 
 @pytest.mark.usefixtures("nic_client", "mock_unraid_websocket_client_class")
