@@ -66,10 +66,13 @@ export class UnraidCardEditor extends LitElement {
     if (!this._config) return html``;
 
     const devices = this.hass?.devices
-      ? Object.values(this.hass.devices).filter((d) =>
-          d.identifiers?.some(
-            ([domain]) => domain === "unraid_management_agent" || domain === "unraid"
-          )
+      ? Object.values(this.hass.devices).filter(
+          (d) =>
+            // Child devices (VMs, containers, GPUs, storage) are not servers
+            !d.parent_device_id &&
+            d.identifiers?.some(
+              ([domain]) => domain === "unraid_management_agent" || domain === "unraid"
+            )
         )
       : [];
 

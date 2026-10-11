@@ -79,6 +79,9 @@
   "device": {
     "vm": {
       "name": "VM \u00b7 {name}"
+    },
+    "gpu": {
+      "name": "GPU \u00b7 {name}"
     }
   },
   "entity": {
@@ -135,25 +138,25 @@
         "name": "Parity Check Progress"
       },
       "gpu_utilization": {
-        "name": "GPU {gpu_name} Utilization"
+        "name": "Utilization"
       },
       "gpu_temperature": {
-        "name": "GPU {gpu_name} Temperature"
+        "name": "Temperature"
       },
       "gpu_power": {
-        "name": "GPU {gpu_name} Power"
+        "name": "Power"
       },
       "gpu_energy": {
-        "name": "GPU {gpu_name} Energy"
+        "name": "Energy"
       },
       "gpu_vram_used": {
-        "name": "GPU {gpu_name} VRAM Used"
+        "name": "VRAM used"
       },
       "gpu_vram_total": {
-        "name": "GPU {gpu_name} VRAM Total"
+        "name": "VRAM total"
       },
       "gpu_vram_usage": {
-        "name": "GPU {gpu_name} VRAM Usage"
+        "name": "VRAM usage"
       },
       "ups_battery": {
         "name": "UPS Battery"

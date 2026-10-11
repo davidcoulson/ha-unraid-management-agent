@@ -14,6 +14,8 @@ import { registerDashboardCard } from "./register-dashboard-card";
 interface GPUItem {
   index: number;
   name: string;
+  /** The name is the GPU device's (as named by the user, if renamed) */
+  nameFromDevice?: boolean;
   driver?: string;
   utilizationPct?: number;
   utilizationEntityId?: string;
@@ -26,6 +28,15 @@ interface GPUItem {
   memUtilPct?: number;
   memUtilEntityId?: string;
 }
+
+// Translation keys of the GPU device sensors the card shows, by metric
+const GPU_DEVICE_METRICS: Record<string, string> = {
+  gpu_utilization: "utilization",
+  gpu_temperature: "temperature",
+  gpu_power: "power",
+  gpu_energy: "energy",
+  gpu_vram_usage: "vram_usage",
+};
 
 export class UnraidGpuCard extends BaseUnraidCard {
   static override editorTag = GPU_EDITOR_TAG;
@@ -44,20 +55,32 @@ export class UnraidGpuCard extends BaseUnraidCard {
       if (!entityId.startsWith("sensor.")) continue;
 
       const ent = this.hass.entities?.[entityId];
+      // Each GPU's sensors sit on a "GPU · <name>" child device of the server
+      const entDevice = ent?.device_id ? this.hass.devices?.[ent.device_id] : undefined;
+      const gpuDevice = entDevice?.parent_device_id ? entDevice : undefined;
       if (deviceId && ent?.device_id) {
-        if (ent.device_id !== deviceId) continue;
+        if (ent.device_id !== deviceId && gpuDevice?.parent_device_id !== deviceId) {
+          continue;
+        }
       } else if (cleanName && !entityId.includes(cleanName)) {
         continue;
       }
 
-      const match = entityId.match(
-        /_gpu_(?:(.+?)_)?(utilization|temperature|power|energy|memory_utilization|vram_usage)$/i
-      );
-      if (!match || !match[2]) continue;
+      // A GPU device's sensors are told apart by translation key: their entity
+      // IDs can carry another GPU's name, or a "_2" suffix, after GPUs swap
+      // indexes. Other sensors are recognized by entity ID.
+      const match = gpuDevice
+        ? undefined
+        : entityId.match(
+            /_gpu_(?:(.+?)_)?(utilization|temperature|power|energy|memory_utilization|vram_usage)$/i
+          );
+      const metric = gpuDevice
+        ? GPU_DEVICE_METRICS[ent?.translation_key ?? ""]
+        : match?.[2]?.toLowerCase();
+      if (!metric) continue;
 
-      const rawKey = match[1] || "0";
-      const gpuKey = rawKey.toLowerCase();
-      const metric = match[2].toLowerCase();
+      const rawKey = gpuDevice ? gpuDevice.id : match?.[1] || "0";
+      const gpuKey = gpuDevice ? `device:${gpuDevice.id}` : rawKey.toLowerCase();
 
       if (!gpuMap.has(gpuKey)) {
         const parsedIndex = parseInt(rawKey, 10);
@@ -72,7 +95,12 @@ export class UnraidGpuCard extends BaseUnraidCard {
                 )
             : undefined;
 
+        const deviceName =
+          gpuDevice?.name_by_user ||
+          gpuDevice?.name?.replace(/^GPU\s*·\s*/i, "") ||
+          undefined;
         const gpuName =
+          deviceName ||
           (typeof stateObj.attributes?.gpu_name === "string"
             ? (stateObj.attributes.gpu_name as string)
             : undefined) ||
@@ -88,6 +116,7 @@ export class UnraidGpuCard extends BaseUnraidCard {
         gpuMap.set(gpuKey, {
           index,
           name: gpuName,
+          nameFromDevice: deviceName !== undefined,
           driver,
         });
       }
@@ -95,7 +124,11 @@ export class UnraidGpuCard extends BaseUnraidCard {
       const item = gpuMap.get(gpuKey)!;
 
       // Update name and driver from any metric attribute that provides them
-      if (stateObj.attributes?.gpu_name && (!item.name || item.name.startsWith("GPU "))) {
+      if (
+        stateObj.attributes?.gpu_name &&
+        !item.nameFromDevice &&
+        (!item.name || item.name.startsWith("GPU "))
+      ) {
         item.name = stateObj.attributes.gpu_name as string;
       }
       if (

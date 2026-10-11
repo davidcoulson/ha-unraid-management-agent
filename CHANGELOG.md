@@ -14,6 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **GPU child devices** ([#198](https://github.com/tinkerologie/ha-unraid-management-agent/issues/198)):
+  - Each GPU's sensors (utilization, temperature, power, energy and VRAM) move from the Unraid server device to a child device of the server named `GPU · <GPU name>` (for example `GPU · NVIDIA GeForce RTX 3070`), like VMs, containers and storage controllers.
+  - The device is keyed by the GPU's own hardware ID: the UUID for NVIDIA GPUs, otherwise the PCI bus address, falling back to the index for agents that report neither. Its name, area and labels stay with the physical card when another GPU (for example one given back to the host by a VM) takes its index.
+  - GPU sensors are still created per GPU index at setup. The integration now reloads when the reported GPUs no longer match them: another GPU took an index (its sensors move to that GPU's device), a GPU appeared at an index without sensors (a GPU added, or GPU data unavailable at setup), or a GPU came back after stale cleanup removed its sensors. Unavailable GPU data or a missing GPU never triggers a reload.
+  - Unique IDs and entity IDs don't change, so history, automations and dashboards are kept. Sensor names drop the GPU name, which is now the device name (`GPU · NVIDIA GeForce RTX 3070 Temperature`). Sensor history stays tied to the GPU index, as before.
+  - A GPU Energy sensor only restores its total when it was measured on the same GPU, so after an index shift one GPU's energy isn't carried over to another GPU's device.
+  - A GPU device is removed by stale cleanup once its GPU is gone, and can be deleted from the device page once the agent no longer reports it.
+  - The GPU dashboard card shows sensors on the server's GPU devices and uses the GPU device's name (or the name you gave it). No dashboard card offers or picks a child device (VM, container, GPU or storage) as the Unraid server.
+
 - **Storage throughput and link utilization sensors**:
   - Each storage topology controller and enclosure (disk shelf) device gets **Read Throughput**, **Write Throughput** and **Throughput** (read + write) sensors (data rate, B/s shown as MB/s by default) and a **Link Utilization** sensor (%), from the optional `throughput` object the agent adds to `/storage/topology`.
   - The sensors appear once the agent reports throughput (from its second collection cycle) and become unavailable if it stops. Link Utilization is unknown when the agent cannot work out the link capacity; its attributes include the drive count, the measurement interval and the capacity in B/s.

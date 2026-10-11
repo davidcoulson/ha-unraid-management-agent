@@ -53,6 +53,16 @@ SHELF2 = "500a098aa6236e71"  # e245, I/O module firmware 0260
 HPT = "500605bbd7eb76e8"  # HighPoint NVMe enclosure (SES only)
 
 
+def _non_gpu_children(devices: dr.DeviceRegistry) -> list[dr.ChildDeviceEntry]:
+    """Return the child devices of the entry that are not GPUs."""
+    gpu_prefix = f"{ENTRY_ID}_gpu_"
+    return [
+        device
+        for device in dr.async_child_entries_for_config_entry(devices, ENTRY_ID)
+        if not any(ident.startswith(gpu_prefix) for _, ident in device.identifiers)
+    ]
+
+
 def _topology(
     mutate: Callable[[dict[str, Any]], None] | None = None,
 ) -> StorageTopology:
@@ -367,7 +377,7 @@ async def test_no_entities_without_the_endpoint(
 
     assert mock_async_unraid_client.get_storage_topology.await_count >= 1
     assert not _storage_entities(hass)
-    assert not dr.async_child_entries_for_config_entry(dr.async_get(hass), ENTRY_ID)
+    assert not _non_gpu_children(dr.async_get(hass))
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")

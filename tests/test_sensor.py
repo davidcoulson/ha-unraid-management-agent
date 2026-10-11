@@ -5011,7 +5011,8 @@ def test_gpu_energy_sensor_initialization() -> None:
 
     assert sensor._total_energy == 0.0
     assert sensor._last_power is None
-    assert sensor._attr_translation_placeholders == {"gpu_name": "GPU 0"}
+    # The GPU name is in the name of the GPU's device, not the sensor's
+    assert not hasattr(sensor, "_attr_translation_placeholders")
     assert sensor._attr_translation_key == "gpu_energy"
 
 
