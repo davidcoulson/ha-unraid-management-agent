@@ -85,6 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Per card: **ASIC**, **PHY** and **MAC Temperature** sensors (and any other hwmon sensor of the card), with highest/max/critical limits as attributes, and **Firmware** (diagnostic).
   - Per port: **Link Speed**; with an SFP/QSFP optic, **Module Temperature**, **Module Voltage**, **RX Power** and **TX Power** (worst lane, dBm; every lane's power and laser bias as attributes), an **Optic** problem binary sensor that is on while an alarm or warning flag is raised, and **Optic Vendor** and **Optic Part Number** (diagnostic). The serial number is never shown.
   - Unique IDs are keyed by PCI address, so renaming an interface keeps them. A card or optic that disappears makes its entities unavailable; a removed card's device can be deleted. Turning the option off removes every network card device and entity, and the endpoint is not polled while it is off.
+  - The dashboard network card only lists interface entities of the server device, so network card entities (e.g. of a `Network card (41:00)` device without a model) never show up as interfaces.
 
 - **Storage throughput and link utilization sensors**:
   - Each storage topology controller and enclosure (disk shelf) device gets **Read Throughput**, **Write Throughput** and **Throughput** (read + write) sensors (data rate, B/s shown as MB/s by default) and a **Link Utilization** sensor (%), from the optional `throughput` object the agent adds to `/storage/topology`.

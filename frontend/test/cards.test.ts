@@ -1091,6 +1091,55 @@ describe("Unraid Custom Cards", () => {
     document.body.removeChild(card);
   });
 
+  it("ignores network card child-device entities in UnraidNetworkCard", async () => {
+    const card = new UnraidNetworkCard();
+    card.setConfig({ type: "custom:unraid-network-card" });
+    const hass = createMockHass();
+    hass.devices!["nic_1"] = {
+      id: "nic_1",
+      name: "Network card (41:00)",
+      identifiers: [["unraid_management_agent", "entry_nic_0000:41:00"]],
+    };
+    // A NIC device without a model is named "Network card (bb:dd)", so its
+    // port entities contain "_network_" like the interface entities do
+    const nicEntities = [
+      "sensor.cube_network_card_41_00_eth0_link_speed",
+      "sensor.cube_network_card_41_00_eth0_rx_power",
+      "binary_sensor.cube_network_card_41_00_eth0_optic",
+    ];
+    for (const entityId of nicEntities) {
+      hass.states[entityId] = {
+        entity_id: entityId,
+        state: "10000",
+        attributes: {},
+        last_changed: "",
+        last_updated: "",
+      };
+      hass.entities![entityId] = {
+        entity_id: entityId,
+        device_id: "nic_1",
+        platform: "unraid_management_agent",
+      };
+    }
+    hass.entities!["sensor.cube_network_eth0_speed"] = {
+      entity_id: "sensor.cube_network_eth0_speed",
+      device_id: "dev_1",
+      platform: "unraid_management_agent",
+    };
+    card.hass = hass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    const names = (
+      card as unknown as { getNetworkInterfaces(): Array<{ name: string }> }
+    )
+      .getNetworkInterfaces()
+      .map((iface) => iface.name);
+    expect(names).toEqual(["eth0"]);
+    expect(card.shadowRoot?.innerHTML).not.toContain("CARD_41_00");
+    document.body.removeChild(card);
+  });
+
   it("filters placeholder IP states from connected count and formats small data rates", async () => {
     const card = new UnraidNetworkCard();
     card.setConfig({ type: "custom:unraid-network-card" });
