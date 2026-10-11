@@ -64,7 +64,10 @@ def _primary_nut_device_name(data: UnraidData) -> str | None:
     name, ``/ups`` comes from apcupsd or an older agent, so no NUT device is
     covered. Without ``/ups`` data at all, the first listed NUT device is
     assumed to be the primary, as the agent's ``/ups`` and ``status`` use it;
-    the first status is only used when there is no device list.
+    the first status is only used when there is no device list. If ``/ups``
+    really comes from apcupsd, that device's entities are only delayed until
+    ``/ups`` answers again (discovery runs on every update), which is better
+    than giving the usual NUT-only primary duplicate entities to remove later.
     """
     if data.ups is not None:
         return data.ups.device_name

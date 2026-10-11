@@ -387,6 +387,30 @@ async def test_which_nut_devices_get_entities(
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_first_device_added_once_apcupsd_ups_answers(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """With /ups down at setup, the first NUT device waits for /ups (apcupsd)."""
+    entry = await _setup(
+        hass, mock_async_unraid_client, None, _nut(_ups_status("ups", 623), ATS_STATUS)
+    )
+    assert _nut_keys(entity_registry) == {f"{ATS}_connected"}
+
+    coordinator = entry.runtime_data.coordinator
+    coordinator.async_set_updated_data(replace(coordinator.data, ups=_APCUPSD_UPS))
+    await hass.async_block_till_done()
+
+    assert _nut_keys(entity_registry) == {
+        f"{UPS}_battery",
+        f"{UPS}_runtime",
+        f"{UPS}_connected",
+        f"{ATS}_connected",
+    }
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
 async def test_no_nut_entities_when_nut_collector_disabled(
     hass: HomeAssistant,
     entity_registry: er.EntityRegistry,
