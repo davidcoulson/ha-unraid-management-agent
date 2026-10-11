@@ -256,6 +256,11 @@ export abstract class BaseUnraidCard extends LitElement {
 
     for (const [entityId, stateObj] of Object.entries(this.hass.states)) {
       if (cleanName && !entityId.includes(cleanName)) continue;
+      // Interface entities live on the server device itself. Entities of its
+      // child devices (e.g. a "Network card (41:00)" NIC device) can also
+      // contain "_network_", so skip any entity registered to another device.
+      const deviceId = this.hass.entities?.[entityId]?.device_id;
+      if (device?.id && deviceId && deviceId !== device.id) continue;
 
       if (entityId.startsWith("binary_sensor.") && entityId.includes("_network_")) {
         if (entityId.includes("_network_service_")) continue;
