@@ -1178,6 +1178,47 @@ describe("Unraid Custom Cards", () => {
     document.body.removeChild(card);
   });
 
+  it("renders UnraidGpuCard with suffixed sensors on the server device after an index shift", async () => {
+    const card = new UnraidGpuCard();
+    card.setConfig({ type: "custom:unraid-gpu-card" });
+    const hass = createMockHass();
+    // A 4090 took index 0: the index-0 sensors kept their 3070 entity IDs, and
+    // the 3070's index-1 sensors got "_2" suffixed entity IDs
+    const rtx3070 = "sensor.cube_gpu_nvidia_geforce_rtx_3070";
+    const sensors: Array<[string, string, string, Record<string, unknown>]> = [
+      [`${rtx3070}_utilization`, "88", "CUBE GPU NVIDIA GeForce RTX 4090 Utilization", { gpu_name: "NVIDIA GeForce RTX 4090" }],
+      [`${rtx3070}_temperature`, "71.0", "CUBE GPU NVIDIA GeForce RTX 4090 Temperature", {}],
+      [`${rtx3070}_utilization_2`, "12", "CUBE GPU NVIDIA GeForce RTX 3070 Utilization", { gpu_name: "NVIDIA GeForce RTX 3070" }],
+      [`${rtx3070}_temperature_2`, "61.0", "CUBE GPU NVIDIA GeForce RTX 3070 Temperature", {}],
+    ];
+    for (const [entityId, state, friendlyName, attributes] of sensors) {
+      hass.states[entityId] = {
+        entity_id: entityId,
+        state,
+        attributes: { friendly_name: friendlyName, ...attributes },
+        last_changed: "",
+        last_updated: "",
+      };
+      hass.entities![entityId] = {
+        entity_id: entityId,
+        device_id: "dev_1",
+        platform: "unraid_management_agent",
+      };
+    }
+    card.hass = hass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    const html = card.shadowRoot?.innerHTML ?? "";
+    const text = card.shadowRoot?.textContent?.replace(/\s+/g, " ") ?? "";
+    expect(text).toContain("NVIDIA GeForce RTX 4090");
+    expect(text).toContain("NVIDIA GeForce RTX 3070");
+    expect(html).toContain("71°C");
+    expect(html).toContain("61°C");
+    expect(text).toContain("3 GPUs");
+    document.body.removeChild(card);
+  });
+
   it("never offers or picks a child device as the Unraid server", async () => {
     const card = new UnraidGpuCard();
     card.setConfig({ type: "custom:unraid-gpu-card" });
