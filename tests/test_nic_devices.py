@@ -295,10 +295,14 @@ async def test_optic_flags_turn_the_problem_sensor_on(
     problem = _state(hass, "binary_sensor", f"{ETH0}_module_problem")
     assert problem.state == STATE_UNKNOWN
     assert problem.attributes["error"] == "invalid external calibration constants"
+    # Readings that came with a decode error are not shown either.
+    for key in ("module_temperature", "module_voltage", "rx_power", "tx_power"):
+        assert _state(hass, "sensor", f"{ETH0}_{key}").state == STATE_UNKNOWN, key
 
     # Valid diagnostics without flags: recovered.
     await _push(hass, mock_config_entry, _cards())
     assert _state(hass, "binary_sensor", f"{ETH0}_module_problem").state == STATE_OFF
+    assert float(_state(hass, "sensor", f"{ETH0}_module_temperature").state) == 51.01
 
 
 @pytest.mark.usefixtures("nic_client", "mock_unraid_websocket_client_class")

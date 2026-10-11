@@ -203,12 +203,35 @@ def _lane_values(module: NICModule | None, field: str) -> list[float]:
     return [v for lane in module.lanes if (v := getattr(lane, field)) is not None]
 
 
+def _valid_diagnostics(ctx: NICContext) -> NICModule | None:
+    """
+    Return the module when its readings are valid, else None.
+
+    Readings of a module whose monitors are not ready, or whose EEPROM could
+    not be decoded, are not trustworthy, so numeric sensors show unknown.
+    """
+    module = ctx.module
+    if module is None or module.data_not_ready or module.error:
+        return None
+    return module
+
+
 def _worst_power(direction: str) -> Callable[[NICContext], float | None]:
     """Return the lowest (worst) lane power in dBm."""
 
     def value(ctx: NICContext) -> float | None:
-        values = _lane_values(ctx.module, f"{direction}_power_dbm")
+        values = _lane_values(_valid_diagnostics(ctx), f"{direction}_power_dbm")
         return min(values) if values else None
+
+    return value
+
+
+def _module_reading(field: str) -> Callable[[NICContext], float | None]:
+    """Return a module-wide reading (temperature, voltage) when valid."""
+
+    def value(ctx: NICContext) -> float | None:
+        module = _valid_diagnostics(ctx)
+        return getattr(module, field) if module else None
 
     return value
 
@@ -262,8 +285,8 @@ def _module_problem(ctx: NICContext) -> bool | None:
     Unknown (None) while the module's monitors are not ready or could not be
     decoded: empty flags then do not mean the optic is healthy.
     """
-    module = cast("NICModule", ctx.module)
-    if module.data_not_ready or module.error:
+    module = _valid_diagnostics(ctx)
+    if module is None:
         return None
     return bool(module.alarms or module.warnings)
 
@@ -410,7 +433,7 @@ _MODULE_TEMPERATURE = UnraidNICSensorEntityDescription(
     device_class=SensorDeviceClass.TEMPERATURE,
     native_unit_of_measurement=UnitOfTemperature.CELSIUS,
     state_class=SensorStateClass.MEASUREMENT,
-    value_fn=lambda ctx: ctx.module.temperature_celsius if ctx.module else None,
+    value_fn=_module_reading("temperature_celsius"),
     attrs_fn=lambda ctx: (
         {"thresholds": _thresholds(ctx.module, "temperature_celsius")}
         if ctx.module
@@ -425,7 +448,7 @@ _MODULE_VOLTAGE = UnraidNICSensorEntityDescription(
     native_unit_of_measurement=UnitOfElectricPotential.VOLT,
     state_class=SensorStateClass.MEASUREMENT,
     entity_category=EntityCategory.DIAGNOSTIC,
-    value_fn=lambda ctx: ctx.module.voltage_volts if ctx.module else None,
+    value_fn=_module_reading("voltage_volts"),
     attrs_fn=lambda ctx: (
         {"thresholds": _thresholds(ctx.module, "voltage_volts")} if ctx.module else {}
     ),
