@@ -779,6 +779,110 @@ describe("Unraid Custom Cards", () => {
     document.body.removeChild(card);
   });
 
+  it("renders UnraidVmCard with VMs on child devices of the VMs device", async () => {
+    const card = new UnraidVmCard();
+    card.setConfig({ type: "custom:unraid-vm-card" });
+    const hass = createMockHass();
+    hass.devices = {
+      ...hass.devices,
+      vms: {
+        id: "vms",
+        name: "CUBE VMs",
+        identifiers: [["unraid_management_agent", "uuid-1234_vms"]],
+        via_device_id: "dev_1",
+      },
+      win10: {
+        id: "win10",
+        name: "Windows 10",
+        identifiers: [["unraid_management_agent", "uuid-1234_vm_win10"]],
+        parent_device_id: "vms",
+      },
+      other: {
+        id: "other",
+        name: "OTHER",
+        identifiers: [["unraid_management_agent", "uuid-9999"]],
+      },
+      other_vms: {
+        id: "other_vms",
+        name: "OTHER VMs",
+        identifiers: [["unraid_management_agent", "uuid-9999_vms"]],
+        via_device_id: "other",
+      },
+      other_vm: {
+        id: "other_vm",
+        name: "Gaming",
+        identifiers: [["unraid_management_agent", "uuid-9999_vm_gaming"]],
+        parent_device_id: "other_vms",
+      },
+    };
+    // Entity IDs of VMs added under the VMs device have no "_vm_" in them
+    const vmSwitches: Array<[string, string, string]> = [
+      ["switch.cube_vms_windows_10_power", "win10", "Windows 10 Power"],
+      ["switch.other_vms_gaming_power", "other_vm", "Gaming Power"],
+    ];
+    for (const [entityId, deviceId, name] of vmSwitches) {
+      hass.states[entityId] = {
+        entity_id: entityId,
+        state: "on",
+        attributes: { friendly_name: name },
+        last_changed: "",
+        last_updated: "",
+      };
+      hass.entities![entityId] = {
+        entity_id: entityId,
+        device_id: deviceId,
+        platform: "unraid_management_agent",
+        translation_key: "vm_power",
+      };
+    }
+    card.hass = hass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    expect(card.shadowRoot?.innerHTML).toContain("Windows 10 Power");
+    expect(card.shadowRoot?.innerHTML).not.toContain("Gaming Power");
+    document.body.removeChild(card);
+  });
+
+  it("finds Container Updates Available on the Docker device", async () => {
+    const card = new UnraidMaintenanceCard();
+    card.setConfig({ type: "custom:unraid-maintenance-card" });
+    const hass = createMockHass();
+    hass.devices = {
+      ...hass.devices,
+      docker: {
+        id: "docker",
+        name: "CUBE Docker",
+        identifiers: [["unraid_management_agent", "uuid-1234_docker"]],
+        via_device_id: "dev_1",
+      },
+    };
+    const entityId = "binary_sensor.renamed_updates";
+    hass.states[entityId] = {
+      entity_id: entityId,
+      state: "on",
+      attributes: { friendly_name: "Updates", updates_available: 3 },
+      last_changed: "",
+      last_updated: "",
+    };
+    hass.entities![entityId] = {
+      entity_id: entityId,
+      device_id: "docker",
+      platform: "unraid_management_agent",
+      translation_key: "container_updates_available",
+    };
+    card.hass = hass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+    const found = (
+      card as unknown as {
+        getEntity: (key: string) => { entity_id: string } | undefined;
+      }
+    ).getEntity("container_updates_available");
+    expect(found?.entity_id).toBe(entityId);
+    document.body.removeChild(card);
+  });
+
   it("renders UnraidDashboardCard with tabs", async () => {
     const card = new UnraidDashboardCard();
     card.setConfig({ type: "custom:unraid-dashboard-card" });

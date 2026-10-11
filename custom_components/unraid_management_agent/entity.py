@@ -122,8 +122,10 @@ def async_get_or_create_group_device(
     an entity or child device needs it, so a server without Docker or VMs gets
     no empty device. It is named after the server ("<hostname> Docker"), which
     keeps it apart from another server's and keeps the friendly names of the
-    entities moved to it from the server device. Returns None if the server
-    device is missing.
+    entities moved to it from the server device. A new one starts in the
+    server's area with its labels, which container and VM devices then
+    inherit, so area and label targets that reached them through the server
+    keep doing so. Returns None if the server device is missing.
     """
     entry = coordinator.config_entry
     registry = dr.async_get(coordinator.hass)
@@ -137,9 +139,11 @@ def async_get_or_create_group_device(
     system = data.system if data else None
     hostname = (system.hostname if system else None) or "Unraid"
     host = entry.data.get(CONF_HOST, "")
-    return registry.async_get_or_create(
+    identifier = (DOMAIN, group_device_identifier(entry.entry_id, group))
+    is_new = registry.async_get_device_by_identifier(identifier, entry.entry_id) is None
+    device = registry.async_get_or_create(
         config_entry_id=entry.entry_id,
-        identifiers={(DOMAIN, group_device_identifier(entry.entry_id, group))},
+        identifiers={identifier},
         manufacturer=MANUFACTURER,
         model=_GROUP_DEVICE_MODELS[group],
         configuration_url=f"http://{host}/{_GROUP_DEVICE_PAGES[group]}",
@@ -147,6 +151,13 @@ def async_get_or_create_group_device(
         translation_placeholders={"hostname": hostname},
         via_device_id=server.id,
     )
+    # A device restored from an earlier removal keeps the area and labels the
+    # user gave it
+    if is_new and device.area_id is None and not device.labels:
+        device = registry.async_update_device(
+            device.id, area_id=server.area_id, labels=set(server.labels)
+        )
+    return device
 
 
 def build_group_device_info(
