@@ -462,6 +462,13 @@ async def async_unload_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> b
     return unload_ok
 
 
+async def async_remove_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> None:
+    """Delete the share repair issues of a removed config entry."""
+    from .repairs import async_delete_share_issues
+
+    async_delete_share_issues(hass, entry.entry_id)
+
+
 async def async_reload_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> None:
     """Reload config entry when options change."""
     await hass.config_entries.async_reload(entry.entry_id)
