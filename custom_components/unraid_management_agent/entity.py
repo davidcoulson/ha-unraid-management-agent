@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
@@ -14,9 +15,11 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
     CONF_ENABLE_CONTAINER_DEVICES,
+    CONF_ENABLE_GPU_DEVICES,
     CONF_ENABLE_VM_DEVICES,
     CONF_READ_ONLY,
     DEFAULT_ENABLE_CONTAINER_DEVICES,
+    DEFAULT_ENABLE_GPU_DEVICES,
     DEFAULT_ENABLE_VM_DEVICES,
     DEFAULT_READ_ONLY,
     DOMAIN,
@@ -189,6 +192,99 @@ def build_container_device_info(
     )
 
 
+def gpu_devices_enabled(coordinator: UnraidDataUpdateCoordinator) -> bool:
+    """Return True when GPUs are shown as separate devices (an option, off by default)."""
+    return bool(
+        coordinator.config_entry.options.get(
+            CONF_ENABLE_GPU_DEVICES, DEFAULT_ENABLE_GPU_DEVICES
+        )
+    )
+
+
+def _gpu_hardware_key(gpu: Any) -> str | None:
+    """
+    Return the key of a GPU's own hardware ID, or None when it reports none.
+
+    The UUID (NVIDIA only) belongs to the card itself, so it survives moving
+    the card to another slot. The PCI bus address is reported for every vendor
+    and only changes when the card moves.
+    """
+    for prefix, attr in (("uuid", "uuid"), ("pci", "pci_id")):
+        value = getattr(gpu, attr, None)
+        if not isinstance(value, str):
+            continue
+        # nvidia-smi reports an unknown field as "[N/A]"
+        if (value := value.strip().lower()) and value not in ("n/a", "[n/a]"):
+            return f"{prefix}_{value}"
+    return None
+
+
+def gpu_device_keys(gpus: list[Any] | None) -> dict[int, str]:
+    """
+    Return the device key of each reported GPU, by GPU index.
+
+    GPU entities are keyed by index, but an index belongs to whichever GPU the
+    agent lists at that position: one appearing in front of it (e.g. a GPU
+    given back to the host by a VM) shifts the others. The device is keyed by
+    the GPU's hardware ID instead, so its name, area and labels stay with the
+    physical card. GPUs reporting no hardware ID, or one shared with another
+    GPU, fall back to their index.
+    """
+    candidates: list[tuple[int, str | None]] = [
+        (gpu.index if gpu.index is not None else position, _gpu_hardware_key(gpu))
+        for position, gpu in enumerate(gpus or [])
+    ]
+    counts = Counter(key for _, key in candidates if key)
+    return {
+        index: key if key and counts[key] == 1 else f"index_{index}"
+        for index, key in candidates
+    }
+
+
+def gpu_device_key(coordinator: UnraidDataUpdateCoordinator, gpu_index: int) -> str:
+    """Return the device key of the GPU currently at an index."""
+    data = coordinator.data
+    return gpu_device_keys(data.gpu if data else None).get(
+        gpu_index, f"index_{gpu_index}"
+    )
+
+
+def gpu_device_identifier(entry_id: str, key: str) -> str:
+    """Return the device registry identifier of a GPU."""
+    return f"{entry_id}_gpu_{key}"
+
+
+def build_gpu_device_info(
+    coordinator: UnraidDataUpdateCoordinator,
+    gpu_index: int,
+    gpu_name: str,
+) -> DeviceInfo | ChildDeviceInfo:
+    """
+    Build device info for a GPU.
+
+    With the "GPUs as separate devices" option on, GPUs are child devices of
+    the Unraid server, like storage controllers. Child devices can't carry a
+    manufacturer, model or firmware version, so the device name is translated
+    ("GPU · <name>") to tell GPUs apart from other child devices; the driver
+    version stays a sensor attribute.
+    """
+    entry_id = coordinator.config_entry.entry_id
+    # The server device is registered during setup, before the platforms load.
+    server = dr.async_get(coordinator.hass).async_get_device_by_identifier(
+        (DOMAIN, entry_id), entry_id
+    )
+    if server is None:
+        # Keep the entity on the server device if it is somehow missing.
+        return DeviceInfo(identifiers={(DOMAIN, entry_id)})
+    key = gpu_device_key(coordinator, gpu_index)
+    return ChildDeviceInfo(
+        identifiers={(DOMAIN, gpu_device_identifier(entry_id, key))},
+        parent_device_id=server.id,
+        translation_key="gpu",
+        translation_placeholders={"name": gpu_name},
+    )
+
+
 def read_only_enabled(coordinator: UnraidDataUpdateCoordinator) -> bool:
     """Return True when the entry is in read-only mode (nothing may change the server)."""
     return bool(coordinator.config_entry.options.get(CONF_READ_ONLY, DEFAULT_READ_ONLY))
@@ -222,9 +318,14 @@ __all__ = [
     "UnraidEntity",
     "UnraidEntityDescription",
     "build_container_device_info",
+    "build_gpu_device_info",
     "build_vm_device_info",
     "container_devices_enabled",
     "find_vm",
+    "gpu_device_identifier",
+    "gpu_device_key",
+    "gpu_device_keys",
+    "gpu_devices_enabled",
     "read_only_enabled",
     "vm_devices_enabled",
 ]

@@ -1,3 +1,9 @@
+enhancement:
+  - head-branch: ['^(?:feat|feature)(?:\/|-).*$', '^enhancement(?:\/|-).*$']
+
+bug:
+  - head-branch: ['^(?:bug)?fix(?:\/|-).*$', '^hotfix(?:\/|-).*$']
+
 integration:
   - changed-files:
       - any-glob-to-any-file:

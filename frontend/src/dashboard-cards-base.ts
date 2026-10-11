@@ -105,10 +105,13 @@ export abstract class BaseUnraidCard extends LitElement {
   /** Get all Unraid server devices registered in Home Assistant */
   protected getUnraidDevices(): DeviceRegistryEntry[] {
     if (!this.hass?.devices) return [];
-    return Object.values(this.hass.devices).filter((device) =>
-      device.identifiers?.some(
-        ([domain]) => domain === "unraid_management_agent" || domain === "unraid"
-      )
+    return Object.values(this.hass.devices).filter(
+      (device) =>
+        // Child devices (VMs, containers, GPUs, storage) are not servers
+        !device.parent_device_id &&
+        device.identifiers?.some(
+          ([domain]) => domain === "unraid_management_agent" || domain === "unraid"
+        )
     );
   }
 
