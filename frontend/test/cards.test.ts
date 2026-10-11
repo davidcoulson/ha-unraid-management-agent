@@ -817,9 +817,13 @@ describe("Unraid Custom Cards", () => {
       },
     };
     // Entity IDs of VMs added under the VMs device have no "_vm_" in them
-    const vmSwitches: Array<[string, string, string]> = [
+    // Only those on the server's devices count: not one without a device,
+    // nor one on another server's device
+    const vmSwitches: Array<[string, string | null, string]> = [
       ["switch.cube_vms_windows_10_power", "win10", "Windows 10 Power"],
       ["switch.other_vms_gaming_power", "other_vm", "Gaming Power"],
+      ["switch.other_kiosk_power", "other", "Kiosk Power"],
+      ["switch.orphan_power", null, "Orphan Power"],
     ];
     for (const [entityId, deviceId, name] of vmSwitches) {
       hass.states[entityId] = {
@@ -842,6 +846,8 @@ describe("Unraid Custom Cards", () => {
 
     expect(card.shadowRoot?.innerHTML).toContain("Windows 10 Power");
     expect(card.shadowRoot?.innerHTML).not.toContain("Gaming Power");
+    expect(card.shadowRoot?.innerHTML).not.toContain("Kiosk Power");
+    expect(card.shadowRoot?.innerHTML).not.toContain("Orphan Power");
     document.body.removeChild(card);
   });
 
@@ -881,6 +887,51 @@ describe("Unraid Custom Cards", () => {
       }
     ).getEntity("container_updates_available");
     expect(found?.entity_id).toBe(entityId);
+    document.body.removeChild(card);
+  });
+
+  it("prefers an entity on the server device over one on the Docker device", async () => {
+    const card = new UnraidMaintenanceCard();
+    card.setConfig({ type: "custom:unraid-maintenance-card" });
+    const hass = createMockHass();
+    hass.devices = {
+      ...hass.devices,
+      docker: {
+        id: "docker",
+        name: "CUBE Docker",
+        identifiers: [["unraid_management_agent", "uuid-1234_docker"]],
+        via_device_id: "dev_1",
+      },
+    };
+    // The Docker device's entity comes first in the registry
+    const entities: Array<[string, string]> = [
+      ["binary_sensor.docker_updates", "docker"],
+      ["binary_sensor.server_updates", "dev_1"],
+    ];
+    for (const [entityId, deviceId] of entities) {
+      hass.states[entityId] = {
+        entity_id: entityId,
+        state: "on",
+        attributes: { friendly_name: "Updates", updates_available: 3 },
+        last_changed: "",
+        last_updated: "",
+      };
+      hass.entities![entityId] = {
+        entity_id: entityId,
+        device_id: deviceId,
+        platform: "unraid_management_agent",
+        translation_key: "container_updates_available",
+      };
+    }
+    card.hass = hass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+    const found = (
+      card as unknown as {
+        getEntity: (key: string) => { entity_id: string } | undefined;
+      }
+    ).getEntity("container_updates_available");
+    expect(found?.entity_id).toBe("binary_sensor.server_updates");
     document.body.removeChild(card);
   });
 

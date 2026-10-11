@@ -179,6 +179,31 @@ async def test_state_and_attributes(
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_service_without_display_name_uses_its_name(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    device_registry: dr.DeviceRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """A service without a display name is named by its agent name, on the server."""
+    mock_async_unraid_client.list_services.return_value = _services(
+        ("tailscaled", True)
+    )
+    await _setup(hass, enable=("tailscaled",))
+
+    entity = _service_entities(entity_registry)["tailscaled"]
+    server = device_registry.async_get_device_by_identifier(
+        (DOMAIN, ENTRY_ID), ENTRY_ID
+    )
+    assert server is not None
+    assert entity.translation_key == "system_service"
+    assert entity.device_id == server.id
+    state = hass.states.get(entity.entity_id)
+    assert state is not None
+    assert state.attributes["friendly_name"] == "unraid-test tailscaled Service"
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
 async def test_no_enabled_attribute_without_settings(
     hass: HomeAssistant,
     mock_async_unraid_client: MagicMock,

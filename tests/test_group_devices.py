@@ -11,6 +11,7 @@ from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import label_registry as lr
+from homeassistant.helpers.translation import async_get_translations
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.unraid_management_agent import (
@@ -558,3 +559,19 @@ async def test_without_server_device_entities_stay_on_the_server(
     _async_move_child_devices_to_groups(hass, entry, coordinator)
     assert registry.async_get(child.id) is not None
     assert registry.async_get_device_by_identifier(DOCKER, ENTRY_ID) is None
+
+
+async def test_group_device_named_unraid_without_hostname(hass: HomeAssistant) -> None:
+    """Before the first update the Docker device is named after "Unraid"."""
+    entry = _entry(hass)
+    await async_get_translations(hass, "en", "device", {DOMAIN})
+    server = dr.async_get(hass).async_get_or_create(
+        config_entry_id=ENTRY_ID, identifiers={SERVER}, name="unraid-test"
+    )
+    coordinator = MagicMock(hass=hass, config_entry=entry, data=None)
+
+    docker = async_get_or_create_group_device(coordinator, DOCKER_DEVICE)
+
+    assert docker is not None
+    assert docker.name == "Unraid Docker"
+    assert docker.via_device_id == server.id
