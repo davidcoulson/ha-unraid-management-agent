@@ -128,7 +128,8 @@ def async_get_or_create_group_device(
     entities moved to it from the server device. A new one starts in the
     server's area with its labels, which container and VM devices then
     inherit, so area and label targets that reached them through the server
-    keep doing so. Returns None if the server device is missing.
+    keep doing so, and is disabled if the server is. Returns None if the
+    server device is missing.
     """
     entry = coordinator.config_entry
     registry = dr.async_get(coordinator.hass)
@@ -154,13 +155,22 @@ def async_get_or_create_group_device(
         translation_placeholders={"hostname": hostname},
         via_device_id=server.id,
     )
+    if not is_new:
+        return device
     # A device restored from an earlier removal keeps the area and labels the
     # user gave it
-    if is_new and device.area_id is None and not device.labels:
-        device = registry.async_update_device(
-            device.id, area_id=server.area_id, labels=set(server.labels)
-        )
-    return device
+    if device.area_id is None and not device.labels:
+        area_id, labels = server.area_id, set(server.labels)
+    else:
+        area_id, labels = device.area_id, set(device.labels)
+    return registry.async_update_device(
+        device.id,
+        area_id=area_id,
+        labels=labels,
+        # Container and VM devices of a disabled server are disabled with it,
+        # and stay so under a disabled Docker or VMs device
+        disabled_by=device.disabled_by or server.disabled_by,
+    )
 
 
 def build_group_device_info(
