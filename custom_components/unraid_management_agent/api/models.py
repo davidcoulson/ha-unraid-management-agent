@@ -1193,6 +1193,23 @@ class ShareInfo(BaseModel):
         return None
 
     @property
+    def exclusive_state_known(self) -> bool:
+        """
+        Return True when the agent reported whether the share is on FUSE.
+
+        Older agents, a stopped array or unreadable config leave the
+        exclusive fields (or just the eligibility) unset.
+
+        Example:
+            >>> ShareInfo(exclusive=False).exclusive_state_known
+            False
+
+        """
+        return self.exclusive is True or (
+            self.exclusive is False and self.exclusive_eligible is not None
+        )
+
+    @property
     def fuse_fallback(self) -> bool:
         """
         Return True when an exclusive-eligible share is served through FUSE.

@@ -1084,7 +1084,7 @@ class UnraidShareFuseFallbackBinarySensor(UnraidBaseEntity, BinarySensorEntity):
     def available(self) -> bool:
         """Return True while the agent reports the share's exclusive state."""
         share = self._get_share()
-        return super().available and share is not None and share.exclusive is not None
+        return super().available and share is not None and share.exclusive_state_known
 
     @property
     def is_on(self) -> bool:
@@ -1104,8 +1104,9 @@ class UnraidShareFuseFallbackBinarySensor(UnraidBaseEntity, BinarySensorEntity):
         }
         if share.exclusive_pool:
             attrs["exclusive_pool"] = share.exclusive_pool
-        if share.fuse_fallback:
-            attrs["locations"] = list(share.locations or [])
+        # Locations are only reported when the agent scanned the disks
+        if share.fuse_fallback and share.locations is not None:
+            attrs["locations"] = list(share.locations)
             attrs["stray_locations"] = share.stray_locations
             if share.locations_unchecked:
                 attrs["locations_unchecked"] = list(share.locations_unchecked)
