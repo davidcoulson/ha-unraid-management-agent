@@ -63,6 +63,7 @@ from .models import (
     NetworkConfig,
     NetworkInterface,
     NetworkServicesStatus,
+    NICList,
     Notification,
     NotificationOverview,
     NotificationsResponse,
@@ -2486,6 +2487,21 @@ class UnraidClient:
         """
         data = await self._request("GET", "/storage/topology")
         return StorageTopology.model_validate(data)
+
+    async def get_network_cards(self) -> NICList:
+        """
+        Get the physical network cards (temperatures, ports and optics).
+
+        Requires an agent with the nic collector; older agents answer 404
+        (UnraidNotFoundError).
+
+        Returns:
+            Network cards; the state is "pending" until the agent's first
+            collection.
+
+        """
+        data = await self._request("GET", "/network/cards")
+        return NICList.model_validate(data)
 
     async def get_fan_status(self) -> FanControlStatus:
         """

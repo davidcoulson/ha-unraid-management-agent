@@ -3685,6 +3685,138 @@ class StorageTopology(BaseModel):
     model_config = ConfigDict(frozen=True, extra="allow")
 
 
+# =============================================================================
+# Network cards (GET /network/cards)
+# =============================================================================
+
+NIC_STATE_OK = "ok"
+
+
+class NICTemperature(BaseModel):
+    """A hwmon temperature sensor of a network card."""
+
+    sensor: str = Field("other", description="asic, phy, mac, module or other")
+    label: str = Field("", description="hwmon label")
+    interface: str | None = Field(None, description="Port of a module sensor")
+    pci_address: str = Field("", description="PCI function of the hwmon chip")
+    celsius: CoercedFloat = Field(None, description="Current reading")
+    highest_celsius: CoercedFloat = Field(None, description="Highest since boot")
+    max_celsius: CoercedFloat = Field(None, description="High limit")
+    crit_celsius: CoercedFloat = Field(None, description="Critical limit")
+
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+
+class NICModuleLane(BaseModel):
+    """One lane of a transceiver."""
+
+    lane: int = Field(1, description="Lane number, from 1")
+    tx_bias_ma: CoercedFloat = Field(None, description="Laser bias (mA)")
+    tx_power_mw: CoercedFloat = Field(None, description="TX power (mW)")
+    tx_power_dbm: CoercedFloat = Field(None, description="TX power (dBm)")
+    rx_power_mw: CoercedFloat = Field(None, description="RX power (mW)")
+    rx_power_dbm: CoercedFloat = Field(None, description="RX power (dBm)")
+
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+
+class NICThreshold(BaseModel):
+    """Alarm and warning limits of one transceiver reading."""
+
+    high_alarm: CoercedFloat = None
+    high_warning: CoercedFloat = None
+    low_warning: CoercedFloat = None
+    low_alarm: CoercedFloat = None
+
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+
+class NICModuleThresholds(BaseModel):
+    """Alarm and warning limits of a transceiver."""
+
+    temperature_celsius: NICThreshold | None = None
+    voltage_volts: NICThreshold | None = None
+    tx_bias_ma: NICThreshold | None = None
+    tx_power_dbm: NICThreshold | None = None
+    rx_power_dbm: NICThreshold | None = None
+
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+
+class NICModule(BaseModel):
+    """A pluggable transceiver (SFP/QSFP) and its diagnostics (DDM)."""
+
+    identifier: str | None = Field(None, description="SFF-8024 module type")
+    standard: str | None = Field(None, description="SFF-8472, SFF-8636 or SFF-8436")
+    connector: str | None = Field(None, description="Connector type")
+    compliance: str | None = Field(None, description="Ethernet compliance code")
+    vendor_name: str | None = Field(None, description="Vendor name")
+    vendor_pn: str | None = Field(None, description="Vendor part number")
+    vendor_rev: str | None = Field(None, description="Vendor revision")
+    vendor_oui: str | None = Field(None, description="Vendor IEEE company ID")
+    wavelength_nm: CoercedFloat = Field(None, description="Laser wavelength (nm)")
+    ddm_supported: bool = Field(False, description="Module reports diagnostics")
+    temperature_celsius: CoercedFloat = Field(None, description="Module temperature")
+    voltage_volts: CoercedFloat = Field(None, description="Supply voltage")
+    rx_power_type: str | None = Field(None, description="average or oma")
+    lanes: list[NICModuleLane] = Field(default_factory=list)
+    alarms: list[str] = Field(default_factory=list, description="Set alarm flags")
+    warnings: list[str] = Field(default_factory=list, description="Set warning flags")
+    thresholds: NICModuleThresholds | None = None
+    error: str | None = Field(None, description="Why the module was not decoded")
+
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+
+class NICPort(BaseModel):
+    """A network interface of a card."""
+
+    id: str = Field(..., description="PCI function address (+ -<dev_port>)")
+    interface: str = Field("", description="Kernel interface name")
+    pci_address: str = Field("", description="PCI function address")
+    dev_port: int = Field(0, description="Port within the PCI function")
+    operstate: str | None = Field(None, description="Operational state")
+    carrier: bool = Field(False, description="Link is up")
+    speed_mbps: CoercedInt = Field(None, description="Link speed (Mbit/s)")
+    duplex: str | None = Field(None, description="full or half")
+    mtu: CoercedInt = Field(None, description="MTU")
+    master: str | None = Field(None, description="Bond or bridge")
+    module: NICModule | None = None
+
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+
+class NICCard(BaseModel):
+    """A physical network card: the PCI functions sharing a slot."""
+
+    id: str = Field(..., description="PCI slot (domain:bus:device)")
+    vendor: str | None = Field(None, description="PCI vendor name")
+    model: str | None = Field(None, description="Short product name")
+    device_name: str | None = Field(None, description="Full PCI device name")
+    subsystem_name: str | None = Field(None, description="PCI subsystem name")
+    vendor_id: str | None = None
+    device_id: str | None = None
+    subsystem_vendor_id: str | None = None
+    subsystem_device_id: str | None = None
+    driver: str | None = Field(None, description="Kernel driver")
+    firmware_version: str | None = Field(None, description="Firmware version")
+    temperatures: list[NICTemperature] = Field(default_factory=list)
+    ports: list[NICPort] = Field(default_factory=list)
+
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+
+class NICList(BaseModel):
+    """Physical network cards (GET /network/cards)."""
+
+    state: str | None = Field(None, description="pending or ok")
+    cards: list[NICCard] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list, description="Collection errors")
+    timestamp: str | None = Field(None, description="Collection time")
+
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+
 def fan_sensor_keys(fans: Any) -> list[tuple[str, str, str, Any]]:
     """
     Return (key, name, display name, fan) for each fan.

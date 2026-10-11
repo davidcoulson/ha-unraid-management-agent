@@ -366,6 +366,24 @@
       "storage_link_utilization": {
         "default": "mdi:gauge"
       },
+      "nic_firmware": {
+        "default": "mdi:chip"
+      },
+      "nic_link_speed": {
+        "default": "mdi:speedometer"
+      },
+      "nic_rx_power": {
+        "default": "mdi:arrow-collapse-down"
+      },
+      "nic_tx_power": {
+        "default": "mdi:arrow-expand-up"
+      },
+      "nic_module_vendor": {
+        "default": "mdi:expansion-card-variant"
+      },
+      "nic_module_part_number": {
+        "default": "mdi:barcode"
+      },
       "alerts_firing": {
         "default": "mdi:bell-alert-outline"
       }
@@ -491,6 +509,12 @@
         "default": "mdi:harddisk",
         "state": {
           "on": "mdi:harddisk-remove"
+        }
+      },
+      "nic_module_problem": {
+        "default": "mdi:check-network-outline",
+        "state": {
+          "on": "mdi:alert-circle-outline"
         }
       },
       "alert_rule": {

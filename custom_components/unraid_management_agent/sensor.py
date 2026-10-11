@@ -13,7 +13,7 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -93,6 +93,13 @@ from .hwmon import (
     fan_legacy_unique_ids,
     fan_model_is_shared,
     temperature_legacy_unique_ids,
+)
+from .nic import (
+    NICEntitySpec,
+    UnraidNICEntity,
+    UnraidNICSensorEntityDescription,
+    async_setup_nic_entities,
+    nic_sensor_specs,
 )
 from .nut import (
     async_move_legacy_nut_entities,
@@ -4553,6 +4560,27 @@ class UnraidStorageSensor(UnraidStorageEntity, SensorEntity):
         return self.entity_description.value_fn(ctx) if ctx else None
 
 
+class UnraidNICSensor(UnraidNICEntity, SensorEntity):
+    """A measurement or property of a network card, port or optic."""
+
+    entity_description: UnraidNICSensorEntityDescription
+
+    def __init__(
+        self, coordinator: UnraidDataUpdateCoordinator, spec: NICEntitySpec
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, spec)
+        self.entity_description = cast(
+            "UnraidNICSensorEntityDescription", spec.description
+        )
+
+    @property
+    def native_value(self) -> Any:
+        """Return the sensor value."""
+        ctx = self._nic_context()
+        return self.entity_description.value_fn(ctx) if ctx else None
+
+
 def _vm_identity(vm: Any) -> tuple[str | None, str | None]:
     """Return the stable identifier and display name of a VM."""
     return getattr(vm, "id", None) or getattr(vm, "name", None), getattr(
@@ -5121,6 +5149,15 @@ async def async_setup_entry(
         "sensor",
         storage_sensor_specs,
         UnraidStorageSensor,
+        async_add_entities,
+    )
+
+    # Network cards (opt-in; each a child device of the server)
+    async_setup_nic_entities(
+        entry,
+        "sensor",
+        nic_sensor_specs,
+        UnraidNICSensor,
         async_add_entities,
     )
 
