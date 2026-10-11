@@ -253,15 +253,23 @@ async def test_no_sensors_when_share_collector_disabled(
     entity_registry: er.EntityRegistry,
     mock_async_unraid_client: MagicMock,
 ) -> None:
-    """A disabled shares collector gets no FUSE fallback sensors."""
-    disabled = MagicMock(enabled=False)
+    """A disabled shares collector gets no sensors until it is enabled."""
+    shares_collector = MagicMock(enabled=False)
     collectors = mock_async_unraid_client.get_collectors_status.return_value
     collectors.get_collector_by_name = MagicMock(
-        side_effect=lambda name: disabled if name == "shares" else None
+        side_effect=lambda name: shares_collector if name == "shares" else None
     )
-    await _setup(hass, mock_async_unraid_client, [EXCLUSIVE, FALLBACK])
+    entry = await _setup(hass, mock_async_unraid_client, [EXCLUSIVE, FALLBACK])
 
     assert _fallback_entities(entity_registry) == set()
+
+    # Collector enabled later: the sensors appear without a reload
+    shares_collector.enabled = True
+    await _refresh(hass, entry, mock_async_unraid_client, [EXCLUSIVE, FALLBACK])
+    assert _fallback_entities(entity_registry) == {
+        f"{ENTRY_ID}_share_appdata_fuse_fallback",
+        f"{ENTRY_ID}_share_domains_fuse_fallback",
+    }
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
@@ -382,6 +390,24 @@ async def test_spun_down_disks_left_unchecked(
     assert state.state == STATE_ON
     assert state.attributes["locations_unchecked"] == ["disk3", "disk4"]
     assert state.attributes["stray_locations"] == []
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_stray_folder_with_unchecked_disks(
+    hass: HomeAssistant, mock_async_unraid_client: MagicMock
+) -> None:
+    """With a stray folder found, the issue also names the unchecked disks."""
+    share = FALLBACK.model_copy(update={"locations_unchecked": ["disk3"]})
+    await _setup(hass, mock_async_unraid_client, [share])
+
+    issue = _issues(hass)[f"{ISSUE_PREFIX}domains"]
+    assert issue.translation_key == "share_fuse_fallback_stray_unchecked"
+    assert issue.translation_placeholders == {
+        "share_name": "domains",
+        "pool": "cache",
+        "locations": "disk1, nvme",
+        "unchecked": "disk3",
+    }
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")

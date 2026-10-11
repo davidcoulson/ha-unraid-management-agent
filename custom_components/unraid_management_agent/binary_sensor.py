@@ -586,6 +586,8 @@ async def async_setup_entry(
     seen_exclusive_shares: set[str] = set()
 
     def _add_share_fuse_fallback_sensors() -> None:
+        if not coordinator.is_collector_enabled("shares"):
+            return
         current_data = coordinator.data
         if not current_data or not current_data.shares:
             return
@@ -610,11 +612,10 @@ async def async_setup_entry(
         if new_entities:
             async_add_entities(new_entities)
 
-    if coordinator.is_collector_enabled("shares"):
-        _add_share_fuse_fallback_sensors()
-        entry.async_on_unload(
-            coordinator.async_add_listener(callback(_add_share_fuse_fallback_sensors))
-        )
+    _add_share_fuse_fallback_sensors()
+    entry.async_on_unload(
+        coordinator.async_add_listener(callback(_add_share_fuse_fallback_sensors))
+    )
 
     # Register listeners so entities are added when new unassigned/remote-share
     # data or new alert rules arrive

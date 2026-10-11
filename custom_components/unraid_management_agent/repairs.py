@@ -384,8 +384,13 @@ def _check_share_fuse_fallback(
             # The agent could not scan the disks (disk list unavailable)
             translation_key = "share_fuse_fallback_unknown"
         elif stray := share.stray_locations:
-            translation_key = "share_fuse_fallback"
             placeholders["locations"] = ", ".join(stray)
+            if share.locations_unchecked:
+                # Spun-down disks may hold more stray folders
+                translation_key = "share_fuse_fallback_stray_unchecked"
+                placeholders["unchecked"] = ", ".join(share.locations_unchecked)
+            else:
+                translation_key = "share_fuse_fallback"
         elif share.locations_unchecked:
             # The agent leaves spun-down disks unchecked rather than wake them
             translation_key = "share_fuse_fallback_unchecked"
