@@ -31,7 +31,7 @@ from custom_components.unraid_management_agent.diagnostics import (
 )
 from custom_components.unraid_management_agent.nut import (
     find_nut_status,
-    nut_connected_device_names,
+    listed_secondary_nut_devices,
     nut_device_key,
     secondary_nut_device_names,
     secondary_nut_statuses,
@@ -477,7 +477,7 @@ async def test_silent_listed_device_is_disconnected(
     )
     assert state is not None
     assert state.state == STATE_OFF
-    assert nut_connected_device_names(None) == []
+    assert listed_secondary_nut_devices(None) == []
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
@@ -564,9 +564,9 @@ def test_cleanup_keeps_listed_devices() -> None:
     statuses_only = UnraidData(
         nut=NUTInfo.model_validate({"statuses": [_ups_status("ups", 623), ATS_STATUS]})
     )
-    assert nut_connected_device_names(statuses_only) == ["ats"]
+    assert listed_secondary_nut_devices(statuses_only) == ["ats"]
     no_devices = UnraidData(nut=NUTInfo.model_validate({"statuses": []}))
-    assert nut_connected_device_names(no_devices) == []
+    assert listed_secondary_nut_devices(no_devices) == []
 
 
 def test_nut_websocket_payload_is_classified() -> None:
@@ -694,6 +694,45 @@ async def test_slug_keyed_entities_move_to_the_new_key(
     assert connected is not None
     assert battery.unique_id == f"{ENTRY_ID}_{GPU}_battery"
     assert connected.unique_id == f"{ENTRY_ID}_{GPU}_connected"
+    state = hass.states.get("sensor.gpu_ups_battery")
+    assert state is not None
+    assert state.state == "100.0"
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_slug_keyed_entity_of_silent_device_is_moved(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """An old entity moves even while its device is silent, so cleanup keeps it."""
+    mock_async_unraid_client.get_ups_info.return_value = UPSInfo.model_validate(
+        UPS_PAYLOAD
+    )
+    mock_async_unraid_client.get_nut_info.return_value = _nut(
+        _ups_status("ups", 623), ATS_STATUS, devices=["ups", "ups-gpu", "ats"]
+    )
+    entry = _entry(hass)
+    _register_legacy(
+        entity_registry,
+        entry,
+        "sensor",
+        f"{ENTRY_ID}_nut_ups_gpu_battery",
+        "sensor.gpu_ups_battery",
+    )
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    battery = entity_registry.async_get("sensor.gpu_ups_battery")
+    assert battery is not None
+    assert battery.unique_id == f"{ENTRY_ID}_{GPU}_battery"
+    coordinator = entry.runtime_data.coordinator
+    assert f"{GPU}_battery" in _build_valid_dynamic_entity_keys(coordinator.data)
+
+    # ups-gpu answers again: its battery sensor keeps the old entity ID.
+    coordinator.async_set_updated_data(replace(coordinator.data, nut=THREE_DEVICES))
+    await hass.async_block_till_done()
+
     state = hass.states.get("sensor.gpu_ups_battery")
     assert state is not None
     assert state.state == "100.0"

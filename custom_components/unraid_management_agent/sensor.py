@@ -87,8 +87,10 @@ from .hwmon import (
     temperature_legacy_unique_ids,
 )
 from .nut import (
+    NUT_SENSOR_SUFFIXES,
     all_nut_device_names,
     find_nut_status,
+    listed_secondary_nut_devices,
     nut_device_key,
     nut_legacy_unique_ids,
     secondary_nut_statuses,
@@ -3575,32 +3577,33 @@ def _new_nut_device_sensors(
     a battery gets no battery, load, runtime, power or energy sensor. ``seen``
     holds the keys already created and is updated in place.
     """
+    data = coordinator.data
+    names = all_nut_device_names(data)
+    # Move entities keyed by the slug-only keys of earlier builds for every
+    # listed device, not only once a reading appears, so cleanup never removes
+    # one whose device is silent or whose reading is missing for a while.
+    for name in listed_secondary_nut_devices(data):
+        prefix = nut_device_key(name)
+        for suffix in NUT_SENSOR_SUFFIXES:
+            async_adopt_unique_id(
+                coordinator.hass,
+                "sensor",
+                f"{entry.entry_id}_{prefix}_{suffix}",
+                nut_legacy_unique_ids(entry.entry_id, name, suffix, names),
+            )
+
     new_entities: list[SensorEntity] = []
-    statuses = secondary_nut_statuses(coordinator.data)
-    names = all_nut_device_names(coordinator.data)
-    for name, status in statuses:
+    for name, status in secondary_nut_statuses(data):
         prefix = nut_device_key(name)
         for description in NUT_DEVICE_SENSOR_DESCRIPTIONS:
             key = f"{prefix}_{description.key}"
             if key in seen or description.value_fn(status) is None:
                 continue
             seen.add(key)
-            async_adopt_unique_id(
-                coordinator.hass,
-                "sensor",
-                f"{entry.entry_id}_{key}",
-                nut_legacy_unique_ids(entry.entry_id, name, description.key, names),
-            )
             new_entities.append(UnraidNUTDeviceSensor(coordinator, name, description))
         energy_key = f"{prefix}_energy"
         if energy_key not in seen and status.realpower_watts is not None:
             seen.add(energy_key)
-            async_adopt_unique_id(
-                coordinator.hass,
-                "sensor",
-                f"{entry.entry_id}_{energy_key}",
-                nut_legacy_unique_ids(entry.entry_id, name, "energy", names),
-            )
             new_entities.append(UnraidNUTEnergySensor(coordinator, entry, name))
     return new_entities
 

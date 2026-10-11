@@ -34,7 +34,7 @@ from .hwmon import async_adopt_unique_id
 from .nut import (
     all_nut_device_names,
     find_nut_status,
-    nut_connected_device_names,
+    listed_secondary_nut_devices,
     nut_device_key,
     nut_legacy_unique_ids,
 )
@@ -643,7 +643,7 @@ async def async_setup_entry(
         )
         new_entities: list[BinarySensorEntity] = []
         names = all_nut_device_names(coordinator.data)
-        for name in nut_connected_device_names(coordinator.data):
+        for name in listed_secondary_nut_devices(coordinator.data):
             if name not in seen_nut_devices:
                 seen_nut_devices.add(name)
                 async_adopt_unique_id(
