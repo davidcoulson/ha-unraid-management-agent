@@ -32,6 +32,7 @@ from homeassistant.util import dt as dt_util
 from homeassistant.util import slugify
 
 from .alerts import ALERT_RULE_KEY_PREFIX, alert_rule_key, alert_rule_names
+from .api.models import fan_sensor_keys, hwmon_temperature_keys
 from .const import (
     CONF_ENABLE_CONTAINER_UPDATES,
     CONF_ENABLE_VM_DEVICES,
@@ -205,27 +206,13 @@ def _build_valid_dynamic_entity_keys(
 
     # ── Fans (RPM sensors from system info) ───────────────────────────────────
     if data.system and data.system.fans:
-        seen_normalized: set[str] = set()
-        for idx, fan in enumerate(data.system.fans):
-            if isinstance(fan, dict):
-                normalized = fan.get("name") or f"fan_{idx}"
-            elif isinstance(fan, (int, float)):
-                normalized = f"fan_{idx}"
-            else:
-                raw = getattr(fan, "name", None) or f"fan_{idx}"
-                normalized = getattr(fan, "normalized_name", None) or raw
-            if normalized in seen_normalized:
-                normalized = f"{normalized}_{idx}"
-            seen_normalized.add(normalized)
-            sanitized = normalized.lower().replace(" ", "_")
-            keys.add(f"fan_{sanitized}")  # sensor
+        for key, *_ in fan_sensor_keys(data.system.fans):
+            keys.add(f"fan_{key}")  # sensor
 
     # ── hwmon temperature channels (from system info) ─────────────────────────
     if data.system:
-        for reading in data.system.temperatures or []:
-            hwmon_key = getattr(reading, "hwmon_key", None)
-            if hwmon_key:
-                keys.add(f"temperature_{slugify(hwmon_key)}")  # sensor
+        for hwmon_key in hwmon_temperature_keys(data.system.temperatures):
+            keys.add(f"temperature_{slugify(hwmon_key)}")  # sensor
 
     # ── Fan speed numbers (from fan_control) ──────────────────────────────────
     if data.fan_control and data.fan_control.fans:

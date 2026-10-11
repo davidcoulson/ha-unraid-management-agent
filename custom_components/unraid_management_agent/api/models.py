@@ -81,8 +81,45 @@ class FanInfo(BaseModel):
 
     name: str | None = Field(None, description="Fan name", examples=["CPU Fan"])
     rpm: int | None = Field(None, description="Fan speed in RPM", examples=[1200])
+    source: str | None = Field(
+        None, description="lm-sensors chip name", examples=["octo-hid-3-13"]
+    )
+    device_id: str | None = Field(
+        None,
+        description="Stable identity of a USB HID chip's device (serial or port)",
+        examples=["07274-50017"],
+    )
 
     model_config = ConfigDict(frozen=True, extra="allow")
+
+    @property
+    def device_key(self) -> str | None:
+        """
+        Return a key that identifies this fan by its chip's device, or None.
+
+        Set when the agent reports a device_id (USB HID chips such as an
+        Aquacomputer Octo), so two identical controllers keep separate fans and
+        a controller keeps its fans when a second one is added.
+
+        Example:
+            >>> FanInfo(
+            ...     name="octo_fan8", source="octo-hid-3-13", device_id="07274-50017"
+            ... ).device_key
+            'octo_07274_50017_fan8'
+
+        """
+        if not self.device_id or not self.name:
+            return None
+        match = _FAN_CHANNEL_RE.search(self.name)
+        if not match:
+            return None
+        chip = (self.source or self.name).split("-")[0].split("_")[0]
+        return f"{chip}_{_key_part(self.device_id)}_{match.group(1)}"
+
+    @property
+    def chip_short(self) -> str | None:
+        """Return the chip's driver name ('octo'), or None without a source."""
+        return self.source.split("-")[0] if self.source else None
 
     @property
     def normalized_name(self) -> str | None:
@@ -127,6 +164,10 @@ class TemperatureInfo(BaseModel):
         None, description="Sensor type (cpu, chipset, other)"
     )
     source: str | None = Field(None, description="Sensor source")
+    device_id: str | None = Field(
+        None,
+        description="Stable identity of a USB HID chip's device (serial or port)",
+    )
 
     model_config = ConfigDict(frozen=True, extra="allow")
 
@@ -170,13 +211,50 @@ class TemperatureInfo(BaseModel):
         return label.strip("_").replace("_", " ") or feature
 
     @property
+    def hwmon_chip(self) -> str | None:
+        """
+        Return the chip name without an address that changes on reconnect.
+
+        lm-sensors names USB HID chips '<driver>-hid-<bus>-<device id>', and the
+        device id changes every time the device re-enumerates on USB (an Octo
+        that resets comes back as 'octo-hid-3-13' instead of 'octo-hid-3-3').
+        Those chips are named by driver, bus type and the device_id the agent
+        reports (its USB serial or port, 'octo-hid-07274-50017'), or by driver
+        and bus type only ('octo-hid') with older agents; other chips keep
+        their full name, whose address is stable (PCI, ISA, ACPI).
+
+        Example:
+            >>> TemperatureInfo(name="x", source="octo-hid-3-13").hwmon_chip
+            'octo-hid'
+            >>> TemperatureInfo(name="x", source="nvme-pci-2800").hwmon_chip
+            'nvme-pci-2800'
+
+        """
+        if not self.source:
+            return None
+        match = _HWMON_HID_CHIP_RE.match(self.source)
+        if not match:
+            return self.source
+        if self.device_id:
+            return f"{match.group(1)}-{self.device_id}"
+        return match.group(1)
+
+    @property
+    def hwmon_hid_chip(self) -> str | None:
+        """Return 'octo-hid' for a USB HID chip, or None for any other chip."""
+        match = _HWMON_HID_CHIP_RE.match(self.source or "")
+        return match.group(1) if match else None
+
+    @property
     def hwmon_key(self) -> str | None:
         """
         Return a stable identity for this temperature channel, or None.
 
-        The full chip name including its bus address plus the channel
-        ('octo-hid-3-3_temp1'), so it never depends on which other chips are
-        present. Readings without a source fall back to their full name.
+        The chip name (hwmon_chip, without a USB HID device's changing
+        address) plus the channel ('octo-hid_temp1', 'nvme-pci-2800_temp1'), so
+        it never depends on which other chips are present or on a USB
+        reconnect. Readings without a source fall back to their full name.
+        hwmon_temperature_keys() resolves two identical HID chips.
 
         Example:
             >>> TemperatureInfo(
@@ -189,8 +267,55 @@ class TemperatureInfo(BaseModel):
         if feature is None or self.name is None:
             return None
         if self.source:
+            return f"{self.hwmon_chip}_{feature}"
+        return self.name.removesuffix("_input")
+
+    @property
+    def hwmon_address_key(self) -> str | None:
+        """Return the channel's identity including the chip's full address."""
+        feature = self.hwmon_feature
+        if feature is None or self.name is None:
+            return None
+        if self.source:
             return f"{self.source}_{feature}"
         return self.name.removesuffix("_input")
+
+
+def hwmon_temperature_keys(readings: Any) -> dict[str, TemperatureInfo]:
+    """
+    Map each hwmon temperature channel's key to its reading.
+
+    Keys are TemperatureInfo.hwmon_key, except when several chips share one
+    (two identical USB HID devices, from an agent that does not report
+    device_id): those keep their full address (hwmon_address_key), since
+    nothing else tells them apart; that address changes when either device
+    reconnects, so such sensors are not stable. Non-temperature
+    readings are skipped, and a channel listed twice keeps its first reading.
+    """
+    temps = [
+        reading
+        for reading in readings or []
+        if isinstance(reading, TemperatureInfo) and reading.hwmon_key
+    ]
+    sources: dict[str, set[str | None]] = {}
+    for reading in temps:
+        sources.setdefault(reading.hwmon_key or "", set()).add(reading.source)
+    keyed: dict[str, TemperatureInfo] = {}
+    for reading in temps:
+        key = reading.hwmon_key or ""
+        if len(sources[key]) > 1:
+            key = reading.hwmon_address_key or key
+        keyed.setdefault(key, reading)
+    return keyed
+
+
+_HWMON_HID_CHIP_RE = re.compile(r"^(.+-hid)-\d+-[0-9a-f]+$")
+_FAN_CHANNEL_RE = re.compile(r"(fan\d+)$")
+
+
+def _key_part(value: str) -> str:
+    """Return value lowercased with runs of other characters turned into '_'."""
+    return re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
 
 
 _HWMON_TEMP_RE = re.compile(r"(?:^|_)(temp\d+)_input$")
@@ -3399,3 +3524,44 @@ class StorageTopology(BaseModel):
     timestamp: str | None = Field(None, description="Collection time")
 
     model_config = ConfigDict(frozen=True, extra="allow")
+
+
+def fan_sensor_keys(fans: Any) -> list[tuple[str, str, str, Any]]:
+    """
+    Return (key, name, display name, fan) for each fan.
+
+    The key (used in the fan sensors' unique IDs) is the fan's device_key when
+    the agent reports a device_id, else its normalized name. A key seen before
+    gets the fan's position appended, and so do its name and display name, so
+    a duplicate never matches another fan's control device by name. Fans may
+    be FanInfo models, plain dicts or bare numbers (older agents).
+    """
+    keyed: list[tuple[str, str, str, Any]] = []
+    seen: set[str] = set()
+    for idx, fan in enumerate(fans or []):
+        if isinstance(fan, dict):
+            name = fan.get("name") or f"fan_{idx}"
+            key = display = name
+        elif isinstance(fan, int | float):
+            name = f"fan_{idx}"
+            key = display = name
+        else:
+            name = getattr(fan, "name", None) or f"fan_{idx}"
+            normalized = getattr(fan, "normalized_name", None)
+            display = normalized if isinstance(normalized, str) and normalized else name
+            key = next(
+                (
+                    value
+                    for value in (
+                        getattr(fan, "device_key", None),
+                        getattr(fan, "normalized_name", None),
+                    )
+                    if isinstance(value, str) and value
+                ),
+                name,
+            )
+        if key in seen:
+            key, name, display = (f"{part}_{idx}" for part in (key, name, display))
+        seen.add(key)
+        keyed.append((key.lower().replace(" ", "_"), name, display, fan))
+    return keyed
