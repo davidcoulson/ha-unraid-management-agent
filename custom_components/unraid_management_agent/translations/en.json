@@ -71,9 +71,9 @@
           "enable_fan_control": "Create fan speed sensor and control entities. Disable if your system does not have controllable fans.",
           "enable_container_updates": "Periodically check Docker containers for available image updates. This may slow down polling and uses additional network requests. Also creates an update entity for each container, from which its image update can be installed.",
           "read_only": "Only create sensors. Switches, buttons and number controls are not created (existing ones are removed), and the integration's actions refuse to run, so Home Assistant cannot start, stop or reboot anything on the server. Update entities still show available updates but do not offer to install them.",
-          "enable_vm_devices": "Give each VM its own device under the server, holding its power switch, control buttons and metric sensors (CPU, memory, network and disk rates). When off, VM switches and buttons stay on the server device and no VM sensors are created.",
+          "enable_vm_devices": "Give each VM its own device under the server's VMs device, holding its power switch, control buttons and metric sensors (CPU, memory, network and disk rates). When off, VM switches and buttons stay on the server device and no VM sensors are created.",
           "enable_gpu_devices": "Give each GPU its own device under the server, holding its utilization, temperature, power, energy and VRAM sensors with short names. When off, GPU sensors stay on the server device, named after the GPU.",
-          "enable_container_devices": "Give each container its own device under the server, holding its switches, restart button and metric sensors with short names (Running, CPU, Memory). When off, container entities stay on the server device, named after the container."
+          "enable_container_devices": "Give each container its own device under the server's Docker device, holding its switches, restart button and metric sensors with short names (Running, CPU, Memory). When off, container entities stay on the server device, named after the container."
         }
       }
     }
@@ -84,6 +84,12 @@
     },
     "gpu": {
       "name": "GPU \u00b7 {name}"
+    },
+    "docker": {
+      "name": "{hostname} Docker"
+    },
+    "vms": {
+      "name": "{hostname} VMs"
     }
   },
   "entity": {
@@ -125,10 +131,10 @@
         "name": "Swappiness"
       },
       "docker_cpu_usage": {
-        "name": "Docker CPU Usage"
+        "name": "CPU Usage"
       },
       "docker_memory_usage": {
-        "name": "Docker Memory Usage"
+        "name": "Memory Usage"
       },
       "system_status": {
         "name": "System Status"
@@ -236,7 +242,7 @@
         "name": "Notifications"
       },
       "docker_vdisk_usage": {
-        "name": "Docker vDisk Usage"
+        "name": "vDisk Usage"
       },
       "log_filesystem_usage": {
         "name": "Log Filesystem Usage"
@@ -507,6 +513,9 @@
       },
       "system_service": {
         "name": "{service_name} Service"
+      },
+      "group_service": {
+        "name": "Service"
       },
       "unassigned_device_mounted": {
         "name": "Unassigned Device {device_name} Mounted"

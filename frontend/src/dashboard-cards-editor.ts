@@ -68,7 +68,9 @@ export class UnraidCardEditor extends LitElement {
     const devices = this.hass?.devices
       ? Object.values(this.hass.devices).filter(
           (d) =>
-            // Child devices (VMs, containers, GPUs, storage) are not servers
+            // Not the Docker and VMs devices or child devices (VMs,
+            // containers, GPUs, storage)
+            !d.via_device_id &&
             !d.parent_device_id &&
             d.identifiers?.some(
               ([domain]) => domain === "unraid_management_agent" || domain === "unraid"
