@@ -14,6 +14,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Entities for every NUT device** ([#181](https://github.com/tinkerologie/ha-unraid-management-agent/issues/181)):
+  Every NUT device other than the primary UPS (a second UPS, an ATS, ...) gets
+  `UPS <device> Battery/Load/Runtime/Power/Energy` sensors and a
+  `UPS <device> Connected` binary sensor, keyed by the exact NUT device name
+  (`nut_<slug>-<hash>_*`, so names such as `UPS`/`ups` or `ups-gpu`/`ups_gpu`
+  never share entities) and on the server device like the existing UPS
+  entities. Entities from earlier builds keyed `nut_<slug>_*` are moved to the
+  new unique IDs when only one current device has that slug. A
+  sensor is only created once the device reports that reading, so an ATS only
+  gets the connected sensor. Every listed device gets the connected sensor, off
+  while it does not answer. The existing `ups_*` entities keep their unique IDs
+  and entity IDs. Needs an agent that reports `/nut` `statuses`
+  ([tinkerologie/unraid-management-agent#206](https://github.com/tinkerologie/unraid-management-agent/issues/206));
+  older agents get no extra entities. NUT `raw_variables` are redacted in
+  diagnostics.
+
 - **Storage throughput and link utilization sensors**:
   - Each storage topology controller and enclosure (disk shelf) device gets **Read Throughput**, **Write Throughput** and **Throughput** (read + write) sensors (data rate, B/s shown as MB/s by default) and a **Link Utilization** sensor (%), from the optional `throughput` object the agent adds to `/storage/topology`.
   - The sensors appear once the agent reports throughput (from its second collection cycle) and become unavailable if it stops. Link Utilization is unknown when the agent cannot work out the link capacity; its attributes include the drive count, the measurement interval and the capacity in B/s.
