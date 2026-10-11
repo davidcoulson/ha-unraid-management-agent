@@ -64,7 +64,8 @@
           "read_only": "Read-only (sensors only)",
           "enable_vm_devices": "Show virtual machines as separate devices",
           "enable_gpu_devices": "Show GPUs as separate devices",
-          "enable_container_devices": "Show Docker containers as separate devices"
+          "enable_container_devices": "Show Docker containers as separate devices",
+          "enable_zfs_pool_devices": "Show ZFS pools as separate devices"
         },
         "data_description": {
           "enable_websocket": "WebSocket provides instant updates instead of polling. When disabled, data is polled every 30 seconds.",
@@ -73,7 +74,8 @@
           "read_only": "Only create sensors. Switches, buttons and number controls are not created (existing ones are removed), and the integration's actions refuse to run, so Home Assistant cannot start, stop or reboot anything on the server. Update entities still show available updates but do not offer to install them.",
           "enable_vm_devices": "Give each VM its own device under the server's VMs device, holding its power switch, control buttons and metric sensors (CPU, memory, network and disk rates). When off, VM switches and buttons stay on the server device and no VM sensors are created.",
           "enable_gpu_devices": "Give each GPU its own device under the server, holding its utilization, temperature, power, energy and VRAM sensors with short names. When off, GPU sensors stay on the server device, named after the GPU.",
-          "enable_container_devices": "Give each container its own device under the server's Docker device, holding its switches, restart button and metric sensors with short names (Running, CPU, Memory). When off, container entities stay on the server device, named after the container."
+          "enable_container_devices": "Give each container its own device under the server's Docker device, holding its switches, restart button and metric sensors with short names (Running, CPU, Memory). When off, container entities stay on the server device, named after the container.",
+          "enable_zfs_pool_devices": "Give each ZFS pool its own device under the server, holding its usage, health, scrub and error sensors with short names, plus drive health roll-ups: hottest drive temperature, worst NVMe wear, media errors, failing drives and a drive count with per-drive details. Drive health needs agent 2026.10 or later. When off, pool entities stay on the server device, named after the pool."
         }
       }
     }
@@ -87,6 +89,9 @@
     },
     "gpu": {
       "name": "GPU \u00b7 {name}"
+    },
+    "zfs_pool": {
+      "name": "ZFS pool \u00b7 {name}"
     }
   },
   "entity": {
@@ -466,6 +471,64 @@
       },
       "alerts_firing": {
         "name": "Firing alerts"
+      },
+      "zfs_pool_device_usage": {
+        "name": "Usage"
+      },
+      "zfs_pool_device_health": {
+        "name": "Health"
+      },
+      "zfs_pool_device_corrupted_files": {
+        "name": "Corrupted files"
+      },
+      "zfs_pool_device_scrub_status": {
+        "name": "Scrub status",
+        "state": {
+          "none": "Never run",
+          "scrubbing": "Scrubbing",
+          "scrub_paused": "Scrub paused",
+          "scrub_finished": "Scrub finished",
+          "scrub_canceled": "Scrub canceled",
+          "resilvering": "Resilvering",
+          "resilver_finished": "Resilver finished",
+          "resilver_canceled": "Resilver canceled"
+        }
+      },
+      "zfs_pool_device_last_scrub": {
+        "name": "Last scrub"
+      },
+      "zfs_pool_device_scrub_errors": {
+        "name": "Scrub errors"
+      },
+      "zfs_pool_device_scrub_repaired": {
+        "name": "Scrub repaired"
+      },
+      "zfs_pool_device_read_errors": {
+        "name": "Read errors"
+      },
+      "zfs_pool_device_write_errors": {
+        "name": "Write errors"
+      },
+      "zfs_pool_device_checksum_errors": {
+        "name": "Checksum errors"
+      },
+      "zfs_pool_device_fragmentation": {
+        "name": "Fragmentation"
+      },
+      "zfs_pool_device_drive_count": {
+        "name": "Drives"
+      },
+      "zfs_pool_device_drive_max_temperature": {
+        "name": "Hottest drive temperature"
+      },
+      "zfs_pool_device_drive_max_wear": {
+        "name": "Worst NVMe wear"
+      },
+      "zfs_pool_device_drive_media_errors": {
+        "name": "Drive media errors"
+      },
+      "zfs_pool_device_drives_failing": {
+        "name": "Failing drives"
       }
     },
     "binary_sensor": {
@@ -567,6 +630,9 @@
             }
           }
         }
+      },
+      "zfs_pool_device_problem": {
+        "name": "Problem"
       }
     },
     "switch": {

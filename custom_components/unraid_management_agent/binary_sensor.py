@@ -34,6 +34,7 @@ from .entity import (
     VMS_DEVICE,
     UnraidBaseEntity,
     UnraidEntityDescription,
+    UnraidZFSPoolEntity,
     build_group_device_info,
 )
 from .nut import (
@@ -1124,7 +1125,7 @@ class UnraidAlertRuleBinarySensor(UnraidBaseEntity, BinarySensorEntity):
         return attrs
 
 
-class UnraidZFSPoolProblemBinarySensor(UnraidBaseEntity, BinarySensorEntity):
+class UnraidZFSPoolProblemBinarySensor(UnraidZFSPoolEntity, BinarySensorEntity):
     """On when a ZFS pool is not ONLINE or has read/write/checksum/scrub errors."""
 
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
@@ -1137,8 +1138,7 @@ class UnraidZFSPoolProblemBinarySensor(UnraidBaseEntity, BinarySensorEntity):
         """Initialize the ZFS pool problem binary sensor."""
         self._pool_name = pool_name
         super().__init__(coordinator, f"zfs_{pool_name}_problem")
-        self._attr_translation_key = "zfs_pool_problem"
-        self._attr_translation_placeholders = {"pool_name": pool_name}
+        self._use_pool_device_or_name(pool_name, "problem")
 
     def _get_pool(self) -> Any | None:
         """Return this pool from coordinator data."""

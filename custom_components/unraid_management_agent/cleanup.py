@@ -36,8 +36,10 @@ from .api.models import fan_sensor_keys, hwmon_temperature_keys
 from .const import (
     CONF_ENABLE_CONTAINER_UPDATES,
     CONF_ENABLE_VM_DEVICES,
+    CONF_ENABLE_ZFS_POOL_DEVICES,
     DEFAULT_ENABLE_CONTAINER_UPDATES,
     DEFAULT_ENABLE_VM_DEVICES,
+    DEFAULT_ENABLE_ZFS_POOL_DEVICES,
     DOMAIN,
 )
 from .nut import (
@@ -114,7 +116,11 @@ def _user_script_key(name: str) -> str:
 
 
 def _build_valid_dynamic_entity_keys(
-    data: UnraidData, *, vm_devices: bool = False, container_updates: bool = False
+    data: UnraidData,
+    *,
+    vm_devices: bool = False,
+    container_updates: bool = False,
+    zfs_pool_devices: bool = False,
 ) -> set[str]:
     """
     Compute the complete set of valid dynamic entity key suffixes from coordinator data.
@@ -130,6 +136,9 @@ def _build_valid_dynamic_entity_keys(
         container_updates: Whether per-container update entities exist (the
             "container update checks" option); when off they are stale and
             get removed.
+        zfs_pool_devices: Whether the per-pool drive health sensors exist
+            (the "ZFS pools as separate devices" option); when off they are
+            stale and get removed.
 
     Returns:
         Set of valid entity key suffixes.
@@ -315,6 +324,16 @@ def _build_valid_dynamic_entity_keys(
             ):
                 keys.add(f"zfs_{name}_{suffix}")  # sensor
             keys.add(f"zfs_{name}_problem")  # binary sensor
+            if zfs_pool_devices:
+                # Drive health roll-ups, only on pool devices
+                for suffix in (
+                    "drive_count",
+                    "drive_max_temperature",
+                    "drive_max_wear",
+                    "drive_media_errors",
+                    "drives_failing",
+                ):
+                    keys.add(f"zfs_{name}_{suffix}")  # sensor
 
     # ── Remote shares ─────────────────────────────────────────────────────────
     for share in data.remote_shares or []:
@@ -485,8 +504,14 @@ def async_cleanup_stale_entities(
             CONF_ENABLE_CONTAINER_UPDATES, DEFAULT_ENABLE_CONTAINER_UPDATES
         )
     )
+    zfs_pool_devices = bool(
+        entry.options.get(CONF_ENABLE_ZFS_POOL_DEVICES, DEFAULT_ENABLE_ZFS_POOL_DEVICES)
+    )
     valid_keys = _build_valid_dynamic_entity_keys(
-        coordinator.data, vm_devices=vm_devices, container_updates=container_updates
+        coordinator.data,
+        vm_devices=vm_devices,
+        container_updates=container_updates,
+        zfs_pool_devices=zfs_pool_devices,
     )
     unavailable_prefixes = _unavailable_data_prefixes(coordinator.data)
     candidates = coordinator.stale_entity_candidates
@@ -544,7 +569,7 @@ def async_cleanup_stale_entities(
 @callback
 def _async_remove_empty_devices(hass: HomeAssistant, entry: UnraidConfigEntry) -> None:
     """
-    Remove devices (VMs, containers, GPUs, storage, Docker, VMs) without entities.
+    Remove devices (VMs, containers, GPUs, storage, ZFS pools, Docker, VMs) without entities.
 
     That happens when the item is deleted from Unraid (its entities are
     removed above), when a "separate devices" option is turned off (its

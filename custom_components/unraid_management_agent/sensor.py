@@ -77,6 +77,7 @@ from .coordinator import UnraidData
 from .entity import (
     DOCKER_DEVICE,
     UnraidBaseEntity,
+    UnraidZFSPoolEntity,
     build_container_device_info,
     build_gpu_device_info,
     build_group_device_info,
@@ -87,6 +88,7 @@ from .entity import (
     gpu_device_keys,
     gpu_devices_enabled,
     vm_devices_enabled,
+    zfs_pool_devices_enabled,
 )
 from .hwmon import (
     async_adopt_unique_id,
@@ -106,6 +108,15 @@ from .storage import (
     UnraidStorageSensorEntityDescription,
     async_setup_storage_entities,
     storage_sensor_specs,
+)
+from .zfs_drives import (
+    drive_details,
+    drive_locations,
+    failing_drives,
+    has_wear,
+    hottest_drive,
+    media_errors,
+    worst_wear,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -2724,7 +2735,7 @@ class UnraidShareUsageSensor(UnraidBaseEntity, SensorEntity):
         return attrs
 
 
-class UnraidZFSPoolSensorBase(UnraidBaseEntity, SensorEntity):
+class UnraidZFSPoolSensorBase(UnraidZFSPoolEntity, SensorEntity):
     """Base class for ZFS pool sensors."""
 
     def __init__(
@@ -2737,6 +2748,7 @@ class UnraidZFSPoolSensorBase(UnraidBaseEntity, SensorEntity):
         """Initialize the sensor."""
         super().__init__(coordinator, f"zfs_{pool_name}_{sensor_type}")
         self._pool_name = pool_name
+        self._use_pool_device_or_name(pool_name, sensor_type)
 
     def _get_pool(self) -> Any:
         """Get the ZFS pool data."""
@@ -2765,8 +2777,6 @@ class UnraidZFSPoolUsageSensor(UnraidZFSPoolSensorBase):
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, entry, pool_name, "usage")
-        self._attr_translation_key = "zfs_pool_usage"
-        self._attr_translation_placeholders = {"pool_name": pool_name}
 
     @property
     def native_value(self) -> float | None:
@@ -2816,8 +2826,6 @@ class UnraidZFSPoolHealthSensor(UnraidZFSPoolSensorBase):
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, entry, pool_name, "health")
-        self._attr_translation_key = "zfs_pool_health"
-        self._attr_translation_placeholders = {"pool_name": pool_name}
 
     @property
     def native_value(self) -> str | None:
@@ -2867,7 +2875,11 @@ class UnraidZFSPoolCorruptedFilesSensor(UnraidZFSPoolSensorBase):
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, entry, pool_name, "corrupted_files")
-        self._attr_name = f"{pool_name} Corrupted Files"
+        if not zfs_pool_devices_enabled(coordinator):
+            # Named after the pool on the server device, as before the option.
+            self._attr_translation_key = None
+            self._attr_translation_placeholders = {}
+            self._attr_name = f"{pool_name} Corrupted Files"
 
     @property
     def native_value(self) -> int | None:
@@ -3040,7 +3052,6 @@ class UnraidZFSPoolSensor(UnraidZFSPoolSensorBase):
         """Initialize the sensor."""
         super().__init__(coordinator, entry, pool_name, description.key)
         self.entity_description = description
-        self._attr_translation_placeholders = {"pool_name": pool_name}
 
     @property
     def native_value(self) -> Any:
@@ -3058,6 +3069,115 @@ class UnraidZFSPoolSensor(UnraidZFSPoolSensorBase):
         if pool is None or attrs_fn is None:
             return None
         return attrs_fn(pool)
+
+
+@dataclass(frozen=True, kw_only=True)
+class UnraidZFSPoolDriveSensorEntityDescription(SensorEntityDescription):
+    """Description for a sensor rolling up a ZFS pool's drive health."""
+
+    value_fn: Callable[[Any], tuple[Any, dict[str, Any]]]
+    exists_fn: Callable[[Any], bool] = lambda _pool: True
+
+
+ZFS_POOL_DRIVE_SENSOR_DESCRIPTIONS: tuple[
+    UnraidZFSPoolDriveSensorEntityDescription, ...
+] = (
+    UnraidZFSPoolDriveSensorEntityDescription(
+        key="drive_max_temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=hottest_drive,
+    ),
+    UnraidZFSPoolDriveSensorEntityDescription(
+        key="drive_max_wear",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=worst_wear,
+        exists_fn=has_wear,
+    ),
+    UnraidZFSPoolDriveSensorEntityDescription(
+        key="drive_media_errors",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=media_errors,
+    ),
+    UnraidZFSPoolDriveSensorEntityDescription(
+        key="drives_failing",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=failing_drives,
+    ),
+)
+
+
+class UnraidZFSPoolDriveSensor(UnraidZFSPoolSensorBase):
+    """A drive-health roll-up for one ZFS pool (pool devices only)."""
+
+    entity_description: UnraidZFSPoolDriveSensorEntityDescription
+
+    def __init__(
+        self,
+        coordinator: UnraidDataUpdateCoordinator,
+        entry: UnraidConfigEntry,
+        pool_name: str,
+        description: UnraidZFSPoolDriveSensorEntityDescription,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, entry, pool_name, description.key)
+        self.entity_description = description
+
+    @property
+    def native_value(self) -> Any:
+        """Return the rolled-up value for this pool."""
+        pool = self._get_pool()
+        if pool is None:
+            return None
+        return self.entity_description.value_fn(pool)[0]
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return which drives the value comes from."""
+        pool = self._get_pool()
+        if pool is None:
+            return None
+        return self.entity_description.value_fn(pool)[1] or None
+
+
+class UnraidZFSPoolDriveCountSensor(UnraidZFSPoolSensorBase):
+    """Number of drives in a ZFS pool, with per-drive details as attributes."""
+
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    # The per-drive list changes with every temperature reading and can be
+    # long; keep it out of the recorder.
+    _unrecorded_attributes = frozenset({"drives"})
+
+    def __init__(
+        self,
+        coordinator: UnraidDataUpdateCoordinator,
+        entry: UnraidConfigEntry,
+        pool_name: str,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, entry, pool_name, "drive_count")
+
+    @property
+    def native_value(self) -> int | None:
+        """Return the number of drives (leaf members) in the pool."""
+        pool = self._get_pool()
+        if pool is None or pool.drives is None:
+            return None
+        return len(pool.drives)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return model, temperature, wear, hours and location per drive."""
+        pool = self._get_pool()
+        if pool is None or pool.drives is None:
+            return None
+        data = self.coordinator.data
+        topology = data.storage_topology if data else None
+        return {"drives": drive_details(pool, drive_locations(topology))}
 
 
 class UnraidZFSArcConfiguredMaxSensor(UnraidBaseEntity, SensorEntity):
@@ -4794,6 +4914,22 @@ async def async_setup_entry(
                         UnraidZFSPoolSensor(coordinator, entry, pool.name, description)
                         for description in ZFS_POOL_SENSOR_DESCRIPTIONS
                     )
+                    # Drive health roll-ups live on the pool's own device and
+                    # need an agent that reports pool members (2026.10+).
+                    if (
+                        zfs_pool_devices_enabled(coordinator)
+                        and pool.drives is not None
+                    ):
+                        entities.append(
+                            UnraidZFSPoolDriveCountSensor(coordinator, entry, pool.name)
+                        )
+                        entities.extend(
+                            UnraidZFSPoolDriveSensor(
+                                coordinator, entry, pool.name, description
+                            )
+                            for description in ZFS_POOL_DRIVE_SENSOR_DESCRIPTIONS
+                            if description.exists_fn(pool)
+                        )
 
             # ZFS ARC sensors
             for description in ZFS_ARC_SENSOR_DESCRIPTIONS:

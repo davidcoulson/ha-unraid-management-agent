@@ -32,6 +32,7 @@ from .const import (
     CONF_ENABLE_GPU_DEVICES,
     CONF_ENABLE_VM_DEVICES,
     CONF_ENABLE_WEBSOCKET,
+    CONF_ENABLE_ZFS_POOL_DEVICES,
     CONF_READ_ONLY,
     DEFAULT_ENABLE_CONTAINER_DEVICES,
     DEFAULT_ENABLE_CONTAINER_UPDATES,
@@ -39,6 +40,7 @@ from .const import (
     DEFAULT_ENABLE_GPU_DEVICES,
     DEFAULT_ENABLE_VM_DEVICES,
     DEFAULT_ENABLE_WEBSOCKET,
+    DEFAULT_ENABLE_ZFS_POOL_DEVICES,
     DEFAULT_PORT,
     DEFAULT_READ_ONLY,
     DOMAIN,
@@ -356,6 +358,13 @@ class UnraidOptionsFlowHandler(OptionsFlowWithReload):
                         CONF_ENABLE_GPU_DEVICES,
                         default=self.config_entry.options.get(
                             CONF_ENABLE_GPU_DEVICES, DEFAULT_ENABLE_GPU_DEVICES
+                        ),
+                    ): cv.boolean,
+                    vol.Optional(
+                        CONF_ENABLE_ZFS_POOL_DEVICES,
+                        default=self.config_entry.options.get(
+                            CONF_ENABLE_ZFS_POOL_DEVICES,
+                            DEFAULT_ENABLE_ZFS_POOL_DEVICES,
                         ),
                     ): cv.boolean,
                 }
