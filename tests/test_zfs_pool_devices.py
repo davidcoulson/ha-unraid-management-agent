@@ -561,13 +561,20 @@ async def test_pool_device_info_falls_back_to_server(hass: HomeAssistant) -> Non
 
 def test_roll_ups_without_health() -> None:
     """Pools whose members have no SMART reading give no values."""
+    # A member on a known disk without a reading is reported as such.
     pool = ZFSPool.model_validate(
         {"name": "p", "drives": [{"name": "sdb1", "disk": "sdb", "state": "ONLINE"}]}
     )
     assert hottest_drive(pool) == (None, {})
     assert worst_wear(pool) == (None, {})
-    assert media_errors(pool) == (None, {})
-    assert failing_drives(pool) == (None, {})
+    assert media_errors(pool) == (None, {"unreported": ["sdb"]})
+    assert failing_drives(pool) == (None, {"unreported": ["sdb"]})
+    # Members without a disk (missing devices) have nothing to report.
+    missing = ZFSPool.model_validate(
+        {"name": "p", "drives": [{"name": "9876543210", "state": "UNAVAIL"}]}
+    )
+    assert media_errors(missing) == (None, {})
+    assert failing_drives(missing) == (None, {})
     asleep = ZFSPool.model_validate(
         {"name": "p", "drives": [{"name": "sdb1", "health": {"standby": True}}]}
     )
@@ -575,9 +582,35 @@ def test_roll_ups_without_health() -> None:
     # The member name is used when the disk could not be resolved.
     assert failing_drives(
         ZFSPool.model_validate(
-            {"name": "p", "drives": [{"name": "x1", "health": {"smart_passed": False}}]}
+            {
+                "name": "p",
+                "drives": [
+                    {
+                        "name": "x1",
+                        "health": {"smart_passed": False, "collected_at": "t"},
+                    }
+                ],
+            }
         )
     ) == (1, {"drives": ["x1"]})
+
+
+def test_roll_ups_unknown_while_a_member_has_no_reading() -> None:
+    """A gap in one member's SMART data must not look like a recovery."""
+    raw = json.loads((FIXTURES / "zfs_pools_drives.json").read_text())
+    exos = next(p for p in raw if p["name"] == "exos24tb")
+    # Only the failing drive's reading is missing (asleep since agent start).
+    exos["drives"][2]["health"] = {"standby": True}
+    pool = ZFSPool.model_validate(exos)
+    assert failing_drives(pool) == (None, {"unreported": ["sdaa"]})
+    assert media_errors(pool) == (None, {"unreported": ["sdaa"]})
+    # Hard drives don't affect NVMe wear.
+    assert worst_wear(pool) == (None, {})
+
+    flash = next(p for p in raw if p["name"] == "flash")
+    del flash["drives"][0]["health"]
+    pool = ZFSPool.model_validate(flash)
+    assert worst_wear(pool) == (None, {"unreported": ["nvme2n1"]})
 
 
 def test_drive_locations() -> None:

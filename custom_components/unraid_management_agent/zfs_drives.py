@@ -21,9 +21,35 @@ def _label(drive: ZFSDrive) -> str | None:
     return drive.disk or drive.name
 
 
+def _has_reading(drive: ZFSDrive) -> bool:
+    """
+    Return True when the member has a SMART reading.
+
+    The agent marks a disk that was asleep at every attempt with only
+    standby=true and no collection time; that is not a reading.
+    """
+    return drive.health is not None and drive.health.collected_at is not None
+
+
 def _healthy_rows(pool: ZFSPool) -> list[tuple[ZFSDrive, DriveHealth]]:
     """Return the members that have a SMART reading."""
-    return [(d, d.health) for d in pool.drives or [] if d.health is not None]
+    return [(d, d.health) for d in pool.drives or [] if d.health and _has_reading(d)]
+
+
+def _unreported(pool: ZFSPool, *, nvme_only: bool = False) -> list[str]:
+    """
+    Return the members on a known disk that have no SMART reading.
+
+    A pool-wide count or total over the others could hide exactly the drive
+    that is failing, so those roll-ups report unknown while this is not empty.
+    """
+    return [
+        _label(d) or ""
+        for d in pool.drives or []
+        if d.disk
+        and not _has_reading(d)
+        and (not nvme_only or d.disk.startswith("nvme"))
+    ]
 
 
 def hottest_drive(pool: ZFSPool) -> tuple[int | None, dict[str, Any]]:
@@ -45,7 +71,13 @@ def hottest_drive(pool: ZFSPool) -> tuple[int | None, dict[str, Any]]:
 
 
 def worst_wear(pool: ZFSPool) -> tuple[int | None, dict[str, Any]]:
-    """Return the highest NVMe "percentage used" and which drive it is."""
+    """
+    Return the highest NVMe "percentage used" and which drive it is.
+
+    Unknown while an NVMe member has no reading.
+    """
+    if unreported := _unreported(pool, nvme_only=True):
+        return None, {"unreported": unreported}
     rows = [
         (d, h.percentage_used)
         for d, h in _healthy_rows(pool)
@@ -63,7 +95,14 @@ def has_wear(pool: ZFSPool) -> bool:
 
 
 def media_errors(pool: ZFSPool) -> tuple[int | None, dict[str, Any]]:
-    """Return the media errors summed over members, and the drives that have any."""
+    """
+    Return the media errors summed over members, and the drives that have any.
+
+    Unknown while a member has no reading. Members whose drive does not
+    report media errors are left out of the sum.
+    """
+    if unreported := _unreported(pool):
+        return None, {"unreported": unreported}
     rows = [
         (d, h.media_errors)
         for d, h in _healthy_rows(pool)
@@ -79,8 +118,11 @@ def failing_drives(pool: ZFSPool) -> tuple[int | None, dict[str, Any]]:
     """
     Return how many members fail SMART or have an NVMe critical warning.
 
-    None when the agent reported no drive health for the pool at all.
+    Unknown while a member has no reading, or when the agent reported no
+    drive health for the pool at all.
     """
+    if unreported := _unreported(pool):
+        return None, {"unreported": unreported}
     rows = _healthy_rows(pool)
     if not rows:
         return None, {}
