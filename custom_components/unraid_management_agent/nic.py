@@ -255,8 +255,16 @@ def _tx_attrs(ctx: NICContext) -> dict[str, Any]:
     }
 
 
-def _module_problem(ctx: NICContext) -> bool:
+def _module_problem(ctx: NICContext) -> bool | None:
+    """
+    Return True while an alarm or warning flag is raised.
+
+    Unknown (None) while the module's monitors are not ready or could not be
+    decoded: empty flags then do not mean the optic is healthy.
+    """
     module = cast("NICModule", ctx.module)
+    if module.data_not_ready or module.error:
+        return None
     return bool(module.alarms or module.warnings)
 
 
@@ -265,7 +273,8 @@ def _module_problem_attrs(ctx: NICContext) -> dict[str, Any]:
     return {
         "alarms": list(module.alarms),
         "warnings": list(module.warnings),
-        "data_not_ready": bool(getattr(module, "data_not_ready", False)),
+        "data_not_ready": bool(module.data_not_ready),
+        "error": module.error,
     }
 
 
@@ -347,7 +356,7 @@ class UnraidNICSensorEntityDescription(SensorEntityDescription):
 class UnraidNICBinarySensorEntityDescription(BinarySensorEntityDescription):
     """Description of a network card binary sensor."""
 
-    is_on_fn: Callable[[NICContext], bool]
+    is_on_fn: Callable[[NICContext], bool | None]
     attrs_fn: Callable[[NICContext], dict[str, Any]] | None = None
     exists_fn: Callable[[NICContext], bool] | None = None
 
