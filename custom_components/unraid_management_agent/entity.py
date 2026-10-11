@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Final
@@ -22,6 +23,11 @@ from .const import (
     CONF_READ_ONLY,
     DEFAULT_ENABLE_CONTAINER_DEVICES,
     DEFAULT_ENABLE_GPU_DEVICES,
+    CONF_ENABLE_HWMON_DEVICES,
+    CONF_ENABLE_VM_DEVICES,
+    CONF_READ_ONLY,
+    DEFAULT_ENABLE_CONTAINER_DEVICES,
+    DEFAULT_ENABLE_HWMON_DEVICES,
     DEFAULT_ENABLE_VM_DEVICES,
     DEFAULT_READ_ONLY,
     DOMAIN,
@@ -367,6 +373,51 @@ def build_gpu_device_info(
 def read_only_enabled(coordinator: UnraidDataUpdateCoordinator) -> bool:
     """Return True when the entry is in read-only mode (nothing may change the server)."""
     return bool(coordinator.config_entry.options.get(CONF_READ_ONLY, DEFAULT_READ_ONLY))
+
+
+def hwmon_devices_enabled(coordinator: UnraidDataUpdateCoordinator) -> bool:
+    """Return True when USB sensor controllers get their own devices (off by default)."""
+    return bool(
+        coordinator.config_entry.options.get(
+            CONF_ENABLE_HWMON_DEVICES, DEFAULT_ENABLE_HWMON_DEVICES
+        )
+    )
+
+
+def hwmon_controller_identifier(entry_id: str, driver: str, device_id: str) -> str:
+    """Return the device registry identifier of a USB sensor controller."""
+    key = re.sub(r"[^a-z0-9]+", "_", f"{driver}_{device_id}".lower()).strip("_")
+    return f"{entry_id}_hwmon_{key}"
+
+
+def build_hwmon_controller_device_info(
+    coordinator: UnraidDataUpdateCoordinator,
+    driver: str,
+    device_id: str,
+    name: str,
+) -> DeviceInfo | ChildDeviceInfo:
+    """
+    Build device info for a USB HID sensor controller (e.g. an Aquacomputer Octo).
+
+    Controllers are child devices of the Unraid server, keyed by driver and
+    the device_id the agent reports (USB serial or port), which stays the
+    same when the controller reconnects.
+    """
+    entry_id = coordinator.config_entry.entry_id
+    # The server device is registered during setup, before the platforms load.
+    server = dr.async_get(coordinator.hass).async_get_device_by_identifier(
+        (DOMAIN, entry_id), entry_id
+    )
+    if server is None:
+        # Keep the entity on the server device if it is somehow missing.
+        return DeviceInfo(identifiers={(DOMAIN, entry_id)})
+    return ChildDeviceInfo(
+        identifiers={
+            (DOMAIN, hwmon_controller_identifier(entry_id, driver, device_id))
+        },
+        name=name,
+        parent_device_id=server.id,
+    )
 
 
 class UnraidEntity(UnraidBaseEntity):

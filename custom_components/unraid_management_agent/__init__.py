@@ -50,8 +50,10 @@ from .entity import (
     async_get_or_create_group_device,
     gpu_device_identifier,
     gpu_device_keys,
+    hwmon_controller_identifier,
 )
 from .frontend import async_register_frontend
+from .hwmon import hwmon_controller_of
 from .storage import CONTROLLER, ENCLOSURE, current_storage_ids, device_identifier
 
 # Service field constants
@@ -501,15 +503,17 @@ async def async_remove_config_entry_device(
     device_entry: dr.DeviceEntry,
 ) -> bool:
     """
-    Allow removing a VM, container, GPU or storage device once it no longer exists.
+    Allow removing a VM, container, GPU, storage or sensor controller device once it no longer exists.
 
-    The server device itself, and VMs, containers, GPUs, storage controllers
-    or enclosures that the agent still reports, cannot be removed.
+    The server device itself, and VMs, containers, GPUs, storage controllers,
+    enclosures or USB sensor controllers that the agent still reports, cannot
+    be removed.
     """
     data = entry.runtime_data.coordinator.data
     vm_prefix = f"{entry.entry_id}_vm_"
     container_prefix = f"{entry.entry_id}_container_"
     gpu_prefix = gpu_device_identifier(entry.entry_id, "")
+    hwmon_prefix = f"{entry.entry_id}_hwmon_"
     topology = data.storage_topology if data else None
     for domain, identifier in device_entry.identifiers:
         if domain != DOMAIN:
@@ -539,6 +543,16 @@ async def async_remove_config_entry_device(
                 for container in ((data.containers if data else None) or [])
             }
             return identifier[len(container_prefix) :] not in current_containers
+        if identifier.startswith(hwmon_prefix):
+            system = data.system if data else None
+            if system is None:
+                return False
+            current_controllers = {
+                hwmon_controller_identifier(entry.entry_id, *controller)
+                for item in [*(system.fans or []), *(system.temperatures or [])]
+                if (controller := hwmon_controller_of(item)) is not None
+            }
+            return identifier not in current_controllers
     return False
 
 

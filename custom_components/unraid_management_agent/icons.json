@@ -368,6 +368,9 @@
       },
       "alerts_firing": {
         "default": "mdi:bell-alert-outline"
+      },
+      "hwmon_device_fan": {
+        "default": "mdi:fan"
       }
     },
     "binary_sensor": {

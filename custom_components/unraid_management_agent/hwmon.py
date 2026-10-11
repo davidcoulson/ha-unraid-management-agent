@@ -153,3 +153,60 @@ def fan_legacy_unique_ids(
         return []
     channel = (fan.name or "").rsplit("_", 1)[-1]
     return [f"{entry_id}_fan_{f'{chip}_{channel}'.lower()}"]
+
+
+# Known USB HID sensor chips (lm-sensors driver name) -> (model, kind) for the
+# device name of a controller ("Octo (fan controller)").
+_CONTROLLER_MODELS: dict[str, tuple[str, str]] = {
+    "octo": ("Octo", "fan controller"),
+    "quadro": ("Quadro", "fan controller"),
+    "aquaero": ("Aquaero", "fan controller"),
+    "d5next": ("D5 Next", "pump"),
+    "highflownext": ("High Flow Next", "flow sensor"),
+    "highflow": ("High Flow", "flow sensor"),
+    "leakshield": ("Leakshield", "leak monitor"),
+    "farbwerk": ("Farbwerk", "RGB controller"),
+    "farbwerk360": ("Farbwerk 360", "RGB controller"),
+    "corsaircpro": ("Commander Pro", "fan controller"),
+    "corsairpsu": ("Corsair PSU", "power supply"),
+}
+
+
+def hwmon_controller_of(item: Any) -> tuple[str, str] | None:
+    """
+    Return the (driver, device_id) of the USB HID controller a reading is on.
+
+    Only fans and temperatures the agent reports with a device_id (a USB
+    serial or port, which does not change on reconnect) belong to one;
+    others, and every reading from an older agent, return None.
+    """
+    if isinstance(item, FanInfo) and item.device_id and item.chip_short:
+        return item.chip_short, item.device_id
+    if isinstance(item, TemperatureInfo) and item.device_id and item.hwmon_hid_chip:
+        return item.hwmon_hid_chip.removesuffix("-hid"), item.device_id
+    return None
+
+
+def hwmon_controller_names(
+    fans: list[Any], readings: list[Any]
+) -> dict[tuple[str, str], str]:
+    """
+    Name each USB HID controller in the current data.
+
+    "Octo (fan controller)", or "Octo 1 (fan controller)", "Octo 2 (fan
+    controller)" when several share a model (numbered in device_id order, so
+    the serial number never shows in the name).
+    """
+    controllers = {
+        controller
+        for item in [*fans, *readings]
+        if (controller := hwmon_controller_of(item)) is not None
+    }
+    names: dict[tuple[str, str], str] = {}
+    for driver in {driver for driver, _ in controllers}:
+        model, kind = _CONTROLLER_MODELS.get(driver, (driver, "sensors"))
+        devices = sorted(dev for drv, dev in controllers if drv == driver)
+        for index, device_id in enumerate(devices, start=1):
+            number = f" {index}" if len(devices) > 1 else ""
+            names[(driver, device_id)] = f"{model}{number} ({kind})"
+    return names
