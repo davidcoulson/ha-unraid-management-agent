@@ -13,7 +13,8 @@ from homeassistant.helpers import issue_registry as ir
 from .const import DOMAIN
 
 if TYPE_CHECKING:
-    from .coordinator import UnraidDataUpdateCoordinator
+    from .api.models import ShareInfo
+    from .coordinator import UnraidData, UnraidDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -178,9 +179,16 @@ class ParityCheckRepairFlow(RepairsFlow):
 
 
 async def async_check_and_create_issues(
-    hass: HomeAssistant, coordinator: UnraidDataUpdateCoordinator
+    hass: HomeAssistant,
+    coordinator: UnraidDataUpdateCoordinator,
+    data: UnraidData | None = None,
 ) -> None:
-    """Check for issues and create repair flows if needed."""
+    """
+    Check for issues and create repair flows if needed.
+
+    The coordinator passes the data it is about to return, since
+    ``coordinator.data`` still holds the previous update at that point.
+    """
     entry_id = coordinator.config_entry.entry_id
 
     # Check for connection issues
@@ -206,15 +214,17 @@ async def async_check_and_create_issues(
         # Connection is successful, remove any existing connection issue
         ir.async_delete_issue(hass, DOMAIN, f"connection_{entry_id}")
 
+    if data is None:
+        data = coordinator.data
     # Skip further checks if coordinator data is not available
-    if not coordinator.data:
+    if not data:
         return
 
     # Get disk settings for temperature thresholds
-    disk_settings = coordinator.data.disk_settings
+    disk_settings = data.disk_settings
 
     # Check for disk health issues
-    disks = coordinator.data.disks or []
+    disks = data.disks or []
     for disk in disks:
         disk_id = getattr(disk, "id", None) or getattr(disk, "name", None) or "unknown"
 
@@ -291,7 +301,7 @@ async def async_check_and_create_issues(
             ir.async_delete_issue(hass, DOMAIN, temp_critical_issue_id)
 
     # Check for array issues (only if parity disks are configured)
-    array_data = coordinator.data.array
+    array_data = data.array
     num_parity_disks = (
         getattr(array_data, "num_parity_disks", None) if array_data else None
     )
@@ -340,3 +350,58 @@ async def async_check_and_create_issues(
     else:
         # Parity check is not stuck, remove any existing issue
         ir.async_delete_issue(hass, DOMAIN, stuck_issue_id)
+
+    _check_share_fuse_fallback(hass, coordinator.config_entry.entry_id, data.shares)
+
+
+def _check_share_fuse_fallback(
+    hass: HomeAssistant, entry_id: str, shares: list[ShareInfo] | None
+) -> None:
+    """Raise an issue per exclusive-eligible share that fell back to FUSE."""
+    if shares is None:
+        # Share fetch failed this cycle; keep the current issues
+        return
+
+    prefix = f"share_fuse_fallback_{entry_id}_"
+    keep: set[str] = set()
+    for share in shares:
+        if not share.name:
+            continue
+        issue_id = f"{prefix}{share.name}"
+        if share.exclusive is None:
+            # State unknown (array stopped or older agent): leave as is
+            keep.add(issue_id)
+            continue
+        if not share.fuse_fallback:
+            continue
+        keep.add(issue_id)
+        placeholders = {
+            "share_name": share.name,
+            "pool": share.exclusive_pool or share.cache_pool or "?",
+        }
+        if share.locations is None:
+            # The agent could not scan the disks (disk list unavailable)
+            translation_key = "share_fuse_fallback_unknown"
+        elif stray := share.stray_locations:
+            translation_key = "share_fuse_fallback"
+            placeholders["locations"] = ", ".join(stray)
+        elif share.locations_unchecked:
+            # The agent leaves spun-down disks unchecked rather than wake them
+            translation_key = "share_fuse_fallback_unchecked"
+            placeholders["unchecked"] = ", ".join(share.locations_unchecked)
+        else:
+            translation_key = "share_fuse_fallback_restart"
+        ir.async_create_issue(
+            hass,
+            DOMAIN,
+            issue_id,
+            is_fixable=False,
+            severity=ir.IssueSeverity.WARNING,
+            translation_key=translation_key,
+            translation_placeholders=placeholders,
+        )
+
+    # Clear issues for shares that are exclusive again or no longer exist
+    for domain, issue_id in list(ir.async_get(hass).issues):
+        if domain == DOMAIN and issue_id.startswith(prefix) and issue_id not in keep:
+            ir.async_delete_issue(hass, DOMAIN, issue_id)
