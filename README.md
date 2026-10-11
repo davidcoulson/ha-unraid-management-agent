@@ -119,6 +119,7 @@ The exact entities exposed depend on the hardware, plugins, and collectors activ
 - **Array State**: Array status (Started, Stopped), total capacity, used space, free space, and usage percentage.
 - **Parity Operations**: Parity check progress percentage, parity check state (Running, Paused, Idle), schedule, history timestamp, duration, and parity sync error count.
 - **Flash Boot Drive**: Flash drive utilization, free space, and device status.
+- **User Shares**: Usage per share, and a **FUSE Fallback** problem binary sensor for each share that is, or can be, an Unraid 6.12+ exclusive share (on when the share has silently fallen back to the slower FUSE layer). A repair issue names the disks or pools holding the stray folder and clears itself once the share is exclusive again. Needs an agent that reports exclusive share state.
 
 ### SAS Storage Topology
 

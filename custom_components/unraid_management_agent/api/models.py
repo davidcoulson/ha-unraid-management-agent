@@ -1140,6 +1140,31 @@ class ShareInfo(BaseModel):
         "array_to_cache, cache_prefer",
     )
 
+    # Exclusive share state (Unraid 6.12+); absent on older agents and while
+    # the array is stopped
+    exclusive: bool | None = Field(
+        None,
+        description="/mnt/user/<share> is a symlink to its pool (bypasses FUSE)",
+    )
+    exclusive_eligible: bool | None = Field(
+        None,
+        description="Exclusive shares are enabled and the share is pool-only",
+    )
+    exclusive_pool: str | None = Field(
+        None,
+        description="The share's pool: symlink target when exclusive, otherwise "
+        "the pool a pool-only share would be exclusive on",
+    )
+    locations: list[str] | None = Field(
+        None,
+        description="Pools/disks holding a top-level folder for an eligible share "
+        "that is not exclusive",
+    )
+    locations_unchecked: list[str] | None = Field(
+        None,
+        description="Spun-down pools/disks the agent did not check for a folder",
+    )
+
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
     model_config = ConfigDict(frozen=True, extra="allow")
@@ -1166,6 +1191,37 @@ class ShareInfo(BaseModel):
         if self.total_bytes and self.used_bytes is not None and self.total_bytes > 0:
             return round((self.used_bytes / self.total_bytes) * 100, 1)
         return None
+
+    @property
+    def fuse_fallback(self) -> bool:
+        """
+        Return True when an exclusive-eligible share is served through FUSE.
+
+        Unraid gives a pool-only share exclusive access (a /mnt/user symlink
+        that bypasses FUSE) unless a folder for it exists on another disk or
+        pool; then it silently keeps the share on FUSE.
+
+        Example:
+            >>> ShareInfo(exclusive_eligible=True, exclusive=False).fuse_fallback
+            True
+
+        """
+        return self.exclusive_eligible is True and self.exclusive is False
+
+    @property
+    def stray_locations(self) -> list[str]:
+        """
+        Return the disks/pools other than the share's pool holding its folder.
+
+        These are what keep an eligible share off exclusive access.
+
+        Example:
+            >>> ShareInfo(exclusive_pool="cache", locations=["cache", "disk1"]).stray_locations
+            ['disk1']
+
+        """
+        pool = self.exclusive_pool or self.cache_pool
+        return [loc for loc in self.locations or [] if loc != pool]
 
 
 class NetworkInterface(BaseModel):

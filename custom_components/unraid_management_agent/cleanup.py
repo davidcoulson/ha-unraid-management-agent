@@ -281,6 +281,7 @@ def _build_valid_dynamic_entity_keys(
         name = getattr(share, "name", None)
         if name:
             keys.add(f"share_{name}_usage")  # sensor
+            keys.add(f"share_{name}_fuse_fallback")  # binary sensor
 
     # ── ZFS pools ─────────────────────────────────────────────────────────────
     for pool in data.zfs_pools or []:
