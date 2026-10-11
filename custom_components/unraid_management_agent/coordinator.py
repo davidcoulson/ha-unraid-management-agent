@@ -753,7 +753,7 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
             # Check for issues and create repair flows
             from . import repairs
 
-            await repairs.async_check_and_create_issues(self.hass, self)
+            await repairs.async_check_and_create_issues(self.hass, self, data)
 
             return data
 
