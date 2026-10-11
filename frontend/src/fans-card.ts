@@ -39,7 +39,10 @@ export class UnraidFansCard extends BaseUnraidCard {
       if (entityId.startsWith("number.") && (entityId.includes("_fan_") || entityId.includes("fan_control"))) {
         if (deviceId && this.hass.entities) {
           const ent = this.hass.entities[entityId];
-          if (ent && ent.device_id && ent.device_id !== deviceId) continue;
+          // Fans of a USB controller sit on a child device of the server
+          if (ent && ent.device_id && !this.isServerOrChildDevice(ent.device_id, deviceId)) {
+            continue;
+          }
         }
         const reg = this.hass.entities?.[entityId];
         if (reg && reg.platform !== "unraid_management_agent" && reg.platform !== "unraid") continue;
@@ -56,7 +59,10 @@ export class UnraidFansCard extends BaseUnraidCard {
       // Check device ID or naming
       if (deviceId && this.hass.entities) {
         const ent = this.hass.entities[entityId];
-        if (ent && ent.device_id && ent.device_id !== deviceId) continue;
+        // Fans of a USB controller sit on a child device of the server
+        if (ent && ent.device_id && !this.isServerOrChildDevice(ent.device_id, deviceId)) {
+          continue;
+        }
       }
       const reg = this.hass.entities?.[entityId];
       if (reg && reg.platform !== "unraid_management_agent" && reg.platform !== "unraid") continue;
@@ -105,7 +111,10 @@ export class UnraidFansCard extends BaseUnraidCard {
         if (!entityId.startsWith("number.")) continue;
         if (deviceId && this.hass.entities) {
           const ent = this.hass.entities[entityId];
-          if (ent && ent.device_id && ent.device_id !== deviceId) continue;
+          // Fans of a USB controller sit on a child device of the server
+          if (ent && ent.device_id && !this.isServerOrChildDevice(ent.device_id, deviceId)) {
+            continue;
+          }
         }
         const reg = this.hass.entities?.[entityId];
         if (reg && reg.platform !== "unraid_management_agent" && reg.platform !== "unraid") continue;

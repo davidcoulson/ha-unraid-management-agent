@@ -164,6 +164,11 @@ export abstract class BaseUnraidCard extends LitElement {
     return ids;
   }
 
+  /** True when a device is the given server device or one of its child devices */
+  protected isServerOrChildDevice(deviceId: string, serverId: string): boolean {
+    return this.getServerDeviceIds(serverId).has(deviceId);
+  }
+
   /**
    * Find an entity by translation key or entity_id suffix.
    */
