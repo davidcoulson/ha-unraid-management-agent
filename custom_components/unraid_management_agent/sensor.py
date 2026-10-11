@@ -82,6 +82,7 @@ from .entity import (
     find_vm,
     gpu_device_key,
     gpu_device_keys,
+    gpu_devices_enabled,
     vm_devices_enabled,
 )
 from .hwmon import (
@@ -3075,7 +3076,30 @@ class UnraidZFSArcConfiguredMaxSensor(UnraidBaseEntity, SensorEntity):
 # =============================================================================
 
 
-class UnraidGPUSensorBase(UnraidBaseEntity, SensorEntity):
+class UnraidGPUEntity(UnraidBaseEntity):
+    """Base for per-GPU entities: on the GPU's device or the server device."""
+
+    def _use_gpu_device_or_name(
+        self, gpu_index: int, gpu_name: str, sensor_type: str
+    ) -> None:
+        """
+        Put the entity on the GPU's device, or name it after the GPU.
+
+        With the "GPUs as separate devices" option on, the entity sits on the
+        GPU's device and its name is short (the device name holds the GPU
+        name). Otherwise it stays on the server device, named after the GPU.
+        """
+        if gpu_devices_enabled(self.coordinator):
+            self._attr_device_info = build_gpu_device_info(
+                self.coordinator, gpu_index, gpu_name
+            )
+            self._attr_translation_key = f"gpu_device_{sensor_type}"
+        else:
+            self._attr_translation_key = f"gpu_{sensor_type}"
+            self._attr_translation_placeholders = {"gpu_name": gpu_name}
+
+
+class UnraidGPUSensorBase(UnraidGPUEntity, SensorEntity):
     """Base class for per-GPU sensors."""
 
     def __init__(
@@ -3090,7 +3114,7 @@ class UnraidGPUSensorBase(UnraidBaseEntity, SensorEntity):
         super().__init__(coordinator, f"gpu_{gpu_index}_{sensor_type}")
         self._gpu_index = gpu_index
         self._gpu_name = gpu_name
-        self._attr_device_info = build_gpu_device_info(coordinator, gpu_index, gpu_name)
+        self._use_gpu_device_or_name(gpu_index, gpu_name, sensor_type)
 
     def _find_gpu(self) -> Any | None:
         """Find a GPU by its stable index."""
@@ -3117,7 +3141,6 @@ class UnraidGPUUtilizationSensor(UnraidGPUSensorBase):
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, entry, gpu_index, gpu_name, "utilization")
-        self._attr_translation_key = "gpu_utilization"
 
     @property
     def native_value(self) -> float | None:
@@ -3158,7 +3181,6 @@ class UnraidGPUTemperatureSensor(UnraidGPUSensorBase):
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, entry, gpu_index, gpu_name, "temperature")
-        self._attr_translation_key = "gpu_temperature"
 
     @property
     def native_value(self) -> float | None:
@@ -3187,7 +3209,6 @@ class UnraidGPUPowerSensor(UnraidGPUSensorBase):
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, entry, gpu_index, gpu_name, "power")
-        self._attr_translation_key = "gpu_power"
 
     @property
     def native_value(self) -> float | None:
@@ -3231,7 +3252,6 @@ class UnraidGPUVramUsedSensor(UnraidGPUSensorBase):
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, entry, gpu_index, gpu_name, "vram_used")
-        self._attr_translation_key = "gpu_vram_used"
 
     @property
     def native_value(self) -> int | None:
@@ -3261,7 +3281,6 @@ class UnraidGPUVramTotalSensor(UnraidGPUSensorBase):
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, entry, gpu_index, gpu_name, "vram_total")
-        self._attr_translation_key = "gpu_vram_total"
 
     @property
     def native_value(self) -> int | None:
@@ -3288,7 +3307,6 @@ class UnraidGPUVramUsageSensor(UnraidGPUSensorBase):
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, entry, gpu_index, gpu_name, "vram_usage")
-        self._attr_translation_key = "gpu_vram_usage"
 
     @property
     def native_value(self) -> float | None:
@@ -3458,7 +3476,7 @@ class UnraidUPSEnergySensor(UnraidBaseEntity, RestoreEntity, SensorEntity):
 # =============================================================================
 
 
-class UnraidGPUEnergySensor(UnraidBaseEntity, RestoreEntity, SensorEntity):
+class UnraidGPUEnergySensor(UnraidGPUEntity, RestoreEntity, SensorEntity):
     """
     GPU Energy sensor that calculates cumulative energy from power readings.
 
@@ -3483,10 +3501,10 @@ class UnraidGPUEnergySensor(UnraidBaseEntity, RestoreEntity, SensorEntity):
         super().__init__(coordinator, f"gpu_{gpu_index}_energy")
         self._gpu_index = gpu_index
         self._gpu_name = gpu_name
-        self._attr_device_info = build_gpu_device_info(coordinator, gpu_index, gpu_name)
+        self._use_gpu_device_or_name(gpu_index, gpu_name, "energy")
         # The GPU this sensor measures: another GPU can take its index later
         self._gpu_key = gpu_device_key(coordinator, gpu_index)
-        self._attr_translation_key = "gpu_energy"
+        self._gpu_devices = gpu_devices_enabled(coordinator)
         self._energy_integrator = EnergyIntegrator()
         self._total_energy: float = 0.0
         self._last_power: float | None = None
@@ -3508,8 +3526,10 @@ class UnraidGPUEnergySensor(UnraidBaseEntity, RestoreEntity, SensorEntity):
         """
         Restore the accumulated energy total and integration baseline.
 
-        Nothing is restored when the energy was measured on another GPU, which
-        had this index before (GPU indexes shift when a GPU appears in front).
+        With GPUs as separate devices, nothing is restored when the energy
+        was measured on another GPU, which had this index before (GPU indexes
+        shift when a GPU appears in front), so it doesn't show on this GPU's
+        device. Otherwise the total follows the index, as it always has.
         """
         extra_data = await self.async_get_last_extra_data()
         restored = (
@@ -3517,7 +3537,11 @@ class UnraidGPUEnergySensor(UnraidBaseEntity, RestoreEntity, SensorEntity):
             if extra_data is not None
             else None
         )
-        if restored is not None and restored.gpu_key not in (None, self._gpu_key):
+        if (
+            self._gpu_devices
+            and restored is not None
+            and restored.gpu_key not in (None, self._gpu_key)
+        ):
             return
 
         if (
@@ -3571,7 +3595,10 @@ class UnraidGPUEnergySensor(UnraidBaseEntity, RestoreEntity, SensorEntity):
         if gpu is None:
             return
         # Until the entry reloads, ignore another GPU that took this index
-        if gpu_device_key(self.coordinator, self._gpu_index) != self._gpu_key:
+        if (
+            self._gpu_devices
+            and gpu_device_key(self.coordinator, self._gpu_index) != self._gpu_key
+        ):
             return
 
         current_power = gpu.power_draw_watts
@@ -4358,8 +4385,8 @@ def _async_watch_gpus(
     """
     Reload the entry when the GPU sensors set up no longer match the GPUs.
 
-    GPU sensors are created at setup, one set per GPU index, on the device of
-    the GPU at that index. Reload when a GPU appears at an index without
+    Only used with GPUs as separate devices. GPU sensors are created at
+    setup, one set per GPU index, on the device of the GPU at that index. Reload when a GPU appears at an index without
     sensors (a GPU added, or GPUs that were unavailable at setup), when
     another GPU takes an index (e.g. one given back to the host by a VM shifts
     the others), or when a GPU comes back after stale cleanup removed its
@@ -4464,7 +4491,7 @@ async def async_setup_entry(
                     ]
                 )
 
-    if coordinator.is_collector_enabled("gpu"):
+    if coordinator.is_collector_enabled("gpu") and gpu_devices_enabled(coordinator):
         _async_watch_gpus(hass, entry, data.gpu if data else None)
 
     # UPS sensors - only if ups collector is enabled

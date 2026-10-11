@@ -1,4 +1,4 @@
-"""Test per-GPU child devices."""
+"""Test per-GPU child devices (the "GPUs as separate devices" option)."""
 
 from __future__ import annotations
 
@@ -24,7 +24,10 @@ from custom_components.unraid_management_agent.api.models import (
 from custom_components.unraid_management_agent.cleanup import (
     _async_remove_empty_devices,
 )
-from custom_components.unraid_management_agent.const import DOMAIN
+from custom_components.unraid_management_agent.const import (
+    CONF_ENABLE_GPU_DEVICES,
+    DOMAIN,
+)
 from custom_components.unraid_management_agent.coordinator import UnraidData
 from custom_components.unraid_management_agent.entity import (
     build_gpu_device_info,
@@ -93,12 +96,12 @@ INTEL_IGPU = _gpu(1, "Intel UHD Graphics 770", vendor="intel", pci_id="0000:00:0
 LEGACY_GPU = _gpu(2, "Legacy GPU", vendor="nvidia")
 
 
-def _entry(hass: HomeAssistant) -> MockConfigEntry:
+def _entry(hass: HomeAssistant, *, gpu_devices: bool = True) -> MockConfigEntry:
     entry = MockConfigEntry(
         domain=DOMAIN,
         title="Unraid (unraid-test)",
         data=MOCK_CONFIG,
-        options=MOCK_OPTIONS,
+        options={**MOCK_OPTIONS, CONF_ENABLE_GPU_DEVICES: gpu_devices},
         entry_id=ENTRY_ID,
     )
     entry.add_to_hass(hass)
@@ -106,10 +109,14 @@ def _entry(hass: HomeAssistant) -> MockConfigEntry:
 
 
 async def _setup(
-    hass: HomeAssistant, client: MagicMock, gpus: list[GPUInfo] | None
+    hass: HomeAssistant,
+    client: MagicMock,
+    gpus: list[GPUInfo] | None,
+    *,
+    gpu_devices: bool = True,
 ) -> MockConfigEntry:
     client.list_gpus.return_value = gpus
-    entry = _entry(hass)
+    entry = _entry(hass, gpu_devices=gpu_devices)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
     return entry
@@ -526,6 +533,7 @@ async def test_gpu_energy_stays_with_its_gpu_when_indexes_shift(
 def test_gpu_energy_ignores_another_gpu_until_the_reload() -> None:
     """Power of a GPU that took the sensor's index is not added to its total."""
     coordinator = MagicMock()
+    coordinator.config_entry.options = {CONF_ENABLE_GPU_DEVICES: True}
     coordinator.data = UnraidData(gpu=[_rtx_3070()])
     energy = UnraidGPUEnergySensor(coordinator, MagicMock(), 0, "RTX 3070")
     energy._update_energy()
@@ -550,3 +558,108 @@ def test_gpu_energy_restore_data_parsing() -> None:
     assert restored is not None
     assert restored.gpu_key is None
     assert restored.native_value == 5.0
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_option_off_keeps_gpu_sensors_on_the_server_device(
+    hass: HomeAssistant, mock_async_unraid_client: MagicMock
+) -> None:
+    """With the option off (default) GPU sensors stay on the server, named after the GPU."""
+    await _setup(
+        hass, mock_async_unraid_client, [_rtx_3070(), INTEL_IGPU], gpu_devices=False
+    )
+
+    devices = dr.async_get(hass)
+    server = devices.async_get_device_by_identifier((DOMAIN, ENTRY_ID), ENTRY_ID)
+    assert server is not None
+    assert not dr.async_child_entries_for_config_entry(devices, ENTRY_ID)
+    gpu_entities = _gpu_entities(hass)
+    assert gpu_entities
+    assert all(e.device_id == server.id for e in gpu_entities.values())
+    state = hass.states.get(gpu_entities["gpu_0_temperature"].entity_id)
+    assert state is not None
+    assert (
+        state.entity_id == "sensor.unraid_test_gpu_nvidia_geforce_rtx_3070_temperature"
+    )
+    assert state.attributes["friendly_name"] == (
+        "unraid-test GPU NVIDIA GeForce RTX 3070 Temperature"
+    )
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_option_off_behaves_as_before(
+    hass: HomeAssistant, mock_async_unraid_client: MagicMock
+) -> None:
+    """With the option off GPU indexes don't reload the entry, and energy follows the index."""
+    mock_restore_cache_with_extra_data(
+        hass, [_stored_energy("5.0", f"uuid_{RTX_4090_UUID.lower()}")]
+    )
+    entry = await _setup(
+        hass, mock_async_unraid_client, [_rtx_3070()], gpu_devices=False
+    )
+    assert float(hass.states.get(ENERGY_ENTITY).state) == 5.0
+
+    rtx_4090 = _rtx_4090(0).model_copy(update={"power_draw_watts": 350.0})
+    with patch.object(hass.config_entries, "async_schedule_reload") as reload:
+        await _push_gpus(
+            hass, entry, mock_async_unraid_client, [rtx_4090, _rtx_3070(1)]
+        )
+    reload.assert_not_called()
+    # The index-0 sensor now measures the 4090, as before this option existed
+    state = hass.states.get(ENERGY_ENTITY)
+    assert state.attributes["current_power_watts"] == 350.0
+    assert float(state.state) >= 5.0
+
+
+async def _set_gpu_devices(
+    hass: HomeAssistant, entry: MockConfigEntry, *, enabled: bool
+) -> None:
+    """Change the option through the options flow, which reloads the entry."""
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    schema = result["data_schema"].schema
+    assert CONF_ENABLE_GPU_DEVICES in {str(key) for key in schema}
+    await hass.config_entries.options.async_configure(
+        result["flow_id"], user_input={CONF_ENABLE_GPU_DEVICES: enabled}
+    )
+    await hass.async_block_till_done()
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_turning_the_option_on_and_off(
+    hass: HomeAssistant, mock_async_unraid_client: MagicMock
+) -> None:
+    """
+    Turning the option on moves GPU sensors to GPU devices; off moves them back.
+
+    Entity IDs never change. Once the sensors are back on the server, the
+    empty GPU devices are removed by the next cleanup.
+    """
+    entry = await _setup(
+        hass, mock_async_unraid_client, [_rtx_3070()], gpu_devices=False
+    )
+    devices = dr.async_get(hass)
+    server = devices.async_get_device_by_identifier((DOMAIN, ENTRY_ID), ENTRY_ID)
+    entity_ids = {k: e.entity_id for k, e in _gpu_entities(hass).items()}
+
+    await _set_gpu_devices(hass, entry, enabled=True)
+    gpu = devices.async_get_child_device_by_identifier(RTX_3070_DEVICE, ENTRY_ID)
+    assert gpu is not None
+    gpu_entities = _gpu_entities(hass)
+    assert {k: e.entity_id for k, e in gpu_entities.items()} == entity_ids
+    assert all(e.device_id == gpu.id for e in gpu_entities.values())
+    state = hass.states.get(entity_ids["gpu_0_temperature"])
+    assert state.attributes["friendly_name"] == (
+        "GPU \u00b7 NVIDIA GeForce RTX 3070 Temperature"
+    )
+
+    await _set_gpu_devices(hass, entry, enabled=False)
+    gpu_entities = _gpu_entities(hass)
+    assert {k: e.entity_id for k, e in gpu_entities.items()} == entity_ids
+    assert all(e.device_id == server.id for e in gpu_entities.values())
+    state = hass.states.get(entity_ids["gpu_0_temperature"])
+    assert state.attributes["friendly_name"] == (
+        "unraid-test GPU NVIDIA GeForce RTX 3070 Temperature"
+    )
+    await entry.runtime_data.coordinator.async_refresh()
+    await hass.async_block_till_done()
+    assert not dr.async_child_entries_for_config_entry(devices, ENTRY_ID)

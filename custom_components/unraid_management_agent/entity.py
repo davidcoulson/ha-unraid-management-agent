@@ -15,9 +15,11 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
     CONF_ENABLE_CONTAINER_DEVICES,
+    CONF_ENABLE_GPU_DEVICES,
     CONF_ENABLE_VM_DEVICES,
     CONF_READ_ONLY,
     DEFAULT_ENABLE_CONTAINER_DEVICES,
+    DEFAULT_ENABLE_GPU_DEVICES,
     DEFAULT_ENABLE_VM_DEVICES,
     DEFAULT_READ_ONLY,
     DOMAIN,
@@ -190,6 +192,15 @@ def build_container_device_info(
     )
 
 
+def gpu_devices_enabled(coordinator: UnraidDataUpdateCoordinator) -> bool:
+    """Return True when GPUs are shown as separate devices (an option, off by default)."""
+    return bool(
+        coordinator.config_entry.options.get(
+            CONF_ENABLE_GPU_DEVICES, DEFAULT_ENABLE_GPU_DEVICES
+        )
+    )
+
+
 def _gpu_hardware_key(gpu: Any) -> str | None:
     """
     Return the key of a GPU's own hardware ID, or None when it reports none.
@@ -251,10 +262,11 @@ def build_gpu_device_info(
     """
     Build device info for a GPU.
 
-    GPUs are child devices of the Unraid server, like storage controllers.
-    Child devices can't carry a manufacturer, model or firmware version, so
-    the device name is translated ("GPU · <name>") to tell GPUs apart from
-    other child devices; the driver version stays a sensor attribute.
+    With the "GPUs as separate devices" option on, GPUs are child devices of
+    the Unraid server, like storage controllers. Child devices can't carry a
+    manufacturer, model or firmware version, so the device name is translated
+    ("GPU · <name>") to tell GPUs apart from other child devices; the driver
+    version stays a sensor attribute.
     """
     entry_id = coordinator.config_entry.entry_id
     # The server device is registered during setup, before the platforms load.
@@ -313,6 +325,7 @@ __all__ = [
     "gpu_device_identifier",
     "gpu_device_key",
     "gpu_device_keys",
+    "gpu_devices_enabled",
     "read_only_enabled",
     "vm_devices_enabled",
 ]

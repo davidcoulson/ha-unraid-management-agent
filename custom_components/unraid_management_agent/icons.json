@@ -100,6 +100,27 @@
       "gpu_vram_usage": {
         "default": "mdi:memory"
       },
+      "gpu_device_utilization": {
+        "default": "mdi:expansion-card"
+      },
+      "gpu_device_temperature": {
+        "default": "mdi:thermometer"
+      },
+      "gpu_device_power": {
+        "default": "mdi:power"
+      },
+      "gpu_device_energy": {
+        "default": "mdi:expansion-card"
+      },
+      "gpu_device_vram_used": {
+        "default": "mdi:memory"
+      },
+      "gpu_device_vram_total": {
+        "default": "mdi:memory"
+      },
+      "gpu_device_vram_usage": {
+        "default": "mdi:memory"
+      },
       "ups_battery": {
         "default": "mdi:battery",
         "state": {

@@ -164,7 +164,7 @@ When the agent's `storage_topology` collector is active (`storcli` or `sg3_utils
 
 ### GPUs, UPS, Fans, & Services
 
-- **GPUs**: Utilization percentage, VRAM Used (MiB), VRAM Total (GiB), VRAM Usage (%), temperatures, and clock frequencies.
+- **GPUs**: Utilization percentage, VRAM Used (MiB), VRAM Total (GiB), VRAM Usage (%), temperatures, and clock frequencies. Optionally each GPU gets its own `GPU · <name>` child device.
 - **UPS**: Battery percentage, load percentage, estimated runtime duration, and power draw.
 - **Fans**: Fan RPM sensors and PWM speed number entities (`number`) when fan control is enabled.
 - **Network Interfaces**: Status, IPv4/IPv6 addresses, link speeds, MTU, and real-time throughput.
@@ -239,6 +239,7 @@ Click **Configure** on an active integration entry to adjust operational options
 | **Enable fan control entities**                | `false` | Exposes PWM number control entities (`number`) for configurable fan controllers.                    |
 | **Show Docker containers as separate devices** | `false` | Creates a child device for each container in Home Assistant with short entity names.                |
 | **Show virtual machines as separate devices**  | `false` | Creates a child device for each VM in Home Assistant keyed by libvirt UUID.                         |
+| **Show GPUs as separate devices**              | `false` | Creates a `GPU · <name>` child device for each GPU, keyed by its UUID or PCI address.               |
 | **Enable container update checks**             | `false` | Tracks container image digest updates and adds an `update` entity per container.                    |
 | **Read-only (sensors only)**                   | `false` | Restricts the integration to monitoring only, disabling all switches, buttons, and control actions. |
 

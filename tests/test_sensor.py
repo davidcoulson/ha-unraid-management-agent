@@ -5004,6 +5004,7 @@ def test_gpu_energy_sensor_initialization() -> None:
     mock_coordinator.data = MagicMock()
     mock_coordinator.config_entry = MagicMock()
     mock_coordinator.config_entry.entry_id = "test_entry"
+    mock_coordinator.config_entry.options = {}
     mock_entry = MagicMock()
     mock_entry.entry_id = "test_entry"
 
@@ -5011,8 +5012,7 @@ def test_gpu_energy_sensor_initialization() -> None:
 
     assert sensor._total_energy == 0.0
     assert sensor._last_power is None
-    # The GPU name is in the name of the GPU's device, not the sensor's
-    assert not hasattr(sensor, "_attr_translation_placeholders")
+    assert sensor._attr_translation_placeholders == {"gpu_name": "GPU 0"}
     assert sensor._attr_translation_key == "gpu_energy"
 
 

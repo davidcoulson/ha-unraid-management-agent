@@ -29,13 +29,14 @@ interface GPUItem {
   memUtilEntityId?: string;
 }
 
-// Translation keys of the GPU device sensors the card shows, by metric
+// Metrics the card shows, by translation key of the sensors on a GPU device
+// (the "Show GPUs as separate devices" option)
 const GPU_DEVICE_METRICS: Record<string, string> = {
-  gpu_utilization: "utilization",
-  gpu_temperature: "temperature",
-  gpu_power: "power",
-  gpu_energy: "energy",
-  gpu_vram_usage: "vram_usage",
+  gpu_device_utilization: "utilization",
+  gpu_device_temperature: "temperature",
+  gpu_device_power: "power",
+  gpu_device_energy: "energy",
+  gpu_device_vram_usage: "vram_usage",
 };
 
 export class UnraidGpuCard extends BaseUnraidCard {
