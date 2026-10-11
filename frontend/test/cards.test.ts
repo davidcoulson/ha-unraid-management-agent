@@ -1266,6 +1266,36 @@ describe("Unraid Custom Cards", () => {
     expect(pools.find((p) => p.name === "flash")?.corruptedFiles).toBe(0);
   });
 
+  it("matches pools by pool_name after pool devices are turned off", async () => {
+    const card = new UnraidZfsCard();
+    card.setConfig({ type: "custom:unraid-zfs-card" });
+    const hass = createMockHass();
+    const add = (entityId: string, translationKey: string | undefined, state: string, attributes: Record<string, unknown>) => {
+      hass.states[entityId] = { entity_id: entityId, state, attributes, last_changed: "", last_updated: "" };
+      hass.entities![entityId] = {
+        entity_id: entityId,
+        device_id: "dev_1",
+        platform: "unraid_management_agent",
+        translation_key: translationKey,
+      };
+    };
+    // Created on a pool device, now back on the server: IDs say "pool_flash".
+    add("sensor.cube_zfs_pool_flash_usage", "zfs_pool_usage", "35", { pool_name: "flash" });
+    add("sensor.cube_zfs_pool_flash_health", "zfs_pool_health", "DEGRADED", { pool_name: "flash" });
+    add("sensor.cube_zfs_pool_flash_corrupted_files", undefined, "4", { pool_name: "flash" });
+    card.hass = hass;
+    const pools = (
+      card as unknown as {
+        getPools(): { name: string; health: string; corruptedFiles?: number }[];
+      }
+    ).getPools();
+    const flash = pools.filter((p) => p.name === "flash");
+    expect(flash).toHaveLength(1);
+    expect(flash[0]?.health).toBe("DEGRADED");
+    expect(flash[0]?.corruptedFiles).toBe(4);
+    expect(pools.map((p) => p.name)).not.toContain("pool_flash");
+  });
+
   it("does not pick a child device as the server", async () => {
     const card = new UnraidZfsCard();
     card.setConfig({ type: "custom:unraid-zfs-card" });

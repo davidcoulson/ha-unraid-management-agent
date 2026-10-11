@@ -2892,11 +2892,12 @@ class UnraidZFSPoolCorruptedFilesSensor(UnraidZFSPoolSensorBase):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Return the first reported corrupted file paths."""
+        """Return the pool name and the first reported corrupted file paths."""
+        attrs: dict[str, Any] = {"pool_name": self._pool_name}
         pool = self._get_pool()
-        if not pool or not pool.corrupted_file_paths:
-            return {}
-        return {"files": pool.corrupted_file_paths[:ZFS_CORRUPTED_FILES_ATTR_LIMIT]}
+        if pool and pool.corrupted_file_paths:
+            attrs["files"] = pool.corrupted_file_paths[:ZFS_CORRUPTED_FILES_ATTR_LIMIT]
+        return attrs
 
 
 # ZFS scan state reported by the agent -> enum state. ZFS keeps only the last

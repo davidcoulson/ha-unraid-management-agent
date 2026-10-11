@@ -105,7 +105,10 @@ def test_zfs_corrupted_files_sensor_counts_paths() -> None:
         [ZFSPool.model_validate(_agent_pool(corrupted_files=CORRUPTED_PATHS))]
     )
     assert sensor.native_value == 5
-    assert sensor.extra_state_attributes == {"files": CORRUPTED_PATHS}
+    assert sensor.extra_state_attributes == {
+        "pool_name": "tank",
+        "files": CORRUPTED_PATHS,
+    }
 
 
 def test_zfs_corrupted_files_sensor_truncates_paths() -> None:
@@ -114,7 +117,8 @@ def test_zfs_corrupted_files_sensor_truncates_paths() -> None:
     sensor = _sensor([ZFSPool.model_validate(_agent_pool(corrupted_files=paths))])
     assert sensor.native_value == 250
     assert sensor.extra_state_attributes == {
-        "files": paths[:ZFS_CORRUPTED_FILES_ATTR_LIMIT]
+        "pool_name": "tank",
+        "files": paths[:ZFS_CORRUPTED_FILES_ATTR_LIMIT],
     }
     assert "files" in sensor._unrecorded_attributes
 
@@ -133,7 +137,7 @@ def test_zfs_corrupted_files_sensor_without_paths(
     """A count, an empty list or a missing field exposes no paths."""
     sensor = _sensor([ZFSPool.model_validate(pool)])
     assert sensor.native_value == value
-    assert sensor.extra_state_attributes == {}
+    assert sensor.extra_state_attributes == {"pool_name": "tank"}
 
 
 @pytest.mark.parametrize(
@@ -142,7 +146,7 @@ def test_zfs_corrupted_files_sensor_without_paths(
 def test_zfs_corrupted_files_sensor_pool_missing(
     pools: list[ZFSPool] | None,
 ) -> None:
-    """Without data for the pool there is no value and no attributes."""
+    """Without data for the pool there is no value and only the pool name."""
     sensor = _sensor(pools)
     assert sensor.native_value is None
-    assert sensor.extra_state_attributes == {}
+    assert sensor.extra_state_attributes == {"pool_name": "tank"}

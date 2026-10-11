@@ -121,7 +121,9 @@ export class UnraidZfsCard extends BaseUnraidCard {
 
         const match = entityId.match(/_zfs_([a-zA-Z0-9_-]+)_usage$/i);
         if (match && match[1]) {
-          const poolName = match[1];
+          // The pool_name attribute is canonical: an entity created on a pool
+          // device and moved back keeps an ID like ..._zfs_pool_<name>_usage.
+          const poolName = (stateObj.attributes?.pool_name as string) || match[1];
           if (!poolMap.has(poolName)) {
             const usageNum = parseFloat(stateObj.state);
             poolMap.set(poolName, {
@@ -171,6 +173,7 @@ export class UnraidZfsCard extends BaseUnraidCard {
     for (const c of [...corruptedEntities, ...deviceCorrupted]) {
       const deviceId = this.hass?.entities?.[c.entity_id]?.device_id;
       const poolName =
+        (c.attributes?.pool_name as string) ||
         (deviceId && poolByDevice.get(deviceId)) ||
         c.entity_id.replace(/^.*?_zfs_/, "").replace(/_corrupted_files$/, "");
       const item = poolMap.get(poolName);
