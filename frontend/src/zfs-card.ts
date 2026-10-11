@@ -85,18 +85,20 @@ export class UnraidZfsCard extends BaseUnraidCard {
   }
 
   private getPools(): ZFSPoolItem[] {
+    const deviceUsageEntities = this.getPoolDeviceEntities("zfs_pool_device_usage");
     const usageEntities = [
       ...this.getEntities("zfs_pool_usage"),
-      ...this.getPoolDeviceEntities("zfs_pool_device_usage"),
+      ...deviceUsageEntities,
     ];
     const healthEntities = [
       ...this.getEntities("zfs_pool_health"),
       ...this.getPoolDeviceEntities("zfs_pool_device_health"),
     ];
     const corruptedEntities = this.getEntities("corrupted_files");
-    // Pool devices: their corrupted-file sensor is named by device, not pool
+    // Pool devices: their corrupted-file sensor is named by device, not pool.
+    // Only pool devices: pools on the server device share its ID.
     const poolByDevice = new Map<string, string>();
-    for (const u of usageEntities) {
+    for (const u of deviceUsageEntities) {
       const deviceId = this.hass?.entities?.[u.entity_id]?.device_id;
       const poolName = u.attributes?.pool_name as string | undefined;
       if (deviceId && poolName) poolByDevice.set(deviceId, poolName);

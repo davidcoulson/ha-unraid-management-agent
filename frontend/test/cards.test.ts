@@ -1241,6 +1241,31 @@ describe("Unraid Custom Cards", () => {
     document.body.removeChild(card);
   });
 
+  it("keeps corrupted-file counts per pool on the server device", async () => {
+    const card = new UnraidZfsCard();
+    card.setConfig({ type: "custom:unraid-zfs-card" });
+    const hass = createMockHass();
+    const add = (entityId: string, translationKey: string | undefined, state: string, attributes: Record<string, unknown> = {}) => {
+      hass.states[entityId] = { entity_id: entityId, state, attributes, last_changed: "", last_updated: "" };
+      hass.entities![entityId] = {
+        entity_id: entityId,
+        device_id: "dev_1",
+        platform: "unraid_management_agent",
+        translation_key: translationKey,
+      };
+    };
+    add("sensor.cube_zfs_tank_usage", "zfs_pool_usage", "42", { pool_name: "tank" });
+    add("sensor.cube_zfs_flash_usage", "zfs_pool_usage", "10", { pool_name: "flash" });
+    add("sensor.cube_zfs_tank_corrupted_files", undefined, "3");
+    add("sensor.cube_zfs_flash_corrupted_files", undefined, "0");
+    card.hass = hass;
+    const pools = (
+      card as unknown as { getPools(): { name: string; corruptedFiles?: number }[] }
+    ).getPools();
+    expect(pools.find((p) => p.name === "tank")?.corruptedFiles).toBe(3);
+    expect(pools.find((p) => p.name === "flash")?.corruptedFiles).toBe(0);
+  });
+
   it("does not pick a child device as the server", async () => {
     const card = new UnraidZfsCard();
     card.setConfig({ type: "custom:unraid-zfs-card" });
