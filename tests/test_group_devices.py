@@ -287,6 +287,38 @@ async def test_restored_group_device_keeps_its_own_area(hass: HomeAssistant) -> 
 @pytest.mark.usefixtures(
     "mock_unraid_client_class", "mock_unraid_websocket_client_class"
 )
+async def test_upgrade_with_the_server_disabled(hass: HomeAssistant) -> None:
+    """Devices of a disabled server stay disabled and can be enabled again."""
+    entry = _all_devices_on(hass)
+    before = _previous_layout(hass, entry)
+    devices = dr.async_get(hass)
+    entities = er.async_get(hass)
+    devices.async_update_device(
+        _device(hass, SERVER).id, disabled_by=dr.DeviceEntryDisabler.USER
+    )
+    assert _child(hass, PLEX).disabled_by is dr.DeviceEntryDisabler.DEVICE
+    plex_cpu = entities.async_get(before["plex_cpu"].entity_id)
+    assert plex_cpu.disabled_by is er.RegistryEntryDisabler.DEVICE
+
+    await _setup(hass, entry)
+
+    docker = _device(hass, DOCKER)
+    assert docker.disabled_by is dr.DeviceEntryDisabler.USER
+    assert _device(hass, VMS).disabled_by is dr.DeviceEntryDisabler.USER
+    assert _child(hass, PLEX).disabled_by is dr.DeviceEntryDisabler.DEVICE
+    plex_cpu = entities.async_get(before["plex_cpu"].entity_id)
+    assert plex_cpu.disabled_by is er.RegistryEntryDisabler.DEVICE
+
+    # Enabling the Docker device enables the container devices and entities
+    devices.async_update_device(docker.id, disabled_by=None)
+    await hass.async_block_till_done()
+    assert _child(hass, PLEX).disabled_by is None
+    assert entities.async_get(before["plex_cpu"].entity_id).disabled_by is None
+
+
+@pytest.mark.usefixtures(
+    "mock_unraid_client_class", "mock_unraid_websocket_client_class"
+)
 async def test_upgrade_with_device_options_off(hass: HomeAssistant) -> None:
     """Left-over devices are moved, then emptied and removed; entities stay."""
     entry = _entry(hass)
