@@ -23,7 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   entities. Entities from earlier builds keyed `nut_<slug>_*` are moved to the
   new unique IDs when only one current device has that slug. A
   sensor is only created once the device reports that reading, so an ATS only
-  gets the connected sensor. The existing `ups_*` entities keep their unique IDs
+  gets the connected sensor. Every listed device gets the connected sensor, off
+  while it does not answer. The existing `ups_*` entities keep their unique IDs
   and entity IDs. Needs an agent that reports `/nut` `statuses`
   ([tinkerologie/unraid-management-agent#206](https://github.com/tinkerologie/unraid-management-agent/issues/206));
   older agents get no extra entities. NUT `raw_variables` are redacted in

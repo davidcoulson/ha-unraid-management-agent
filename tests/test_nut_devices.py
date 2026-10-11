@@ -31,6 +31,7 @@ from custom_components.unraid_management_agent.diagnostics import (
 )
 from custom_components.unraid_management_agent.nut import (
     find_nut_status,
+    nut_connected_device_names,
     nut_device_key,
     secondary_nut_device_names,
     secondary_nut_statuses,
@@ -338,6 +339,28 @@ _SOURCE_CASES: dict[str, tuple[UPSInfo | None, NUTInfo | None, set[str]]] = {
         _nut(_ups_status("ups", 623), ATS_STATUS),
         {f"{ATS}_connected"},
     ),
+    # No /ups data and the first device did not answer: the primary is
+    # guessed wrongly, so only devices that answered get a connected sensor
+    # and the real primary (ups) gets none.
+    "no-ups-data-first-silent": (
+        None,
+        _nut(
+            _ups_status("ups-gpu", 508), ATS_STATUS, devices=["ups", "ups-gpu", "ats"]
+        ),
+        {f"{ATS}_connected"},
+    ),
+    # A listed device that never answered still gets a connected sensor.
+    "listed-silent-device": (
+        UPSInfo.model_validate(UPS_PAYLOAD),
+        _nut(_ups_status("ups", 623), ATS_STATUS, devices=["ups", "ups-gpu", "ats"]),
+        {f"{GPU}_connected", f"{ATS}_connected"},
+    ),
+    # Every device failed its query: listed devices are still connected-off.
+    "no-statuses-answered": (
+        UPSInfo.model_validate(UPS_PAYLOAD),
+        _nut(devices=["ups", "ats"]),
+        {f"{ATS}_connected"},
+    ),
     # /nut fetch failed.
     "no-nut-data": (UPSInfo.model_validate(UPS_PAYLOAD), None, set()),
 }
@@ -404,6 +427,28 @@ async def test_removed_entity_is_recreated(
     await hass.async_block_till_done()
 
     assert {f"{GPU}_battery", f"{ATS}_connected"} <= _nut_keys(entity_registry)
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_silent_listed_device_is_disconnected(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """A listed device that never answered shows as disconnected, not missing."""
+    await _setup(
+        hass,
+        mock_async_unraid_client,
+        UPSInfo.model_validate(UPS_PAYLOAD),
+        _nut(_ups_status("ups", 623), devices=["ups", "ups-gpu"]),
+    )
+
+    state = hass.states.get(
+        _entity_id(entity_registry, "binary_sensor", f"{GPU}_connected")
+    )
+    assert state is not None
+    assert state.state == STATE_OFF
+    assert nut_connected_device_names(None) == []
 
 
 def test_cleanup_keeps_listed_devices() -> None:

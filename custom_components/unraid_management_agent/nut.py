@@ -101,6 +101,23 @@ def secondary_nut_device_names(data: UnraidData) -> set[str]:
     return {name for name in names if name and name != primary}
 
 
+def nut_connected_device_names(data: UnraidData | None) -> list[str]:
+    """
+    Return the NUT devices that get a ``Connected`` binary sensor.
+
+    That is every listed device other than the primary UPS, one that does not
+    answer included, so it shows as disconnected rather than having no entity.
+    Older agents (no ``statuses``) get none. Without ``/ups`` data the primary
+    is guessed from the first status, which is wrong when the first device
+    does not answer, so only devices that answered are used then.
+    """
+    if data is None or data.nut is None or data.nut.statuses is None:
+        return []
+    if data.ups is None:
+        return [name for name, _status in secondary_nut_statuses(data)]
+    return sorted(secondary_nut_device_names(data))
+
+
 def all_nut_device_names(data: UnraidData | None) -> set[str]:
     """Return every NUT device name the agent reports, the primary UPS included."""
     if data is None or data.nut is None:
