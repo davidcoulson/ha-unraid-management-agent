@@ -12,6 +12,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import ChildDeviceInfo, DeviceInfo
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_ENABLE_CONTAINER_DEVICES,
@@ -141,7 +142,8 @@ def async_get_or_create_group_device(
     hostname = (system.hostname if system else None) or "Unraid"
     host = entry.data.get(CONF_HOST, "")
     identifier = (DOMAIN, group_device_identifier(entry.entry_id, group))
-    is_new = registry.async_get_device_by_identifier(identifier, entry.entry_id) is None
+    registered = registry.async_get_device_by_identifier(identifier, entry.entry_id)
+    started = dt_util.utcnow()
     device = registry.async_get_or_create(
         config_entry_id=entry.entry_id,
         identifiers={identifier},
@@ -152,21 +154,17 @@ def async_get_or_create_group_device(
         translation_placeholders={"hostname": hostname},
         via_device_id=server.id,
     )
-    if not is_new:
+    if registered is not None or device.created_at < started:
+        # Registered earlier, or restored from an earlier removal with the
+        # settings the user gave it
         return device
-    # A device restored from an earlier removal keeps the area and labels the
-    # user gave it
-    if device.area_id is None and not device.labels:
-        area_id, labels = server.area_id, set(server.labels)
-    else:
-        area_id, labels = device.area_id, set(device.labels)
     return registry.async_update_device(
         device.id,
-        area_id=area_id,
-        labels=labels,
+        area_id=server.area_id,
+        labels=set(server.labels),
         # Container and VM devices of a disabled server are disabled with it,
         # and stay so under a disabled Docker or VMs device
-        disabled_by=device.disabled_by or server.disabled_by,
+        disabled_by=server.disabled_by,
     )
 
 
