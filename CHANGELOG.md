@@ -17,8 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Entities for every NUT device** ([#181](https://github.com/tinkerologie/ha-unraid-management-agent/issues/181)):
   Every NUT device other than the primary UPS (a second UPS, an ATS, ...) gets
   `UPS <device> Battery/Load/Runtime/Power/Energy` sensors and a
-  `UPS <device> Connected` binary sensor, keyed by NUT device name
-  (`nut_<device>_*`) and on the server device like the existing UPS entities. A
+  `UPS <device> Connected` binary sensor, keyed by the exact NUT device name
+  (`nut_<slug>-<hash>_*`, so names such as `UPS`/`ups` or `ups-gpu`/`ups_gpu`
+  never share entities) and on the server device like the existing UPS
+  entities. Entities from earlier builds keyed `nut_<slug>_*` are moved to the
+  new unique IDs when only one current device has that slug. A
   sensor is only created once the device reports that reading, so an ATS only
   gets the connected sensor. The existing `ups_*` entities keep their unique IDs
   and entity IDs. Needs an agent that reports `/nut` `statuses`

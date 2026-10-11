@@ -27,19 +27,16 @@ NUT_BINARY_SENSOR_SUFFIXES: Final = ("connected",)
 
 def nut_device_key(device_name: str) -> str:
     """
-    Return the entity key prefix for a NUT device, e.g. ``nut_ups``.
+    Return the entity key prefix for a NUT device, e.g. ``nut_ups-1a2b3c4d``.
 
     NUT device names are case-sensitive and may contain ``-`` and ``.``, which
     slugify folds together (``UPS`` and ``ups``, ``ups-gpu`` and ``ups_gpu``).
-    A name that is already its own slug keeps the readable key. Any other name
-    gets its slug plus a hash of the exact name after a ``-``, which a slug
-    never contains, so two different names never share a key.
+    The key is the slug plus a hash of the exact name after a ``-``, so two
+    different names never share a key, and no key equals the slug-only key of
+    earlier versions (see nut_legacy_unique_ids).
     """
-    slug = slugify(device_name)
-    if slug == device_name:
-        return f"{NUT_KEY_PREFIX}{slug}"
     digest = hashlib.sha256(device_name.encode()).hexdigest()[:8]
-    return f"{NUT_KEY_PREFIX}{slug}-{digest}"
+    return f"{NUT_KEY_PREFIX}{slugify(device_name)}-{digest}"
 
 
 def nut_legacy_unique_ids(
@@ -50,15 +47,12 @@ def nut_legacy_unique_ids(
 
     Earlier versions keyed a device by ``nut_<slug>`` alone. That old ID is
     only offered when no other current device has the same slug, since it
-    cannot say which of them it was; empty when the key has not changed.
+    cannot say which of them it was.
     """
     slug = slugify(device_name)
-    old_key = f"{NUT_KEY_PREFIX}{slug}"
-    if nut_device_key(device_name) == old_key or any(
-        other != device_name and slugify(other) == slug for other in device_names
-    ):
+    if any(other != device_name and slugify(other) == slug for other in device_names):
         return []
-    return [f"{entry_id}_{old_key}_{suffix}"]
+    return [f"{entry_id}_{NUT_KEY_PREFIX}{slug}_{suffix}"]
 
 
 def _primary_nut_device_name(data: UnraidData) -> str | None:

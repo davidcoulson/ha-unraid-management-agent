@@ -38,8 +38,10 @@ from custom_components.unraid_management_agent.nut import (
 
 from .const import MOCK_CONFIG, MOCK_OPTIONS, mock_collectors_status
 
-# "ups-gpu" is not its own slug, so its key carries a hash of the exact name
+# NUT device keys carry a hash of the exact device name
 GPU = nut_device_key("ups-gpu")
+UPS = nut_device_key("ups")
+ATS = nut_device_key("ats")
 ENTRY_ID = "test_entry_id"
 
 # /api/v1/ups from an agent with multi-device support: the first NUT device,
@@ -171,7 +173,7 @@ async def test_entities_per_nut_device(
         f"{GPU}_battery",
         f"{GPU}_runtime",
         f"{GPU}_connected",
-        "nut_ats_connected",
+        f"{ATS}_connected",
     }
 
     battery = hass.states.get(_entity_id(entity_registry, "sensor", f"{GPU}_battery"))
@@ -190,7 +192,7 @@ async def test_entities_per_nut_device(
     assert "ups_status" not in runtime.attributes
 
     ats = hass.states.get(
-        _entity_id(entity_registry, "binary_sensor", "nut_ats_connected")
+        _entity_id(entity_registry, "binary_sensor", f"{ATS}_connected")
     )
     assert ats is not None
     assert ats.entity_id == "binary_sensor.unraid_test_ups_ats_connected"
@@ -202,7 +204,7 @@ async def test_entities_per_nut_device(
     server = entity_registry.async_get(
         _entity_id(entity_registry, "sensor", "ups_battery")
     ).device_id
-    for key in (f"{GPU}_battery", "nut_ats_connected"):
+    for key in (f"{GPU}_battery", f"{ATS}_connected"):
         platform = "binary_sensor" if key.endswith("connected") else "sensor"
         entity = entity_registry.async_get(_entity_id(entity_registry, platform, key))
         assert entity is not None
@@ -266,7 +268,7 @@ async def test_readings_and_devices_that_appear_later(
         assert state is not None
         assert state.state == STATE_UNAVAILABLE, key
     ats = hass.states.get(
-        _entity_id(entity_registry, "binary_sensor", "nut_ats_connected")
+        _entity_id(entity_registry, "binary_sensor", f"{ATS}_connected")
     )
     assert ats is not None
     assert ats.state == STATE_OFF
@@ -324,17 +326,17 @@ _SOURCE_CASES: dict[str, tuple[UPSInfo | None, NUTInfo | None, set[str]]] = {
         _APCUPSD_UPS,
         _nut(_ups_status("ups", 623), ATS_STATUS),
         {
-            "nut_ups_battery",
-            "nut_ups_runtime",
-            "nut_ups_connected",
-            "nut_ats_connected",
+            f"{UPS}_battery",
+            f"{UPS}_runtime",
+            f"{UPS}_connected",
+            f"{ATS}_connected",
         },
     ),
     # No /ups data: the first NUT device is taken as the primary.
     "no-ups-data": (
         None,
         _nut(_ups_status("ups", 623), ATS_STATUS),
-        {"nut_ats_connected"},
+        {f"{ATS}_connected"},
     ),
     # /nut fetch failed.
     "no-nut-data": (UPSInfo.model_validate(UPS_PAYLOAD), None, set()),
@@ -391,7 +393,7 @@ async def test_removed_entity_is_recreated(
     )
     for platform, key in (
         ("sensor", f"{GPU}_battery"),
-        ("binary_sensor", "nut_ats_connected"),
+        ("binary_sensor", f"{ATS}_connected"),
     ):
         entity_registry.async_remove(_entity_id(entity_registry, platform, key))
     await hass.async_block_till_done()
@@ -401,7 +403,7 @@ async def test_removed_entity_is_recreated(
     coordinator.async_set_updated_data(coordinator.data)
     await hass.async_block_till_done()
 
-    assert {f"{GPU}_battery", "nut_ats_connected"} <= _nut_keys(entity_registry)
+    assert {f"{GPU}_battery", f"{ATS}_connected"} <= _nut_keys(entity_registry)
 
 
 def test_cleanup_keeps_listed_devices() -> None:
@@ -417,9 +419,9 @@ def test_cleanup_keeps_listed_devices() -> None:
         f"{GPU}_battery",
         f"{GPU}_energy",
         f"{GPU}_connected",
-        "nut_ats_connected",
+        f"{ATS}_connected",
     } <= keys
-    assert not any(k.startswith("nut_ups_") and "gpu" not in k for k in keys)
+    assert not any(k.startswith(UPS) for k in keys)
     assert secondary_nut_device_names(data) == {"ups-gpu", "ats"}
     assert "nut_" not in _unavailable_data_prefixes(data)
     assert "nut_" in _unavailable_data_prefixes(UnraidData())
@@ -500,13 +502,13 @@ async def test_diagnostics_redact_nut_raw_variables(
 
 
 def test_device_keys_do_not_collide() -> None:
-    """Names that slugify alike get different keys; slug-only names keep theirs."""
-    assert nut_device_key("ups") == "nut_ups"
-    assert nut_device_key("ups_gpu") == "nut_ups_gpu"
+    """Names that slugify alike get different keys, none equal to the old key."""
     keys = {nut_device_key(n) for n in ("ups", "UPS", "ups_gpu", "ups-gpu", "ups.gpu")}
     assert len(keys) == 5
+    assert UPS.startswith("nut_ups-")
     assert GPU.startswith("nut_ups_gpu-")
-    assert nut_device_key("ups-gpu") == GPU
+    # Never the slug-only key of earlier versions
+    assert nut_device_key("ups_gpu") != "nut_ups_gpu"
 
 
 def _register_legacy(
@@ -571,7 +573,7 @@ async def test_ambiguous_slug_keyed_entity_is_not_moved(
     entity_registry: er.EntityRegistry,
     mock_async_unraid_client: MagicMock,
 ) -> None:
-    """With "ups-gpu" and "ups_gpu" both present, the old key stays with "ups_gpu"."""
+    """With "ups-gpu" and "ups_gpu" both present, neither takes the old entity."""
     mock_async_unraid_client.get_ups_info.return_value = UPSInfo.model_validate(
         UPS_PAYLOAD
     )
@@ -594,7 +596,11 @@ async def test_ambiguous_slug_keyed_entity_is_not_moved(
     old = entity_registry.async_get("sensor.old_battery")
     assert old is not None
     assert old.unique_id == f"{ENTRY_ID}_nut_ups_gpu_battery"
-    assert {f"{GPU}_battery", "nut_ups_gpu_battery"} <= _nut_keys(entity_registry)
+    assert {
+        f"{GPU}_battery",
+        f"{nut_device_key('ups_gpu')}_battery",
+        "nut_ups_gpu_battery",
+    } <= _nut_keys(entity_registry)
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
