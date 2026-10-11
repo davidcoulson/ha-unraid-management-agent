@@ -264,24 +264,38 @@ async def test_upgrade_moves_devices_keeping_entities_and_settings(
 @pytest.mark.usefixtures(
     "mock_unraid_client_class", "mock_unraid_websocket_client_class"
 )
-async def test_restored_group_device_keeps_its_own_area(hass: HomeAssistant) -> None:
-    """A Docker device removed earlier comes back with the user's area."""
-    entry = _entry(hass)
+async def test_restored_group_devices_keep_their_own_settings(
+    hass: HomeAssistant,
+) -> None:
+    """Docker and VMs devices removed earlier come back as the user left them."""
+    entry = _all_devices_on(hass)
     devices = dr.async_get(hass)
     areas = ar.async_get(hass)
     server = devices.async_get_or_create(
         config_entry_id=ENTRY_ID, identifiers={SERVER}, name="unraid-test"
     )
-    devices.async_update_device(server.id, area_id=areas.async_create("Office").id)
+    devices.async_update_device(
+        server.id,
+        area_id=areas.async_create("Office").id,
+        labels={lr.async_get(hass).async_create("Unraid").label_id},
+    )
     docker = devices.async_get_or_create(config_entry_id=ENTRY_ID, identifiers={DOCKER})
     devices.async_update_device(docker.id, area_id=areas.async_create("Rack").id)
+    # The user took the VMs device out of the server's area and labels
+    vms = devices.async_get_or_create(config_entry_id=ENTRY_ID, identifiers={VMS})
     devices.async_remove_device(docker.id)
+    devices.async_remove_device(vms.id)
 
     await _setup(hass, entry)
 
     restored = _device(hass, DOCKER)
     assert restored.id == docker.id
     assert restored.area_id == areas.async_get_area_by_name("Rack").id
+    assert not restored.labels
+    restored = _device(hass, VMS)
+    assert restored.id == vms.id
+    assert restored.area_id is None
+    assert not restored.labels
 
 
 @pytest.mark.usefixtures(
