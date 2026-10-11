@@ -40,6 +40,7 @@ from .api.models import (
     MoverSettings,
     NetworkInterface,
     NetworkServicesStatus,
+    NICList,
     NotificationOverview,
     NotificationsResponse,
     NUTInfo,
@@ -68,7 +69,9 @@ from .api.models import (
 from .api.websocket import UnraidWebSocketClient
 from .const import (
     CONF_ENABLE_CONTAINER_UPDATES,
+    CONF_ENABLE_NIC_DEVICES,
     DEFAULT_ENABLE_CONTAINER_UPDATES,
+    DEFAULT_ENABLE_NIC_DEVICES,
     DOMAIN,
     UPDATE_INTERVAL,
 )
@@ -130,6 +133,9 @@ class UnraidData:
     docker_port_conflicts: list[DockerPortConflict] | None = None
     # None when the agent has no /storage/topology endpoint or the fetch failed
     storage_topology: StorageTopology | None = None
+    # None when network card devices are off, the agent has no /network/cards
+    # endpoint, or the fetch failed
+    network_cards: NICList | None = None
     # Alerting engine (agent /alerts/rules and /alerts/status). None when the
     # agent does not provide them (older agents: 404) or the fetch failed.
     alert_rules: list[AlertRule] | None = None
@@ -423,6 +429,14 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
             CONF_ENABLE_CONTAINER_UPDATES, DEFAULT_ENABLE_CONTAINER_UPDATES
         )
 
+    def is_nic_devices_enabled(self) -> bool:
+        """Return True when network cards are shown as separate devices (options)."""
+        return bool(
+            self.config_entry.options.get(
+                CONF_ENABLE_NIC_DEVICES, DEFAULT_ENABLE_NIC_DEVICES
+            )
+        )
+
     def is_vm_enabled(self) -> bool:
         """
         Check if VM service is enabled in Unraid settings.
@@ -459,6 +473,14 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
             if not (suppress_404 and "404" in str(err)):
                 _LOGGER.debug("Error fetching %s: %s", label, err)
             return None
+
+    async def _fetch_network_cards(self) -> NICList | None:
+        """Fetch the network cards, only when NIC devices are enabled."""
+        if not self.is_nic_devices_enabled():
+            return None
+        return await self._fetch(
+            "network cards", self.client.get_network_cards, suppress_404=True
+        )
 
     async def _fetch_parity_history(self) -> ParityHistory | None:
         """
@@ -564,6 +586,7 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                     suppress_404=True,
                 ),
                 self._fetch("NUT status", self.client.get_nut_info, suppress_404=True),
+                self._fetch_network_cards(),
             )
 
             # Unpack results with proper types (gather loses individual type info).
@@ -606,6 +629,7 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
             alerts_status: AlertsStatusResponse | None = results[32]
             storage_topology: StorageTopology | None = results[33]
             nut: NUTInfo | None = results[34]
+            network_cards: NICList | None = results[35]
 
             # If the core endpoints are all unreachable, treat the whole update
             # as failed instead of returning an empty snapshot. This flips
@@ -736,6 +760,7 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                 if alerts_status is not None
                 else None,
                 storage_topology=storage_topology,
+                network_cards=network_cards,
             )
             # Websocket events that arrived while this poll was in flight are
             # newer than its REST results: keep them.
@@ -827,8 +852,7 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                 keep = {
                     name: getattr(current, name)
                     for name in ("statuses", "devices")
-                    if getattr(nut, name) is None
-                    and getattr(current, name) is not None
+                    if getattr(nut, name) is None and getattr(current, name) is not None
                 }
                 if keep:
                     nut = nut.model_copy(update=keep)

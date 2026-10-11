@@ -58,6 +58,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - A repair issue per affected share names the disks or pools holding the stray folder (or the unchecked ones) and clears automatically once the share is exclusive again, the share is removed or the integration entry is deleted.
   - Needs an agent that reports `exclusive` in `/shares`; with older agents or while the array is stopped no sensors are created (existing ones become unavailable) and existing issues are kept.
 
+- **Network cards as separate devices (opt-in)** ([#203](https://github.com/tinkerologie/ha-unraid-management-agent/issues/203)):
+  - New option **Show network cards as separate devices** (`enable_nic_devices`, off by default). When on, each PCI network card the agent reports at `/network/cards` (agent with the `nic` collector, tinkerologie/unraid-management-agent#225) becomes a child device of the server, named after its model and PCI slot, e.g. `ConnectX-6 Dx (41:00)`.
+  - Per card: **ASIC**, **PHY** and **MAC Temperature** sensors (and any other hwmon sensor of the card), with highest/max/critical limits as attributes, and **Firmware** (diagnostic).
+  - Per port: **Link Speed**; with an SFP/QSFP optic, **Module Temperature**, **Module Voltage**, **RX Power** and **TX Power** (worst lane, dBm; every lane's power and laser bias as attributes), an **Optic** problem binary sensor that is on while an alarm or warning flag is raised, and **Optic Vendor** and **Optic Part Number** (diagnostic). The serial number is never shown.
+  - Unique IDs are keyed by PCI address, so renaming an interface keeps them. A card or optic that disappears makes its entities unavailable; a removed card's device can be deleted. Turning the option off removes every network card device and entity, and the endpoint is not polled while it is off.
+
 - **Storage throughput and link utilization sensors**:
   - Each storage topology controller and enclosure (disk shelf) device gets **Read Throughput**, **Write Throughput** and **Throughput** (read + write) sensors (data rate, B/s shown as MB/s by default) and a **Link Utilization** sensor (%), from the optional `throughput` object the agent adds to `/storage/topology`.
   - The sensors appear once the agent reports throughput (from its second collection cycle) and become unavailable if it stops. Link Utilization is unknown when the agent cannot work out the link capacity; its attributes include the drive count, the measurement interval and the capacity in B/s.
