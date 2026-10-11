@@ -11,6 +11,7 @@ so the entity keeps its entity ID, name, area and enabled state.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import re
 from typing import Any
@@ -21,6 +22,7 @@ from homeassistant.util import slugify
 
 from .api.models import FanInfo, TemperatureInfo
 from .const import DOMAIN
+from .entity import hwmon_controller_identifier
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -188,14 +190,19 @@ def hwmon_controller_of(item: Any) -> tuple[str, str] | None:
 
 
 def hwmon_controller_names(
-    fans: list[Any], readings: list[Any]
+    entry_id: str,
+    fans: list[Any],
+    readings: list[Any],
+    known_identifiers: set[str] | frozenset[str] = frozenset(),
 ) -> dict[tuple[str, str], str]:
     """
     Name each USB HID controller in the current data.
 
-    "Octo (fan controller)", or "Octo 1 (fan controller)", "Octo 2 (fan
-    controller)" when several share a model (numbered in device_id order, so
-    the serial number never shows in the name).
+    "Octo (fan controller)" while it is the only Octo known. Once several of
+    one model are known (in the current data or as devices in the registry),
+    each name gets a tag derived from its device identifier ("Octo 3f9a (fan
+    controller)"). The tag never changes and never moves to other hardware,
+    and the serial number cannot be read from it.
     """
     controllers = {
         controller
@@ -203,10 +210,17 @@ def hwmon_controller_names(
         if (controller := hwmon_controller_of(item)) is not None
     }
     names: dict[tuple[str, str], str] = {}
-    for driver in {driver for driver, _ in controllers}:
+    for driver, device_id in controllers:
         model, kind = _CONTROLLER_MODELS.get(driver, (driver, "sensors"))
-        devices = sorted(dev for drv, dev in controllers if drv == driver)
-        for index, device_id in enumerate(devices, start=1):
-            number = f" {index}" if len(devices) > 1 else ""
-            names[(driver, device_id)] = f"{model}{number} ({kind})"
+        identifier = hwmon_controller_identifier(entry_id, driver, device_id)
+        prefix = f"{hwmon_controller_identifier(entry_id, driver, '')}_"
+        peers = {i for i in known_identifiers if i.startswith(prefix)} | {
+            hwmon_controller_identifier(entry_id, drv, dev)
+            for drv, dev in controllers
+            if drv == driver
+        }
+        tag = ""
+        if len(peers) > 1:
+            tag = " " + hashlib.sha256(identifier.encode()).hexdigest()[:4]
+        names[(driver, device_id)] = f"{model}{tag} ({kind})"
     return names

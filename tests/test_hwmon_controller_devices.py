@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from unittest.mock import MagicMock
 
 import pytest
@@ -43,6 +44,8 @@ SERIAL_A = "00000-00001"
 SERIAL_B = "00000-00002"
 CONTROLLER_A = (DOMAIN, f"{ENTRY_ID}_hwmon_octo_00000_00001")
 CONTROLLER_B = (DOMAIN, f"{ENTRY_ID}_hwmon_octo_00000_00002")
+TAG_A = hashlib.sha256(CONTROLLER_A[1].encode()).hexdigest()[:4]
+TAG_B = hashlib.sha256(CONTROLLER_B[1].encode()).hexdigest()[:4]
 
 
 def _octo_fans(
@@ -260,11 +263,11 @@ async def test_unlabelled_channels_are_named_by_number(
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
-async def test_two_controllers_are_numbered(
+async def test_two_controllers_are_told_apart(
     hass: HomeAssistant, mock_async_unraid_client: MagicMock
 ) -> None:
-    """Two Octos get separate devices, numbered rather than named by serial."""
-    await _setup(
+    """Two Octos get separate devices with stable tags, never the serial."""
+    entry = await _setup(
         hass,
         mock_async_unraid_client,
         [
@@ -275,10 +278,20 @@ async def test_two_controllers_are_numbered(
     )
     first = _controller(hass, CONTROLLER_A)
     second = _controller(hass, CONTROLLER_B)
-    assert first.name == "Octo 1 (fan controller)"
-    assert second.name == "Octo 2 (fan controller)"
+    assert first.name == f"Octo {TAG_A} (fan controller)"
+    assert second.name == f"Octo {TAG_B} (fan controller)"
+    assert "00000" not in first.name
     assert _entity(hass, f"{FAN}octo_00000_00002_fan8").device_id == second.id
     assert _entity(hass, f"{TEMP}octo_hid_00000_00002_temp1").device_id == second.id
+
+    # The second Octo is unplugged and the entry reloads: the first keeps its
+    # name, since the second is still known as a device.
+    system = mock_async_unraid_client.get_system_info.return_value
+    system.fans = _octo_fans("octo-hid-3-13", SERIAL_A, prefix=f"octo-{SERIAL_A}")
+    system.temperatures = [_coolant("octo-hid-3-13", SERIAL_A)]
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert _controller(hass, CONTROLLER_A).name == f"Octo {TAG_A} (fan controller)"
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
@@ -349,10 +362,23 @@ async def test_remove_controller_device_only_when_gone(
     system = coordinator.data.system
     coordinator.data.system = None
     assert await async_remove_config_entry_device(hass, entry, device) is False
+    coordinator.data.system = system
+
+    # Without a complete inventory the controller may still be there.
+    system.fans = None
+    system.temperatures = [CPU_TEMP]
+    assert await async_remove_config_entry_device(hass, entry, device) is False
+    system.fans = [MOTHERBOARD_FAN]
+    system.temperatures = None
+    assert await async_remove_config_entry_device(hass, entry, device) is False
+    # A USB HID chip reported without a device_id (agent downgrade).
+    system.temperatures = [_coolant("octo-hid-3-13", None)]
+    assert await async_remove_config_entry_device(hass, entry, device) is False
+    system.temperatures = [CPU_TEMP]
+    system.fans = [FanInfo(name="octo_fan1", rpm=1, source="octo-hid-3-13")]
+    assert await async_remove_config_entry_device(hass, entry, device) is False
 
     system.fans = [MOTHERBOARD_FAN]
-    system.temperatures = [CPU_TEMP]
-    coordinator.data.system = system
     assert await async_remove_config_entry_device(hass, entry, device) is True
 
 
@@ -380,8 +406,16 @@ def test_controller_helpers() -> None:
     unknown = FanInfo(
         name="widget_fan1", rpm=1, source="widget-hid-3-9", device_id="usb-3-9"
     )
-    assert hwmon_controller_names([unknown], []) == {
+    assert hwmon_controller_names(ENTRY_ID, [unknown], []) == {
         ("widget", "usb-3-9"): "widget (sensors)"
+    }
+    # Another Octo known only from the registry tags this one too.
+    octo = _coolant("octo-hid-3-13", SERIAL_A)
+    assert hwmon_controller_names(ENTRY_ID, [], [octo]) == {
+        ("octo", SERIAL_A): "Octo (fan controller)"
+    }
+    assert hwmon_controller_names(ENTRY_ID, [], [octo], {CONTROLLER_B[1]}) == {
+        ("octo", SERIAL_A): f"Octo {TAG_A} (fan controller)"
     }
     assert FanInfo(name="octo_fan8", label="Coolant FLOW").is_flow
     assert not FanInfo(name="octo_fan1", label="Array Fan1").is_flow

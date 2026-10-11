@@ -34,6 +34,7 @@ from homeassistant.const import (
     UnitOfTime,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import ChildDeviceInfo, DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -1907,9 +1908,19 @@ def _hwmon_controller_device(
     if controller is None or not hwmon_devices_enabled(coordinator):
         return None
     system = data.system if data else None
+    entry_id = coordinator.config_entry.entry_id
+    registry = dr.async_get(coordinator.hass)
+    known = {
+        identifier
+        for device in dr.async_child_entries_for_config_entry(registry, entry_id)
+        for domain, identifier in device.identifiers
+        if domain == DOMAIN and identifier.startswith(f"{entry_id}_hwmon_")
+    }
     names = hwmon_controller_names(
+        entry_id,
         (system.fans or []) if system else [],
         (system.temperatures or []) if system else [],
+        known,
     )
     return build_hwmon_controller_device_info(
         coordinator, *controller, names[controller]
