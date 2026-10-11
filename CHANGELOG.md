@@ -10,6 +10,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Contribution governance: issues without a `bug` or `enhancement` label are labeled automatically when their type can be determined, so CodeRabbit can plan them. Pull requests that conflict with the default branch are labeled, and their authors are notified in a comment. Stale issues and pull requests are labeled after 14 days without activity and closed 30 days later. PR governance no longer passes silently when a bot edits the PR description. Codecov patch coverage must now reach 90%.
+- **Docker and VMs devices group containers and VMs** instead of the server device listing every container and VM:
+  - Before, every container and VM device was a child device of the server device, along with the Docker sensors:
+
+    ```text
+    Tower
+    ├── Docker CPU Usage, Docker Memory Usage, Docker vDisk Usage, Docker Service,
+    │   Libvirt Service, Container Updates Available, ...server entities
+    ├── plex, sonarr, ... (one child device per container)
+    └── VM · Windows 10, VM · Ubuntu, ... (one child device per VM)
+    ```
+
+  - Now the server device is linked to two devices, **Tower Docker** and **Tower VMs**, which hold the Docker-wide and VM-wide entities, and container and VM devices are child devices of those (Home Assistant child devices can't have children of their own, so the two are regular devices linked to the server):
+
+    ```text
+    Tower
+    ├── ...server entities
+    ├── Tower Docker: CPU Usage, Memory Usage, vDisk Usage, Service,
+    │   Container Updates Available
+    │   └── plex, sonarr, ... (with "Show Docker containers as separate devices")
+    └── Tower VMs: Service (libvirt)
+        └── Windows 10, Ubuntu, ... (with "Show virtual machines as separate devices")
+    ```
+
+  - The Docker and VMs devices are created only when something needs them (a server without VMs gets no VMs device), are named after the server so several servers stay apart, and link to the server's Docker and VMs pages.
+  - Existing installations are migrated on startup without losing anything: each container and VM device is moved under its new parent with the same device ID (device automations keep working), area, name, labels and disabled state, and its entities keep their entity IDs, unique IDs, settings and history. The Docker sensors keep their entity IDs and friendly names ("Tower Docker CPU Usage"); the libvirt service sensor keeps its entity ID and is now called "Tower VMs Service".
+  - VM devices are named after the VM again ("Windows 10" instead of "VM · Windows 10"): the "VMs" device in front of them now tells them apart from containers. The rename is applied to existing VM devices automatically; a name you gave a device is kept.
+  - Entities of containers and VMs added from now on get entity IDs with the Docker or VMs device in them (`sensor.tower_docker_plex_cpu`, `switch.tower_vms_windows_10_power`), as Home Assistant includes the parent device in entity IDs. Existing entity IDs do not change.
+  - With the "separate devices" options off, container and VM entities stay on the server device as before.
+  - The dashboard cards no longer offer the Docker and VMs devices, or container and VM devices, as servers to pick.
+
 - Updated repository and documentation URLs to `tinkerologie` organization
 - Configured Codecov GitHub Actions workflow for tokenless coverage uploads
 

@@ -107,7 +107,10 @@ export abstract class BaseUnraidCard extends LitElement {
     if (!this.hass?.devices) return [];
     return Object.values(this.hass.devices).filter(
       (device) =>
-        // Child devices (VMs, containers, GPUs, storage) are not servers
+        // Child devices (GPUs, storage) of a server, and the Docker and VMs
+        // devices (linked to their server) with their child devices
+        // (containers, VMs), are not servers
+        !device.via_device_id &&
         !device.parent_device_id &&
         device.identifiers?.some(
           ([domain]) => domain === "unraid_management_agent" || domain === "unraid"

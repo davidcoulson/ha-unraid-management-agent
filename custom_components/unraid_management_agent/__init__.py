@@ -44,7 +44,13 @@ from .coordinator import (
     UnraidDataUpdateCoordinator,
     UnraidRuntimeData,
 )
-from .entity import gpu_device_identifier, gpu_device_keys
+from .entity import (
+    DOCKER_DEVICE,
+    VMS_DEVICE,
+    async_get_or_create_group_device,
+    gpu_device_identifier,
+    gpu_device_keys,
+)
 from .frontend import async_register_frontend
 from .storage import CONTROLLER, ENCLOSURE, current_storage_ids, device_identifier
 
@@ -314,6 +320,74 @@ def _async_remove_control_entities(
             registry.async_remove(entity.entity_id)
 
 
+@callback
+def _async_move_child_devices_to_groups(
+    hass: HomeAssistant,
+    entry: UnraidConfigEntry,
+    coordinator: UnraidDataUpdateCoordinator,
+) -> None:
+    """
+    Move container and VM child devices under the Docker and VMs devices.
+
+    Earlier releases made them child devices of the server device. The device
+    registry can't reparent a child device, and removing a device removes its
+    entities, so each one's entities are detached first, the child device is
+    removed and created again under its new parent, and the entities are
+    attached to it again. Entities keep their unique and entity IDs, settings
+    and history. The registry restores the removed device from its deleted
+    devices, so the device keeps its ID (and the device automations using it),
+    area, name, labels and disabled state.
+    """
+    device_registry = dr.async_get(hass)
+    entity_registry = er.async_get(hass)
+    children = dr.async_child_entries_for_config_entry(device_registry, entry.entry_id)
+    for group, prefix in (
+        (DOCKER_DEVICE, f"{entry.entry_id}_container_"),
+        (VMS_DEVICE, f"{entry.entry_id}_vm_"),
+    ):
+        to_move = [
+            child
+            for child in children
+            if any(
+                domain == DOMAIN and identifier.startswith(prefix)
+                for domain, identifier in child.identifiers
+            )
+        ]
+        if not to_move:
+            continue
+        parent = async_get_or_create_group_device(coordinator, group)
+        if parent is None:
+            return
+        for child in to_move:
+            if child.parent_device_id == parent.id:
+                continue
+            entity_ids = [
+                entity.entity_id
+                for entity in er.async_entries_for_device(
+                    entity_registry, child.id, include_disabled_entities=True
+                )
+            ]
+            for entity_id in entity_ids:
+                entity_registry.async_update_entity(entity_id, device_id=None)
+            device_registry.async_remove_device(child.id)
+            try:
+                moved = device_registry.async_get_or_create_child(
+                    config_entry_id=entry.entry_id,
+                    config_subentry_id=child.config_subentry_id,
+                    identifiers=set(child.identifiers),
+                    name=child.name,
+                    parent_device_id=parent.id,
+                )
+            except HomeAssistantError as err:
+                # The entities stay, without a device, until their platform
+                # sets them up again on the device it creates.
+                _LOGGER.warning("Could not move device %s: %s", child.name, err)
+                continue
+            for entity_id in entity_ids:
+                entity_registry.async_update_entity(entity_id, device_id=moved.id)
+            _LOGGER.debug("Moved device %s under %s", child.name, parent.name)
+
+
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up Unraid Management Agent integration."""
     # Register dashboard card frontend
@@ -381,8 +455,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
     if read_only:
         _async_remove_control_entities(hass, entry)
 
-    # Register the server device up front: VM and container child devices
-    # reference it by registry id, so it must exist before any platform loads.
+    # Register the server device up front: the Docker and VMs devices link to
+    # it and storage child devices reference it by registry id, so it must
+    # exist before any platform loads.
     system = coordinator.data.system if coordinator.data else None
     dr.async_get(hass).async_get_or_create(
         config_entry_id=entry.entry_id,
@@ -390,6 +465,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
         name=(system.hostname if system else None) or "Unraid",
         manufacturer=MANUFACTURER,
     )
+    _async_move_child_devices_to_groups(hass, entry, coordinator)
 
     # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, platforms)

@@ -52,7 +52,7 @@ async def _setup(hass: HomeAssistant, *, container_devices: bool) -> MockConfigE
 @pytest.mark.usefixtures(
     "mock_unraid_client_class", "mock_unraid_websocket_client_class"
 )
-async def test_containers_are_child_devices_of_the_server(
+async def test_containers_are_child_devices_of_the_docker_device(
     hass: HomeAssistant,
 ) -> None:
     """With the option on, each container's entities share a child device."""
@@ -61,10 +61,16 @@ async def test_containers_are_child_devices_of_the_server(
     devices = dr.async_get(hass)
     server = devices.async_get_device_by_identifier((DOMAIN, ENTRY_ID), ENTRY_ID)
     plex = devices.async_get_child_device_by_identifier(PLEX, ENTRY_ID)
+    docker = devices.async_get_device_by_identifier(
+        (DOMAIN, f"{ENTRY_ID}_docker"), ENTRY_ID
+    )
     assert server is not None
+    assert docker is not None
+    assert docker.name == "unraid-test Docker"
+    assert docker.via_device_id == server.id
     assert plex is not None
     assert plex.name == "plex"
-    assert plex.parent_device_id == server.id
+    assert plex.parent_device_id == docker.id
 
     entities = er.async_get(hass)
     on_plex = {
@@ -72,10 +78,10 @@ async def test_containers_are_child_devices_of_the_server(
         for e in entities.entities.values()
         if e.config_entry_id == ENTRY_ID and e.device_id == plex.id
     }
-    assert "switch.unraid_test_plex_running" in on_plex
-    assert "switch.unraid_test_plex_autostart" in on_plex
-    assert "button.unraid_test_plex_restart" in on_plex
-    assert "sensor.unraid_test_plex_cpu" in on_plex
+    assert "switch.unraid_test_docker_plex_running" in on_plex
+    assert "switch.unraid_test_docker_plex_autostart" in on_plex
+    assert "button.unraid_test_docker_plex_restart" in on_plex
+    assert "sensor.unraid_test_docker_plex_cpu" in on_plex
 
     # Containers do not show up as separate main devices
     main_devices = dr.async_entries_for_config_entry(devices, ENTRY_ID)
@@ -92,9 +98,9 @@ async def test_container_sensor_entity_ids_do_not_collide(
     await _setup(hass, container_devices=True)
 
     entities = er.async_get(hass)
-    assert entities.async_get("sensor.unraid_test_plex_memory") is not None
-    assert entities.async_get("sensor.unraid_test_plex_memory_usage") is not None
-    assert entities.async_get("sensor.unraid_test_plex_memory_2") is None
+    assert entities.async_get("sensor.unraid_test_docker_plex_memory") is not None
+    assert entities.async_get("sensor.unraid_test_docker_plex_memory_usage") is not None
+    assert entities.async_get("sensor.unraid_test_docker_plex_memory_2") is None
 
 
 @pytest.mark.usefixtures(
