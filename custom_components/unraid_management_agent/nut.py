@@ -12,7 +12,10 @@ import hashlib
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Final
 
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.util import slugify
+
+from .hwmon import async_adopt_unique_id
 
 if TYPE_CHECKING:
     from .api.models import NUTDeviceStatus
@@ -112,13 +115,44 @@ def listed_secondary_nut_devices(data: UnraidData | None) -> list[str]:
     Return every listed NUT device other than the primary UPS, sorted.
 
     A device that does not answer is included: it gets a ``Connected`` binary
-    sensor that shows it as disconnected, and its entities from earlier
-    builds are moved to the new keys. Older agents (no ``statuses``) get none.
+    sensor that shows it as disconnected. Older agents (no ``statuses``) get
+    none.
     """
     if data is None or data.nut is None or data.nut.statuses is None:
         return []
     primary = _primary_nut_device_name(data)
     return sorted(name for name in all_nut_device_names(data) if name != primary)
+
+
+@callback
+def async_move_legacy_nut_entities(
+    hass: HomeAssistant, entry_id: str, data: UnraidData | None
+) -> None:
+    """
+    Move entities keyed ``nut_<slug>_*`` by earlier builds to the hashed keys.
+
+    Covers the devices whose keys cleanup keeps (secondary_nut_device_names),
+    whether or not they answer or report a reading, so cleanup never sees the
+    old key of a listed device. Only registry entries move; no entity is
+    created. Both platforms call this before adding entities, so no entity
+    takes a new key before the old entity has moved to it.
+    """
+    if data is None:
+        return
+    names = all_nut_device_names(data)
+    for name in sorted(secondary_nut_device_names(data)):
+        prefix = nut_device_key(name)
+        for domain, suffixes in (
+            ("sensor", NUT_SENSOR_SUFFIXES),
+            ("binary_sensor", NUT_BINARY_SENSOR_SUFFIXES),
+        ):
+            for suffix in suffixes:
+                async_adopt_unique_id(
+                    hass,
+                    domain,
+                    f"{entry_id}_{prefix}_{suffix}",
+                    nut_legacy_unique_ids(entry_id, name, suffix, names),
+                )
 
 
 def all_nut_device_names(data: UnraidData | None) -> set[str]:

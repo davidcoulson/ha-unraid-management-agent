@@ -87,12 +87,9 @@ from .hwmon import (
     temperature_legacy_unique_ids,
 )
 from .nut import (
-    NUT_SENSOR_SUFFIXES,
-    all_nut_device_names,
+    async_move_legacy_nut_entities,
     find_nut_status,
-    listed_secondary_nut_devices,
     nut_device_key,
-    nut_legacy_unique_ids,
     secondary_nut_statuses,
 )
 from .storage import (
@@ -3578,19 +3575,7 @@ def _new_nut_device_sensors(
     holds the keys already created and is updated in place.
     """
     data = coordinator.data
-    names = all_nut_device_names(data)
-    # Move entities keyed by the slug-only keys of earlier builds for every
-    # listed device, not only once a reading appears, so cleanup never removes
-    # one whose device is silent or whose reading is missing for a while.
-    for name in listed_secondary_nut_devices(data):
-        prefix = nut_device_key(name)
-        for suffix in NUT_SENSOR_SUFFIXES:
-            async_adopt_unique_id(
-                coordinator.hass,
-                "sensor",
-                f"{entry.entry_id}_{prefix}_{suffix}",
-                nut_legacy_unique_ids(entry.entry_id, name, suffix, names),
-            )
+    async_move_legacy_nut_entities(coordinator.hass, entry.entry_id, data)
 
     new_entities: list[SensorEntity] = []
     for name, status in secondary_nut_statuses(data):

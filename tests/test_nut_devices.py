@@ -30,6 +30,7 @@ from custom_components.unraid_management_agent.diagnostics import (
     async_get_config_entry_diagnostics,
 )
 from custom_components.unraid_management_agent.nut import (
+    async_move_legacy_nut_entities,
     find_nut_status,
     listed_secondary_nut_devices,
     nut_device_key,
@@ -736,6 +737,50 @@ async def test_slug_keyed_entity_of_silent_device_is_moved(
     state = hass.states.get("sensor.gpu_ups_battery")
     assert state is not None
     assert state.state == "100.0"
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_slug_keyed_entity_of_first_device_moved_while_ups_missing(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """With apcupsd /ups down at setup, the first device's old entities move too."""
+    mock_async_unraid_client.get_ups_info.return_value = None
+    mock_async_unraid_client.get_nut_info.return_value = _nut(
+        _ups_status("ups", 623), ATS_STATUS
+    )
+    entry = _entry(hass)
+    for platform, suffix, entity_id in (
+        ("sensor", "battery", "sensor.first_ups_battery"),
+        ("binary_sensor", "connected", "binary_sensor.first_ups_connected"),
+    ):
+        _register_legacy(
+            entity_registry, entry, platform, f"{ENTRY_ID}_nut_ups_{suffix}", entity_id
+        )
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    # Moved but not created yet: ups is taken as the primary without /ups.
+    battery = entity_registry.async_get("sensor.first_ups_battery")
+    assert battery is not None
+    assert battery.unique_id == f"{ENTRY_ID}_{UPS}_battery"
+    assert hass.states.get("sensor.first_ups_battery") is None
+    coordinator = entry.runtime_data.coordinator
+    keys = _build_valid_dynamic_entity_keys(coordinator.data)
+    assert {f"{UPS}_battery", f"{UPS}_connected"} <= keys
+
+    # /ups answers from apcupsd: the entities come back with their entity IDs.
+    coordinator.async_set_updated_data(replace(coordinator.data, ups=_APCUPSD_UPS))
+    await hass.async_block_till_done()
+
+    state = hass.states.get("sensor.first_ups_battery")
+    assert state is not None
+    assert state.state == "100.0"
+    connected = hass.states.get("binary_sensor.first_ups_connected")
+    assert connected is not None
+    assert connected.state == STATE_ON
+    async_move_legacy_nut_entities(hass, ENTRY_ID, None)
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
