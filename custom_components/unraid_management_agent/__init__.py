@@ -45,6 +45,8 @@ from .coordinator import (
     UnraidRuntimeData,
 )
 from .frontend import async_register_frontend
+from .nic import async_remove_nic_devices, current_card_ids
+from .nic import device_identifier as nic_device_identifier
 from .storage import CONTROLLER, ENCLOSURE, current_storage_ids, device_identifier
 
 # Service field constants
@@ -379,6 +381,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
     )
     if read_only:
         _async_remove_control_entities(hass, entry)
+    if not coordinator.is_nic_devices_enabled():
+        # Network card devices were turned off (or never on): drop leftovers.
+        async_remove_nic_devices(hass, entry)
 
     # Register the server device up front: VM and container child devices
     # reference it by registry id, so it must exist before any platform loads.
@@ -414,18 +419,24 @@ async def async_remove_config_entry_device(
     device_entry: dr.DeviceEntry,
 ) -> bool:
     """
-    Allow removing a VM, container or storage device once it no longer exists.
+    Allow removing a VM, container, storage or network card device once it no longer exists.
 
-    The server device itself, and VMs, containers, storage controllers or
-    enclosures that the agent still reports, cannot be removed.
+    The server device itself, and VMs, containers, storage controllers,
+    enclosures or network cards that the agent still reports, cannot be removed.
     """
     data = entry.runtime_data.coordinator.data
     vm_prefix = f"{entry.entry_id}_vm_"
     container_prefix = f"{entry.entry_id}_container_"
+    nic_prefix = nic_device_identifier(entry.entry_id, "")
     topology = data.storage_topology if data else None
     for domain, identifier in device_entry.identifiers:
         if domain != DOMAIN:
             continue
+        if identifier.startswith(nic_prefix):
+            cards = data.network_cards if data else None
+            if cards is None or cards.state != "ok":
+                return False
+            return identifier[len(nic_prefix) :] not in current_card_ids(cards)
         for kind in (CONTROLLER, ENCLOSURE):
             prefix = device_identifier(entry.entry_id, kind, "")
             if identifier.startswith(prefix):

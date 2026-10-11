@@ -1,0 +1,318 @@
+{
+  "state": "ok",
+  "cards": [
+    {
+      "id": "0000:41:00",
+      "vendor": "Mellanox Technologies",
+      "model": "ConnectX-6 Dx",
+      "device_name": "MT2892 Family [ConnectX-6 Dx]",
+      "subsystem_name": "Device 0016",
+      "vendor_id": "15b3",
+      "device_id": "101d",
+      "subsystem_vendor_id": "15b3",
+      "subsystem_device_id": "0016",
+      "driver": "mlx5_core",
+      "firmware_version": "22.47.3576 (MT_0000000359)",
+      "temperatures": [
+        {
+          "sensor": "asic",
+          "label": "asic",
+          "pci_address": "0000:41:00.0",
+          "celsius": 89,
+          "highest_celsius": 90,
+          "crit_celsius": 105
+        },
+        {
+          "sensor": "module",
+          "label": "Module0",
+          "interface": "eth0",
+          "pci_address": "0000:41:00.0",
+          "celsius": 51,
+          "highest_celsius": 55.875,
+          "crit_celsius": 80
+        },
+        {
+          "sensor": "module",
+          "label": "Module1",
+          "interface": "eth1",
+          "pci_address": "0000:41:00.1",
+          "celsius": 52.125,
+          "highest_celsius": 57.875,
+          "crit_celsius": 80
+        }
+      ],
+      "ports": [
+        {
+          "id": "0000:41:00.0",
+          "interface": "eth0",
+          "pci_address": "0000:41:00.0",
+          "dev_port": 0,
+          "operstate": "up",
+          "carrier": true,
+          "speed_mbps": 100000,
+          "duplex": "full",
+          "mtu": 1500,
+          "master": "bond0",
+          "module": {
+            "identifier": "QSFP28",
+            "standard": "SFF-8636",
+            "connector": "No separable connector",
+            "compliance": "100G AOC or 25GAUI C2M AOC (BER 5e-5)",
+            "vendor_name": "CISCO-PROLINE",
+            "vendor_pn": "QSFP-100G-AOC-3M",
+            "vendor_rev": "D1",
+            "wavelength_nm": 850,
+            "ddm_supported": true,
+            "temperature_celsius": 51.01,
+            "voltage_volts": 3.2676,
+            "rx_power_type": "average",
+            "lanes": [
+              {
+                "lane": 1,
+                "tx_bias_ma": 6.762,
+                "tx_power_mw": 1.3524,
+                "tx_power_dbm": 1.31,
+                "rx_power_mw": 2.324,
+                "rx_power_dbm": 3.66
+              },
+              {
+                "lane": 2,
+                "tx_bias_ma": 6.888,
+                "tx_power_mw": 1.3776,
+                "tx_power_dbm": 1.39,
+                "rx_power_mw": 2.4032,
+                "rx_power_dbm": 3.81
+              },
+              {
+                "lane": 3,
+                "tx_bias_ma": 6.678,
+                "tx_power_mw": 1.3356,
+                "tx_power_dbm": 1.26,
+                "rx_power_mw": 2.4448,
+                "rx_power_dbm": 3.88
+              },
+              {
+                "lane": 4,
+                "tx_bias_ma": 6.804,
+                "tx_power_mw": 1.3608,
+                "tx_power_dbm": 1.34,
+                "rx_power_mw": 2.0832,
+                "rx_power_dbm": 3.19
+              }
+            ],
+            "alarms": [],
+            "warnings": [],
+            "thresholds": {
+              "temperature_celsius": {
+                "high_alarm": 90,
+                "high_warning": 80,
+                "low_warning": -10,
+                "low_alarm": -20
+              },
+              "voltage_volts": {
+                "high_alarm": 3.62,
+                "high_warning": 3.6,
+                "low_warning": 3,
+                "low_alarm": 2.95
+              },
+              "tx_bias_ma": {
+                "high_alarm": 14,
+                "high_warning": 12,
+                "low_warning": 1.5,
+                "low_alarm": 1
+              },
+              "tx_power_dbm": {
+                "high_alarm": 8.13,
+                "high_warning": 7.99,
+                "low_warning": -6.99,
+                "low_alarm": -10
+              },
+              "rx_power_dbm": {
+                "high_alarm": 8.13,
+                "high_warning": 7.99,
+                "low_warning": -10,
+                "low_alarm": -13.01
+              }
+            }
+          }
+        },
+        {
+          "id": "0000:41:00.1",
+          "interface": "eth1",
+          "pci_address": "0000:41:00.1",
+          "dev_port": 0,
+          "operstate": "up",
+          "carrier": true,
+          "speed_mbps": 100000,
+          "duplex": "full",
+          "mtu": 1500,
+          "master": "bond0",
+          "module": {
+            "identifier": "QSFP28",
+            "standard": "SFF-8636",
+            "connector": "No separable connector",
+            "compliance": "100G AOC or 25GAUI C2M AOC (BER 5e-5)",
+            "vendor_name": "CISCO-PROLINE",
+            "vendor_pn": "QSFP-100G-AOC-3M",
+            "vendor_rev": "D1",
+            "wavelength_nm": 850,
+            "ddm_supported": true,
+            "temperature_celsius": 52.18,
+            "voltage_volts": 3.186,
+            "rx_power_type": "average",
+            "lanes": [
+              {
+                "lane": 1,
+                "tx_bias_ma": 7.224,
+                "tx_power_mw": 1.4448,
+                "tx_power_dbm": 1.6,
+                "rx_power_mw": 2.1104,
+                "rx_power_dbm": 3.24
+              },
+              {
+                "lane": 2,
+                "tx_bias_ma": 6.972,
+                "tx_power_mw": 1.3944,
+                "tx_power_dbm": 1.44,
+                "rx_power_mw": 2.2352,
+                "rx_power_dbm": 3.49
+              },
+              {
+                "lane": 3,
+                "tx_bias_ma": 7.056,
+                "tx_power_mw": 1.4112,
+                "tx_power_dbm": 1.5,
+                "rx_power_mw": 2.356,
+                "rx_power_dbm": 3.72
+              },
+              {
+                "lane": 4,
+                "tx_bias_ma": 7.014,
+                "tx_power_mw": 1.4028,
+                "tx_power_dbm": 1.47,
+                "rx_power_mw": 2.2792,
+                "rx_power_dbm": 3.58
+              }
+            ],
+            "alarms": [],
+            "warnings": [],
+            "thresholds": {
+              "temperature_celsius": {
+                "high_alarm": 90,
+                "high_warning": 80,
+                "low_warning": -10,
+                "low_alarm": -20
+              },
+              "voltage_volts": {
+                "high_alarm": 3.62,
+                "high_warning": 3.6,
+                "low_warning": 3,
+                "low_alarm": 2.95
+              },
+              "tx_bias_ma": {
+                "high_alarm": 14,
+                "high_warning": 12,
+                "low_warning": 1.5,
+                "low_alarm": 1
+              },
+              "tx_power_dbm": {
+                "high_alarm": 8.13,
+                "high_warning": 7.99,
+                "low_warning": -6.99,
+                "low_alarm": -10
+              },
+              "rx_power_dbm": {
+                "high_alarm": 8.13,
+                "high_warning": 7.99,
+                "low_warning": -10,
+                "low_alarm": -13.01
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "0000:d5:00",
+      "vendor": "Aquantia Corp.",
+      "model": "AQC113CS",
+      "device_name": "AQtion AQC113CS NBase-T/IEEE 802.3an Ethernet Controller [Antigua 10G]",
+      "subsystem_name": "Device d113",
+      "vendor_id": "1d6a",
+      "device_id": "94c0",
+      "subsystem_vendor_id": "1849",
+      "subsystem_device_id": "d113",
+      "driver": "atlantic",
+      "firmware_version": "1.3.24",
+      "temperatures": [
+        {
+          "sensor": "phy",
+          "label": "PHY Temperature",
+          "pci_address": "0000:d5:00.0",
+          "celsius": 42,
+          "interface": "eth2"
+        },
+        {
+          "sensor": "mac",
+          "label": "MAC Temperature",
+          "pci_address": "0000:d5:00.0",
+          "celsius": 42,
+          "interface": "eth2"
+        }
+      ],
+      "ports": [
+        {
+          "id": "0000:d5:00.0",
+          "interface": "eth2",
+          "pci_address": "0000:d5:00.0",
+          "dev_port": 0,
+          "operstate": "down",
+          "carrier": false,
+          "mtu": 1500
+        }
+      ]
+    },
+    {
+      "id": "0000:d6:00",
+      "vendor": "Aquantia Corp.",
+      "model": "AQC113CS",
+      "device_name": "AQtion AQC113CS NBase-T/IEEE 802.3an Ethernet Controller [Antigua 10G]",
+      "subsystem_name": "Device d113",
+      "vendor_id": "1d6a",
+      "device_id": "94c0",
+      "subsystem_vendor_id": "1849",
+      "subsystem_device_id": "d113",
+      "driver": "atlantic",
+      "firmware_version": "1.3.24",
+      "temperatures": [
+        {
+          "sensor": "phy",
+          "label": "PHY Temperature",
+          "pci_address": "0000:d6:00.0",
+          "celsius": 42,
+          "interface": "eth3"
+        },
+        {
+          "sensor": "mac",
+          "label": "MAC Temperature",
+          "pci_address": "0000:d6:00.0",
+          "celsius": 42,
+          "interface": "eth3"
+        }
+      ],
+      "ports": [
+        {
+          "id": "0000:d6:00.0",
+          "interface": "eth3",
+          "pci_address": "0000:d6:00.0",
+          "dev_port": 0,
+          "operstate": "down",
+          "carrier": false,
+          "mtu": 1500
+        }
+      ]
+    }
+  ],
+  "collection_duration_ms": 217,
+  "timestamp": "2026-10-11T13:48:02-04:00"
+}

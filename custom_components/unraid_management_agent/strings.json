@@ -63,6 +63,7 @@
           "enable_container_updates": "Enable container update checks",
           "read_only": "Read-only (sensors only)",
           "enable_vm_devices": "Show virtual machines as separate devices",
+          "enable_nic_devices": "Show network cards as separate devices",
           "enable_container_devices": "Show Docker containers as separate devices"
         },
         "data_description": {
@@ -71,6 +72,7 @@
           "enable_container_updates": "Periodically check Docker containers for available image updates. This may slow down polling and uses additional network requests. Also creates an update entity for each container, from which its image update can be installed.",
           "read_only": "Only create sensors. Switches, buttons and number controls are not created (existing ones are removed), and the integration's actions refuse to run, so Home Assistant cannot start, stop or reboot anything on the server. Update entities still show available updates but do not offer to install them.",
           "enable_vm_devices": "Give each VM its own device under the server, holding its power switch, control buttons and metric sensors (CPU, memory, network and disk rates). When off, VM switches and buttons stay on the server device and no VM sensors are created.",
+          "enable_nic_devices": "Give each PCI network card its own device under the server, with its ASIC, PHY and MAC temperatures, and per port the link speed and the plugged optic's diagnostics (module temperature and voltage, RX and TX power, alarm and warning flags, vendor and part number). Needs an agent that reports network cards. When off, no network card entities are created (existing ones are removed).",
           "enable_container_devices": "Give each container its own device under the server, holding its switches, restart button and metric sensors with short names (Running, CPU, Memory). When off, container entities stay on the server device, named after the container."
         }
       }
@@ -420,6 +422,51 @@
       "storage_slot_errors": {
         "name": "Slot {index} Errors"
       },
+      "nic_asic_temperature": {
+        "name": "ASIC Temperature"
+      },
+      "nic_phy_temperature": {
+        "name": "PHY Temperature"
+      },
+      "nic_port_phy_temperature": {
+        "name": "{port} PHY Temperature"
+      },
+      "nic_mac_temperature": {
+        "name": "MAC Temperature"
+      },
+      "nic_port_mac_temperature": {
+        "name": "{port} MAC Temperature"
+      },
+      "nic_temperature": {
+        "name": "{label}"
+      },
+      "nic_port_temperature": {
+        "name": "{port} {label}"
+      },
+      "nic_firmware": {
+        "name": "Firmware"
+      },
+      "nic_link_speed": {
+        "name": "{port} Link Speed"
+      },
+      "nic_module_temperature": {
+        "name": "{port} Module Temperature"
+      },
+      "nic_module_voltage": {
+        "name": "{port} Module Voltage"
+      },
+      "nic_rx_power": {
+        "name": "{port} RX Power"
+      },
+      "nic_tx_power": {
+        "name": "{port} TX Power"
+      },
+      "nic_module_vendor": {
+        "name": "{port} Optic Vendor"
+      },
+      "nic_module_part_number": {
+        "name": "{port} Optic Part Number"
+      },
       "alerts_firing": {
         "name": "Firing alerts"
       }
@@ -496,6 +543,9 @@
       },
       "storage_drive_health": {
         "name": "Drive Health"
+      },
+      "nic_module_problem": {
+        "name": "{port} Optic"
       },
       "alert_rule": {
         "name": "Alert {rule_name}",
