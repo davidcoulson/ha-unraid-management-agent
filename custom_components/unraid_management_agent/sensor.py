@@ -113,9 +113,9 @@ from .zfs_drives import (
     drive_details,
     drive_locations,
     failing_drives,
-    has_wear,
     hottest_drive,
     media_errors,
+    roll_up_keys,
     worst_wear,
 )
 
@@ -3076,7 +3076,6 @@ class UnraidZFSPoolDriveSensorEntityDescription(SensorEntityDescription):
     """Description for a sensor rolling up a ZFS pool's drive health."""
 
     value_fn: Callable[[Any], tuple[Any, dict[str, Any]]]
-    exists_fn: Callable[[Any], bool] = lambda _pool: True
 
 
 ZFS_POOL_DRIVE_SENSOR_DESCRIPTIONS: tuple[
@@ -3094,7 +3093,6 @@ ZFS_POOL_DRIVE_SENSOR_DESCRIPTIONS: tuple[
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=worst_wear,
-        exists_fn=has_wear,
     ),
     UnraidZFSPoolDriveSensorEntityDescription(
         key="drive_media_errors",
@@ -3108,6 +3106,11 @@ ZFS_POOL_DRIVE_SENSOR_DESCRIPTIONS: tuple[
         value_fn=failing_drives,
     ),
 )
+
+
+ZFS_POOL_DRIVE_SENSOR_BY_KEY: dict[str, UnraidZFSPoolDriveSensorEntityDescription] = {
+    description.key: description for description in ZFS_POOL_DRIVE_SENSOR_DESCRIPTIONS
+}
 
 
 class UnraidZFSPoolDriveSensor(UnraidZFSPoolSensorBase):
@@ -4914,22 +4917,6 @@ async def async_setup_entry(
                         UnraidZFSPoolSensor(coordinator, entry, pool.name, description)
                         for description in ZFS_POOL_SENSOR_DESCRIPTIONS
                     )
-                    # Drive health roll-ups live on the pool's own device and
-                    # need an agent that reports pool members (2026.10+).
-                    if (
-                        zfs_pool_devices_enabled(coordinator)
-                        and pool.drives is not None
-                    ):
-                        entities.append(
-                            UnraidZFSPoolDriveCountSensor(coordinator, entry, pool.name)
-                        )
-                        entities.extend(
-                            UnraidZFSPoolDriveSensor(
-                                coordinator, entry, pool.name, description
-                            )
-                            for description in ZFS_POOL_DRIVE_SENSOR_DESCRIPTIONS
-                            if description.exists_fn(pool)
-                        )
 
             # ZFS ARC sensors
             for description in ZFS_ARC_SENSOR_DESCRIPTIONS:
@@ -5170,6 +5157,48 @@ async def async_setup_entry(
     _add_fan_sensors()
 
     entry.async_on_unload(coordinator.async_add_listener(callback(_add_fan_sensors)))
+
+    # ZFS pool drive roll-ups - on pool devices, created as drive data appears
+    # (an agent upgrade, or NVMe wear first reported) without a reload.
+    if coordinator.is_collector_enabled("zfs") and zfs_pool_devices_enabled(
+        coordinator
+    ):
+        setup_pools = {pool.name for pool in (data.zfs_pools if data else None) or []}
+        seen_roll_ups: set[str] = set()
+
+        def _add_zfs_roll_up_sensors() -> None:
+            current_data = coordinator.data
+            if not current_data:
+                return
+            async_prune_seen_names(
+                hass, "sensor", seen_roll_ups, lambda key: f"{entry.entry_id}_zfs_{key}"
+            )
+            new_entities: list[SensorEntity] = []
+            for pool in current_data.zfs_pools or []:
+                # Pool sensors are only set up for the pools present at setup.
+                if pool.name not in setup_pools:
+                    continue
+                for key in roll_up_keys(pool):
+                    if f"{pool.name}_{key}" in seen_roll_ups:
+                        continue
+                    seen_roll_ups.add(f"{pool.name}_{key}")
+                    new_entities.append(
+                        UnraidZFSPoolDriveCountSensor(coordinator, entry, pool.name)
+                        if key == "drive_count"
+                        else UnraidZFSPoolDriveSensor(
+                            coordinator,
+                            entry,
+                            pool.name,
+                            ZFS_POOL_DRIVE_SENSOR_BY_KEY[key],
+                        )
+                    )
+            if new_entities:
+                async_add_entities(new_entities)
+
+        _add_zfs_roll_up_sensors()
+        entry.async_on_unload(
+            coordinator.async_add_listener(callback(_add_zfs_roll_up_sensors))
+        )
 
     # hwmon temperature sensors - one per channel, created as channels appear.
     # Independent of fan control: these are plain lm-sensors readings.

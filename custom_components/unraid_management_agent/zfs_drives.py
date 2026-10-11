@@ -12,8 +12,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from .storage import enclosure_name
-
 if TYPE_CHECKING:
     from .api.models import DriveHealth, StorageTopology, ZFSDrive, ZFSPool
 
@@ -90,6 +88,31 @@ def failing_drives(pool: ZFSPool) -> tuple[int | None, dict[str, Any]]:
     return len(failing), ({"drives": failing} if failing else {})
 
 
+# Keys of the per-pool drive roll-up sensors (unique ID: zfs_<pool>_<key>).
+ROLL_UP_KEYS: tuple[str, ...] = (
+    "drive_count",
+    "drive_max_temperature",
+    "drive_max_wear",
+    "drive_media_errors",
+    "drives_failing",
+)
+
+
+def roll_up_keys(pool: ZFSPool) -> list[str]:
+    """
+    Return the roll-up sensors a pool should have.
+
+    None without member drives (an agent older than 2026.10), and no wear
+    sensor for a pool without NVMe members. Setup creates exactly these and
+    stale cleanup keeps exactly these, so a roll-up that no longer applies
+    (agent rollback, NVMe members replaced by hard drives) is removed after
+    the usual grace period.
+    """
+    if pool.drives is None:
+        return []
+    return [key for key in ROLL_UP_KEYS if key != "drive_max_wear" or has_wear(pool)]
+
+
 def drive_locations(
     topology: StorageTopology | None,
 ) -> dict[str, tuple[str, int]]:
@@ -100,6 +123,9 @@ def drive_locations(
     block devices. Drives behind controllers without topology support (for
     example NVMe on a PCIe switch card) have no location.
     """
+    # Imported here: storage imports cleanup, which imports this module.
+    from .storage import enclosure_name
+
     if topology is None:
         return {}
     by_id = {e.id: e for e in topology.enclosures or []}

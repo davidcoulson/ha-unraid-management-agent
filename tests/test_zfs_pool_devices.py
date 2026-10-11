@@ -40,6 +40,7 @@ from custom_components.unraid_management_agent.zfs_drives import (
     failing_drives,
     hottest_drive,
     media_errors,
+    roll_up_keys,
     worst_wear,
 )
 
@@ -402,14 +403,72 @@ async def test_roll_ups_stay_valid_while_option_on(
 
 
 def test_valid_keys_include_roll_ups_only_with_option() -> None:
-    """The roll-up keys are valid only when pool devices are enabled."""
-    data = UnraidData(zfs_pools=_pools())
+    """Roll-up keys are valid only with the option on, and only where they apply."""
+    data = UnraidData(zfs_pools=[*_pools(), *mock_zfs_pools()])
     off = _build_valid_dynamic_entity_keys(data)
     on = _build_valid_dynamic_entity_keys(data, zfs_pool_devices=True)
     for key in DRIVE_KEYS:
         assert f"zfs_flash_{key}" not in off
         assert f"zfs_flash_{key}" in on
+        # An agent without member drives: no roll-ups at all.
+        assert f"zfs_zfs_pool_{key}" not in on
     assert "zfs_flash_usage" in off
+    # A pool of hard drives has no wear sensor to keep.
+    assert "zfs_exos24tb_drive_max_wear" not in on
+    assert "zfs_exos24tb_drive_count" in on
+
+
+def test_roll_up_keys() -> None:
+    """Which roll-ups a pool gets."""
+    assert roll_up_keys(_pool("flash")) == list(DRIVE_KEYS)
+    assert "drive_max_wear" not in roll_up_keys(_pool("exos24tb"))
+    assert roll_up_keys(mock_zfs_pools()[0]) == []
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_roll_ups_appear_when_drive_data_appears(
+    hass: HomeAssistant, mock_async_unraid_client: MagicMock
+) -> None:
+    """Roll-ups are created on updates once the agent reports drives."""
+    older = [
+        ZFSPool.model_validate({**p.model_dump(), "drives": None}) for p in _pools()
+    ]
+    entry = await _setup(hass, mock_async_unraid_client, older)
+    registry = er.async_get(hass)
+    assert (
+        registry.async_get_entity_id(
+            "sensor", DOMAIN, f"{ENTRY_ID}_zfs_flash_drive_count"
+        )
+        is None
+    )
+
+    # The agent is upgraded: drives appear, the roll-ups follow without a reload.
+    coordinator = entry.runtime_data.coordinator
+    coordinator.data.zfs_pools = [
+        *_pools(),
+        ZFSPool.model_validate({"name": "new_pool", "drives": []}),
+    ]
+    coordinator.async_set_updated_data(coordinator.data)
+    await hass.async_block_till_done()
+    for key in DRIVE_KEYS:
+        assert _entity(hass, "sensor", f"zfs_flash_{key}").device_id == (
+            _pool_device(hass, "flash").id
+        )
+    # A pool that appeared after setup waits for a reload, like its other sensors.
+    assert (
+        registry.async_get_entity_id(
+            "sensor", DOMAIN, f"{ENTRY_ID}_zfs_new_pool_drive_count"
+        )
+        is None
+    )
+    # A further update adds nothing twice, and an update without data is ignored.
+    coordinator.async_set_updated_data(coordinator.data)
+    await hass.async_block_till_done()
+    count = len(er.async_entries_for_config_entry(registry, ENTRY_ID))
+    coordinator.data = None
+    coordinator.async_update_listeners()
+    await hass.async_block_till_done()
+    assert len(er.async_entries_for_config_entry(registry, ENTRY_ID)) == count
 
 
 # ── Device removal ────────────────────────────────────────────────────────────
