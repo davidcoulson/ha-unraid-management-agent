@@ -42,6 +42,7 @@ from .const import (
     DEFAULT_ENABLE_ZFS_POOL_DEVICES,
     DOMAIN,
 )
+from .hwmon import hid_drivers_without_ids
 from .nut import (
     NUT_BINARY_SENSOR_SUFFIXES,
     NUT_KEY_PREFIX,
@@ -426,10 +427,21 @@ def _unavailable_data_prefixes(data: UnraidData) -> set[str]:
         prefixes.add("disk_")
     # fan_ covers fan_{name} (from system.fans) and fan_speed_{id} (from
     # fan_control); protect the whole prefix if either source is unavailable.
-    if data.system is None or data.fan_control is None:
+    # A missing list is not a complete inventory either; nor are USB HID
+    # readings without a device_id (an older agent or a downgrade), for the
+    # sensors of that controller model.
+    system = data.system
+    if system is None or data.fan_control is None or system.fans is None:
         prefixes.add("fan_")
-    if data.system is None:
+    else:
+        prefixes.update(f"fan_{d}_" for d in hid_drivers_without_ids(system.fans))
+    if system is None or system.temperatures is None:
         prefixes.add("temperature_")
+    else:
+        prefixes.update(
+            f"temperature_{d}_hid_"
+            for d in hid_drivers_without_ids(system.temperatures)
+        )
     if data.gpu is None:
         prefixes.add("gpu_")
     if data.network is None:

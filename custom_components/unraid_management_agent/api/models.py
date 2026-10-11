@@ -89,8 +89,29 @@ class FanInfo(BaseModel):
         description="Stable identity of a USB HID chip's device (serial or port)",
         examples=["07274-50017"],
     )
+    label: str | None = Field(
+        None,
+        description="Channel label from lm-sensors (driver or sensors.conf)",
+        examples=["Coolant Flow (rpm)"],
+    )
 
     model_config = ConfigDict(frozen=True, extra="allow")
+
+    @property
+    def is_flow(self) -> bool:
+        """
+        Return True when the channel is labelled as a flow meter.
+
+        Flow meters (an Aquacomputer flow sensor on an Octo fan header, for
+        example) report pulses as RPM; the user labels the channel in
+        sensors.conf. The reading stays in RPM.
+
+        Example:
+            >>> FanInfo(name="octo_fan8", label="Coolant Flow (rpm)").is_flow
+            True
+
+        """
+        return "flow" in (self.label or "").lower()
 
     @property
     def device_key(self) -> str | None:

@@ -17,6 +17,7 @@ CONF_ENABLE_VM_DEVICES: Final = "enable_vm_devices"
 CONF_ENABLE_GPU_DEVICES: Final = "enable_gpu_devices"
 CONF_ENABLE_NIC_DEVICES: Final = "enable_nic_devices"
 CONF_ENABLE_ZFS_POOL_DEVICES: Final = "enable_zfs_pool_devices"
+CONF_ENABLE_HWMON_DEVICES: Final = "enable_hwmon_devices"
 
 # Default values
 DEFAULT_PORT: Final = 8043
@@ -29,6 +30,7 @@ DEFAULT_ENABLE_VM_DEVICES: Final = False
 DEFAULT_ENABLE_GPU_DEVICES: Final = False
 DEFAULT_ENABLE_NIC_DEVICES: Final = False
 DEFAULT_ENABLE_ZFS_POOL_DEVICES: Final = False
+DEFAULT_ENABLE_HWMON_DEVICES: Final = False
 
 # Fixed update interval following Home Assistant best practices
 # https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/appropriate-polling/

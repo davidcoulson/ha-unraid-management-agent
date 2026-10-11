@@ -243,6 +243,7 @@ Click **Configure** on an active integration entry to adjust operational options
 | **Show GPUs as separate devices**              | `false` | Creates a `GPU · <name>` child device for each GPU, keyed by its UUID or PCI address.                |
 | **Show network cards as separate devices**     | `false` | Creates a child device per PCI network card with ASIC/PHY/MAC temperatures, link speed and SFP/QSFP optic diagnostics (needs an agent with the `nic` collector). |
 | **Show ZFS pools as separate devices**         | `false` | Creates a child device for each ZFS pool holding its sensors, plus drive health roll-ups (hottest drive, worst NVMe wear, media errors, failing drives). |
+| **Show USB sensor controllers as separate devices** | `false` | Creates a child device for each USB sensor controller the agent identifies (e.g. an Aquacomputer Octo), holding its fan and temperature sensors named by their lm-sensors labels. |
 | **Enable container update checks**             | `false` | Tracks container image digest updates and adds an `update` entity per container.                     |
 | **Read-only (sensors only)**                   | `false` | Restricts the integration to monitoring only, disabling all switches, buttons, and control actions.  |
 

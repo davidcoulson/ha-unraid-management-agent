@@ -66,7 +66,8 @@
           "enable_gpu_devices": "Show GPUs as separate devices",
           "enable_nic_devices": "Show network cards as separate devices",
           "enable_container_devices": "Show Docker containers as separate devices",
-          "enable_zfs_pool_devices": "Show ZFS pools as separate devices"
+          "enable_zfs_pool_devices": "Show ZFS pools as separate devices",
+          "enable_hwmon_devices": "Show USB sensor controllers as separate devices"
         },
         "data_description": {
           "enable_websocket": "WebSocket provides instant updates instead of polling. When disabled, data is polled every 30 seconds.",
@@ -77,7 +78,8 @@
           "enable_gpu_devices": "Give each GPU its own device under the server, holding its utilization, temperature, power, energy and VRAM sensors with short names. When off, GPU sensors stay on the server device, named after the GPU.",
           "enable_nic_devices": "Give each PCI network card its own device under the server, with its ASIC, PHY and MAC temperatures, and per port the link speed and the plugged optic's diagnostics (module temperature and voltage, RX and TX power, alarm and warning flags, vendor and part number). Needs an agent that reports network cards. When off, no network card entities are created (existing ones are removed).",
           "enable_container_devices": "Give each container its own device under the server's Docker device, holding its switches, restart button and metric sensors with short names (Running, CPU, Memory). When off, container entities stay on the server device, named after the container.",
-          "enable_zfs_pool_devices": "Give each ZFS pool its own device under the server, holding its usage, health, scrub and error sensors with short names, plus drive health roll-ups: hottest drive temperature, worst NVMe wear, media errors, failing drives and a drive count with per-drive details. Drive health needs agent 2026.10 or later. When off, pool entities stay on the server device, named after the pool."
+          "enable_zfs_pool_devices": "Give each ZFS pool its own device under the server, holding its usage, health, scrub and error sensors with short names, plus drive health roll-ups: hottest drive temperature, worst NVMe wear, media errors, failing drives and a drive count with per-drive details. Drive health needs agent 2026.10 or later. When off, pool entities stay on the server device, named after the pool.",
+          "enable_hwmon_devices": "Give each USB sensor controller the agent identifies (for example an Aquacomputer Octo) its own device under the server, holding its fan and temperature sensors named by their lm-sensors labels (\"Array Fan1\", \"Coolant Temp\"). Entity IDs are kept. When off, these sensors stay on the server device. A channel labelled as flow in sensors.conf (\"Coolant Flow\") is shown as a flow channel either way; it still reports RPM."
         }
       }
     }
@@ -579,6 +581,9 @@
       },
       "zfs_pool_device_drives_failing": {
         "name": "Failing drives"
+      },
+      "hwmon_device_fan": {
+        "name": "Fan {channel}"
       }
     },
     "binary_sensor": {

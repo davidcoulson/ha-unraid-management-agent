@@ -51,9 +51,11 @@ from .entity import (
     async_get_or_create_group_device,
     gpu_device_identifier,
     gpu_device_keys,
+    hwmon_controller_identifier,
     zfs_pool_device_identifier,
 )
 from .frontend import async_register_frontend
+from .hwmon import hid_drivers_without_ids, hwmon_controller_of
 from .nic import async_remove_nic_devices, current_card_ids
 from .nic import device_identifier as nic_device_identifier
 from .storage import CONTROLLER, ENCLOSURE, current_storage_ids, device_identifier
@@ -513,10 +515,11 @@ async def async_remove_config_entry_device(
     device_entry: dr.DeviceEntry,
 ) -> bool:
     """
-    Allow removing a VM, container, GPU, storage, network card or ZFS pool device once it no longer exists.
+    Allow removing a VM, container, GPU, storage, network card, ZFS pool or sensor controller device once it no longer exists.
 
     The server device itself, and VMs, containers, GPUs, storage controllers,
-    enclosures, network cards or ZFS pools that the agent still reports, cannot
+    enclosures, network cards, ZFS pools or USB sensor controllers that the
+    agent still reports, cannot
     be removed.
     """
     data = entry.runtime_data.coordinator.data
@@ -525,6 +528,7 @@ async def async_remove_config_entry_device(
     gpu_prefix = gpu_device_identifier(entry.entry_id, "")
     nic_prefix = nic_device_identifier(entry.entry_id, "")
     zfs_pool_prefix = zfs_pool_device_identifier(entry.entry_id, "")
+    hwmon_prefix = f"{entry.entry_id}_hwmon_"
     topology = data.storage_topology if data else None
     for domain, identifier in device_entry.identifiers:
         if domain != DOMAIN:
@@ -564,6 +568,22 @@ async def async_remove_config_entry_device(
                 return False
             current_pools = {pool.name for pool in data.zfs_pools}
             return identifier[len(zfs_pool_prefix) :] not in current_pools
+        if identifier.startswith(hwmon_prefix):
+            system = data.system if data else None
+            if (
+                system is None
+                or system.fans is None
+                or system.temperatures is None
+                or hid_drivers_without_ids([*system.fans, *system.temperatures])
+            ):
+                # Not a complete inventory: the controller may still be there.
+                return False
+            current_controllers = {
+                hwmon_controller_identifier(entry.entry_id, *controller)
+                for item in [*(system.fans or []), *(system.temperatures or [])]
+                if (controller := hwmon_controller_of(item)) is not None
+            }
+            return identifier not in current_controllers
     return False
 
 

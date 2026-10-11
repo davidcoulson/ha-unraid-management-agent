@@ -440,6 +440,9 @@
         "range": {
           "1": "mdi:alert-circle"
         }
+      },
+      "hwmon_device_fan": {
+        "default": "mdi:fan"
       }
     },
     "binary_sensor": {
