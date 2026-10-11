@@ -5,6 +5,7 @@ import {
 } from "./config";
 import { BaseUnraidCard } from "./dashboard-cards-base";
 import { UnraidZfsCardEditor } from "./dashboard-cards-editor";
+import type { HassEntity } from "./ha-types";
 import {
   iconTemplate,
   mdiAlertCircle,
@@ -60,10 +61,51 @@ export class UnraidZfsCard extends BaseUnraidCard {
     };
   }
 
+  /**
+   * Entities of pools shown as their own devices (the "ZFS pools as separate
+   * devices" option): on child devices of the server, with short-name
+   * translation keys.
+   */
+  private getPoolDeviceEntities(translationKey: string): HassEntity[] {
+    const server = this.getActiveDevice();
+    if (!this.hass?.entities || !server) return [];
+    const found: HassEntity[] = [];
+    for (const ent of Object.values(this.hass.entities)) {
+      if (
+        ent.translation_key === translationKey &&
+        ent.device_id &&
+        ent.device_id !== server.id &&
+        this.isServerOrChildDevice(ent.device_id, server.id)
+      ) {
+        const stateObj = this.hass.states[ent.entity_id];
+        if (stateObj) found.push(stateObj);
+      }
+    }
+    return found;
+  }
+
   private getPools(): ZFSPoolItem[] {
-    const usageEntities = this.getEntities("zfs_pool_usage");
-    const healthEntities = this.getEntities("zfs_pool_health");
+    const deviceUsageEntities = this.getPoolDeviceEntities("zfs_pool_device_usage");
+    const usageEntities = [
+      ...this.getEntities("zfs_pool_usage"),
+      ...deviceUsageEntities,
+    ];
+    const healthEntities = [
+      ...this.getEntities("zfs_pool_health"),
+      ...this.getPoolDeviceEntities("zfs_pool_device_health"),
+    ];
     const corruptedEntities = this.getEntities("corrupted_files");
+    // Pool devices: their corrupted-file sensor is named by device, not pool.
+    // Only pool devices: pools on the server device share its ID.
+    const poolByDevice = new Map<string, string>();
+    for (const u of deviceUsageEntities) {
+      const deviceId = this.hass?.entities?.[u.entity_id]?.device_id;
+      const poolName = u.attributes?.pool_name as string | undefined;
+      if (deviceId && poolName) poolByDevice.set(deviceId, poolName);
+    }
+    const deviceCorrupted = this.getPoolDeviceEntities(
+      "zfs_pool_device_corrupted_files"
+    );
 
     const poolMap = new Map<string, ZFSPoolItem>();
     const device = this.getActiveDevice();
@@ -79,7 +121,9 @@ export class UnraidZfsCard extends BaseUnraidCard {
 
         const match = entityId.match(/_zfs_([a-zA-Z0-9_-]+)_usage$/i);
         if (match && match[1]) {
-          const poolName = match[1];
+          // The pool_name attribute is canonical: an entity created on a pool
+          // device and moved back keeps an ID like ..._zfs_pool_<name>_usage.
+          const poolName = (stateObj.attributes?.pool_name as string) || match[1];
           if (!poolMap.has(poolName)) {
             const usageNum = parseFloat(stateObj.state);
             poolMap.set(poolName, {
@@ -126,8 +170,12 @@ export class UnraidZfsCard extends BaseUnraidCard {
     }
 
     // Attach corrupted files
-    for (const c of corruptedEntities) {
-      const poolName = c.entity_id.replace(/^.*?_zfs_/, "").replace(/_corrupted_files$/, "");
+    for (const c of [...corruptedEntities, ...deviceCorrupted]) {
+      const deviceId = this.hass?.entities?.[c.entity_id]?.device_id;
+      const poolName =
+        (c.attributes?.pool_name as string) ||
+        (deviceId && poolByDevice.get(deviceId)) ||
+        c.entity_id.replace(/^.*?_zfs_/, "").replace(/_corrupted_files$/, "");
       const item = poolMap.get(poolName);
       if (item) {
         const val = parseInt(c.state, 10);

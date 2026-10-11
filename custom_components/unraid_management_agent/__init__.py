@@ -51,6 +51,7 @@ from .entity import (
     async_get_or_create_group_device,
     gpu_device_identifier,
     gpu_device_keys,
+    zfs_pool_device_identifier,
 )
 from .frontend import async_register_frontend
 from .nic import async_remove_nic_devices, current_card_ids
@@ -512,16 +513,18 @@ async def async_remove_config_entry_device(
     device_entry: dr.DeviceEntry,
 ) -> bool:
     """
-    Allow removing a VM, container, GPU, storage or network card device once it no longer exists.
+    Allow removing a VM, container, GPU, storage, network card or ZFS pool device once it no longer exists.
 
     The server device itself, and VMs, containers, GPUs, storage controllers,
-    enclosures or network cards that the agent still reports, cannot be removed.
+    enclosures, network cards or ZFS pools that the agent still reports, cannot
+    be removed.
     """
     data = entry.runtime_data.coordinator.data
     vm_prefix = f"{entry.entry_id}_vm_"
     container_prefix = f"{entry.entry_id}_container_"
     gpu_prefix = gpu_device_identifier(entry.entry_id, "")
     nic_prefix = nic_device_identifier(entry.entry_id, "")
+    zfs_pool_prefix = zfs_pool_device_identifier(entry.entry_id, "")
     topology = data.storage_topology if data else None
     for domain, identifier in device_entry.identifiers:
         if domain != DOMAIN:
@@ -556,6 +559,11 @@ async def async_remove_config_entry_device(
                 for container in ((data.containers if data else None) or [])
             }
             return identifier[len(container_prefix) :] not in current_containers
+        if identifier.startswith(zfs_pool_prefix):
+            if data is None or data.zfs_pools is None:
+                return False
+            current_pools = {pool.name for pool in data.zfs_pools}
+            return identifier[len(zfs_pool_prefix) :] not in current_pools
     return False
 
 

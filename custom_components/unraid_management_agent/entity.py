@@ -19,10 +19,12 @@ from .const import (
     CONF_ENABLE_CONTAINER_DEVICES,
     CONF_ENABLE_GPU_DEVICES,
     CONF_ENABLE_VM_DEVICES,
+    CONF_ENABLE_ZFS_POOL_DEVICES,
     CONF_READ_ONLY,
     DEFAULT_ENABLE_CONTAINER_DEVICES,
     DEFAULT_ENABLE_GPU_DEVICES,
     DEFAULT_ENABLE_VM_DEVICES,
+    DEFAULT_ENABLE_ZFS_POOL_DEVICES,
     DEFAULT_READ_ONLY,
     DOMAIN,
     MANUFACTURER,
@@ -367,6 +369,70 @@ def build_gpu_device_info(
 def read_only_enabled(coordinator: UnraidDataUpdateCoordinator) -> bool:
     """Return True when the entry is in read-only mode (nothing may change the server)."""
     return bool(coordinator.config_entry.options.get(CONF_READ_ONLY, DEFAULT_READ_ONLY))
+
+
+def zfs_pool_devices_enabled(coordinator: UnraidDataUpdateCoordinator) -> bool:
+    """Return True when ZFS pools are shown as separate devices (off by default)."""
+    return bool(
+        coordinator.config_entry.options.get(
+            CONF_ENABLE_ZFS_POOL_DEVICES, DEFAULT_ENABLE_ZFS_POOL_DEVICES
+        )
+    )
+
+
+def zfs_pool_device_identifier(entry_id: str, pool_name: str) -> str:
+    """Return the device registry identifier of a ZFS pool device."""
+    return f"{entry_id}_zfs_pool_{pool_name}"
+
+
+def build_zfs_pool_device_info(
+    coordinator: UnraidDataUpdateCoordinator, pool_name: str
+) -> DeviceInfo | ChildDeviceInfo:
+    """
+    Build device info for a ZFS pool.
+
+    Pools are child devices of the Unraid server, keyed by pool name (the
+    name is how zpool and Unraid identify a pool). The device name is
+    translated ("ZFS pool · <name>"), like VM devices.
+    """
+    entry_id = coordinator.config_entry.entry_id
+    # The server device is registered during setup, before the platforms load.
+    server = dr.async_get(coordinator.hass).async_get_device_by_identifier(
+        (DOMAIN, entry_id), entry_id
+    )
+    if server is None:
+        # Keep the entity on the server device if it is somehow missing.
+        return DeviceInfo(identifiers={(DOMAIN, entry_id)})
+    return ChildDeviceInfo(
+        identifiers={(DOMAIN, zfs_pool_device_identifier(entry_id, pool_name))},
+        parent_device_id=server.id,
+        translation_key="zfs_pool",
+        translation_placeholders={"name": pool_name},
+    )
+
+
+class UnraidZFSPoolEntity(UnraidBaseEntity):
+    """Base for per-pool ZFS entities: on the pool's device or the server device."""
+
+    def _use_pool_device_or_name(self, pool_name: str, sensor_type: str) -> None:
+        """
+        Put the entity on the pool's device, or name it after the pool.
+
+        With the "ZFS pools as separate devices" option on, the entity sits on
+        the pool's device with a short name (the device name holds the pool
+        name). Otherwise it stays on the server device, named after the pool.
+        Unique IDs are the same either way, so toggling the option moves the
+        existing entities and keeps their entity IDs.
+        """
+        if zfs_pool_devices_enabled(self.coordinator):
+            self._attr_device_info = build_zfs_pool_device_info(
+                self.coordinator, pool_name
+            )
+            self._attr_translation_key = f"zfs_pool_device_{sensor_type}"
+            self._attr_translation_placeholders = {}
+        else:
+            self._attr_translation_key = f"zfs_pool_{sensor_type}"
+            self._attr_translation_placeholders = {"pool_name": pool_name}
 
 
 class UnraidEntity(UnraidBaseEntity):
