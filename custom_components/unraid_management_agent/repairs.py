@@ -6,7 +6,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.repairs import RepairsFlow
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import issue_registry as ir
 
@@ -362,7 +362,7 @@ def _check_share_fuse_fallback(
         # Share fetch failed this cycle; keep the current issues
         return
 
-    prefix = f"share_fuse_fallback_{entry_id}_"
+    prefix = _share_issue_prefix(entry_id)
     keep: set[str] = set()
     for share in shares:
         if not share.name:
@@ -403,6 +403,24 @@ def _check_share_fuse_fallback(
         )
 
     # Clear issues for shares that are exclusive again or no longer exist
+    async_delete_share_issues(hass, entry_id, keep)
+
+
+def _share_issue_prefix(entry_id: str) -> str:
+    """Return the issue ID prefix of a config entry's share issues."""
+    return f"share_fuse_fallback_{entry_id}_"
+
+
+@callback
+def async_delete_share_issues(
+    hass: HomeAssistant, entry_id: str, keep: set[str] | None = None
+) -> None:
+    """Delete a config entry's share FUSE fallback issues, except ``keep``."""
+    prefix = _share_issue_prefix(entry_id)
     for domain, issue_id in list(ir.async_get(hass).issues):
-        if domain == DOMAIN and issue_id.startswith(prefix) and issue_id not in keep:
+        if (
+            domain == DOMAIN
+            and issue_id.startswith(prefix)
+            and issue_id not in (keep or ())
+        ):
             ir.async_delete_issue(hass, DOMAIN, issue_id)

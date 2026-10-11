@@ -41,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Exclusive share (FUSE fallback) monitoring**:
   - Each user share that is, or can be, an Unraid 6.12+ exclusive share gets a **Share {name} FUSE Fallback** problem binary sensor (diagnostic). It is on when the share is eligible for exclusive access but Unraid serves it through the slower FUSE user share layer, usually because a stray folder for it exists on another disk or pool. Attributes: `exclusive`, `exclusive_eligible`, `exclusive_pool` and, while on, `locations`, `stray_locations` and `locations_unchecked` (spun-down disks the agent did not check).
-  - A repair issue per affected share names the disks or pools holding the stray folder (or the unchecked ones) and clears automatically once the share is exclusive again or removed.
+  - A repair issue per affected share names the disks or pools holding the stray folder (or the unchecked ones) and clears automatically once the share is exclusive again, the share is removed or the integration entry is deleted.
   - Needs an agent that reports `exclusive` in `/shares`; with older agents or while the array is stopped no sensors are created (existing ones become unavailable) and existing issues are kept.
 
 - **Storage throughput and link utilization sensors**:

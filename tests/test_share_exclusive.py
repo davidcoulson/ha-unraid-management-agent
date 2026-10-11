@@ -336,6 +336,31 @@ async def test_repair_issue_lifecycle(
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_issues_removed_with_config_entry(
+    hass: HomeAssistant, mock_async_unraid_client: MagicMock
+) -> None:
+    """Removing the integration entry deletes its share issues only."""
+    entry = await _setup(hass, mock_async_unraid_client, [FALLBACK])
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        "share_fuse_fallback_other_entry_media",
+        is_fixable=False,
+        severity=ir.IssueSeverity.WARNING,
+        translation_key="share_fuse_fallback_restart",
+    )
+    assert set(_issues(hass)) == {f"{ISSUE_PREFIX}domains"}
+
+    await hass.config_entries.async_remove(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert _issues(hass) == {}
+    assert (DOMAIN, "share_fuse_fallback_other_entry_media") in ir.async_get(
+        hass
+    ).issues
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
 async def test_spun_down_disks_left_unchecked(
     hass: HomeAssistant, mock_async_unraid_client: MagicMock
 ) -> None:
