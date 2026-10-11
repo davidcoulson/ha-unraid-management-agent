@@ -339,15 +339,20 @@ _SOURCE_CASES: dict[str, tuple[UPSInfo | None, NUTInfo | None, set[str]]] = {
         _nut(_ups_status("ups", 623), ATS_STATUS),
         {f"{ATS}_connected"},
     ),
-    # No /ups data and the first device did not answer: the primary is
-    # guessed wrongly, so only devices that answered get a connected sensor
-    # and the real primary (ups) gets none.
+    # No /ups data and the first device did not answer: the first listed
+    # device is still the primary, so ups-gpu keeps its entities and ups gets
+    # none.
     "no-ups-data-first-silent": (
         None,
         _nut(
             _ups_status("ups-gpu", 508), ATS_STATUS, devices=["ups", "ups-gpu", "ats"]
         ),
-        {f"{ATS}_connected"},
+        {
+            f"{GPU}_battery",
+            f"{GPU}_runtime",
+            f"{GPU}_connected",
+            f"{ATS}_connected",
+        },
     ),
     # A listed device that never answered still gets a connected sensor.
     "listed-silent-device": (
@@ -451,6 +456,57 @@ async def test_silent_listed_device_is_disconnected(
     assert nut_connected_device_names(None) == []
 
 
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_secondaries_kept_while_ups_data_and_first_device_missing(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """/ups failing while the first device is silent changes no NUT entity."""
+    entry = await _setup(
+        hass,
+        mock_async_unraid_client,
+        UPSInfo.model_validate(UPS_PAYLOAD),
+        THREE_DEVICES,
+    )
+    coordinator = entry.runtime_data.coordinator
+    before = _nut_keys(entity_registry)
+
+    coordinator.async_set_updated_data(
+        replace(
+            coordinator.data,
+            ups=None,
+            nut=_nut(
+                _ups_status("ups-gpu", 508),
+                ATS_STATUS,
+                devices=["ups", "ups-gpu", "ats"],
+            ),
+        )
+    )
+    await hass.async_block_till_done()
+
+    assert _nut_keys(entity_registry) == before
+    battery = hass.states.get(_entity_id(entity_registry, "sensor", f"{GPU}_battery"))
+    assert battery is not None
+    assert float(battery.state) == 100
+    # Cleanup keeps every listed device while the primary is not certain.
+    keys = _build_valid_dynamic_entity_keys(coordinator.data)
+    assert {f"{GPU}_battery", f"{GPU}_connected", f"{ATS}_connected"} <= keys
+    assert f"{UPS}_connected" in keys
+
+    coordinator.async_set_updated_data(
+        replace(
+            coordinator.data, ups=UPSInfo.model_validate(UPS_PAYLOAD), nut=THREE_DEVICES
+        )
+    )
+    await hass.async_block_till_done()
+
+    assert _nut_keys(entity_registry) == before
+    keys = _build_valid_dynamic_entity_keys(coordinator.data)
+    assert f"{GPU}_battery" in keys
+    assert not any(k.startswith(UPS) for k in keys)
+
+
 def test_cleanup_keeps_listed_devices() -> None:
     """Valid keys cover every listed extra device, even one that missed a query."""
     data = UnraidData(
@@ -480,6 +536,13 @@ def test_cleanup_keeps_listed_devices() -> None:
         nut=NUTInfo.model_validate({"devices": [{"name": "ups"}, {"name": "ats"}]})
     )
     assert secondary_nut_device_names(listed_only) == {"ups", "ats"}
+    # Statuses without a device list: the first status is the primary.
+    statuses_only = UnraidData(
+        nut=NUTInfo.model_validate({"statuses": [_ups_status("ups", 623), ATS_STATUS]})
+    )
+    assert nut_connected_device_names(statuses_only) == ["ats"]
+    no_devices = UnraidData(nut=NUTInfo.model_validate({"statuses": []}))
+    assert nut_connected_device_names(no_devices) == []
 
 
 def test_nut_websocket_payload_is_classified() -> None:

@@ -62,11 +62,14 @@ def _primary_nut_device_name(data: UnraidData) -> str | None:
 
     That is the device ``/ups`` reports (``device_name``). Without a device
     name, ``/ups`` comes from apcupsd or an older agent, so no NUT device is
-    covered. Without ``/ups`` data at all, the first NUT device is assumed to
-    be the primary, as the agent's ``/ups`` uses it.
+    covered. Without ``/ups`` data at all, the first listed NUT device is
+    assumed to be the primary, as the agent's ``/ups`` and ``status`` use it;
+    the first status is only used when there is no device list.
     """
     if data.ups is not None:
         return data.ups.device_name
+    if data.nut is not None and data.nut.devices:
+        return data.nut.devices[0].name
     if data.nut is not None and data.nut.statuses:
         return data.nut.statuses[0].device_name
     return None
@@ -88,34 +91,31 @@ def secondary_nut_statuses(
 
 def secondary_nut_device_names(data: UnraidData) -> set[str]:
     """
-    Return the names of NUT devices other than the primary UPS.
+    Return the NUT devices whose ``nut_*`` entities cleanup keeps.
 
     Uses the device list (``upsc -l``) as well as the statuses, so a device
-    that misses one query is still known and its entities are kept.
+    that misses one query is still known and its entities are kept. Only the
+    device ``/ups`` reports is left out; without ``/ups`` data the primary is
+    not certain (``/ups`` may come from apcupsd), so every device is kept.
     """
-    if data.nut is None:
-        return set()
-    primary = _primary_nut_device_name(data)
-    names = {status.device_name for status in data.nut.statuses or []}
-    names.update(device.name for device in data.nut.devices or [])
-    return {name for name in names if name and name != primary}
+    names = all_nut_device_names(data)
+    if data.ups is None:
+        return names
+    return names - {data.ups.device_name}
 
 
 def nut_connected_device_names(data: UnraidData | None) -> list[str]:
     """
-    Return the NUT devices that get a ``Connected`` binary sensor.
+    Return the NUT devices that get a ``Connected`` binary sensor, sorted.
 
     That is every listed device other than the primary UPS, one that does not
     answer included, so it shows as disconnected rather than having no entity.
-    Older agents (no ``statuses``) get none. Without ``/ups`` data the primary
-    is guessed from the first status, which is wrong when the first device
-    does not answer, so only devices that answered are used then.
+    Older agents (no ``statuses``) get none.
     """
     if data is None or data.nut is None or data.nut.statuses is None:
         return []
-    if data.ups is None:
-        return [name for name, _status in secondary_nut_statuses(data)]
-    return sorted(secondary_nut_device_names(data))
+    primary = _primary_nut_device_name(data)
+    return sorted(name for name in all_nut_device_names(data) if name != primary)
 
 
 def all_nut_device_names(data: UnraidData | None) -> set[str]:
