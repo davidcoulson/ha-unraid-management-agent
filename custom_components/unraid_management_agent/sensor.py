@@ -87,10 +87,10 @@ from .hwmon import (
     temperature_legacy_unique_ids,
 )
 from .nut import (
+    all_nut_device_names,
     find_nut_status,
     nut_device_key,
     nut_legacy_unique_ids,
-    secondary_nut_device_names,
     secondary_nut_statuses,
 )
 from .storage import (
@@ -3577,9 +3577,7 @@ def _new_nut_device_sensors(
     """
     new_entities: list[SensorEntity] = []
     statuses = secondary_nut_statuses(coordinator.data)
-    names = {name for name, _ in statuses}
-    if coordinator.data is not None:
-        names |= secondary_nut_device_names(coordinator.data)
+    names = all_nut_device_names(coordinator.data)
     for name, status in statuses:
         prefix = nut_device_key(name)
         for description in NUT_DEVICE_SENSOR_DESCRIPTIONS:

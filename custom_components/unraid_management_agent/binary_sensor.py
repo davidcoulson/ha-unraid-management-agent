@@ -32,10 +32,10 @@ from .const import ATTR_PARITY_CHECK_STATUS
 from .entity import UnraidBaseEntity, UnraidEntityDescription
 from .hwmon import async_adopt_unique_id
 from .nut import (
+    all_nut_device_names,
     find_nut_status,
     nut_device_key,
     nut_legacy_unique_ids,
-    secondary_nut_device_names,
     secondary_nut_statuses,
 )
 from .storage import (
@@ -643,9 +643,7 @@ async def async_setup_entry(
         )
         new_entities: list[BinarySensorEntity] = []
         statuses = secondary_nut_statuses(coordinator.data)
-        names = {name for name, _ in statuses}
-        if coordinator.data is not None:
-            names |= secondary_nut_device_names(coordinator.data)
+        names = all_nut_device_names(coordinator.data)
         for name, _status in statuses:
             if name not in seen_nut_devices:
                 seen_nut_devices.add(name)

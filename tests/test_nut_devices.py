@@ -630,3 +630,44 @@ async def test_partial_nut_event_keeps_device_lists(
         WebSocketEvent(event_type=EventType.NUT_STATUS_UPDATE, data=single)
     )
     assert coordinator.data.nut.statuses == single.statuses
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_primary_device_counts_for_legacy_ambiguity(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """A secondary "ups_gpu" does not take an old entity when the primary is "ups-gpu"."""
+    mock_async_unraid_client.get_ups_info.return_value = UPSInfo.model_validate(
+        {**UPS_PAYLOAD, "device_name": "ups-gpu"}
+    )
+    mock_async_unraid_client.get_nut_info.return_value = _nut(
+        _ups_status("ups-gpu", 623), _ups_status("ups_gpu", 400)
+    )
+    entry = _entry(hass)
+    _register_legacy(
+        entity_registry,
+        entry,
+        "sensor",
+        f"{ENTRY_ID}_nut_ups_gpu_battery",
+        "sensor.old_battery",
+    )
+    _register_legacy(
+        entity_registry,
+        entry,
+        "binary_sensor",
+        f"{ENTRY_ID}_nut_ups_gpu_connected",
+        "binary_sensor.old_connected",
+    )
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    for entity_id, key in (
+        ("sensor.old_battery", "nut_ups_gpu_battery"),
+        ("binary_sensor.old_connected", "nut_ups_gpu_connected"),
+    ):
+        entity = entity_registry.async_get(entity_id)
+        assert entity is not None
+        assert entity.unique_id == f"{ENTRY_ID}_{key}"
+    assert f"{nut_device_key('ups_gpu')}_battery" in _nut_keys(entity_registry)

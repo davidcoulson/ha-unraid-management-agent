@@ -46,8 +46,9 @@ def nut_legacy_unique_ids(
     Return the unique ID an entity had under the slug-only key used before.
 
     Earlier versions keyed a device by ``nut_<slug>`` alone. That old ID is
-    only offered when no other current device has the same slug, since it
-    cannot say which of them it was.
+    only offered when no other current device (the primary UPS included, see
+    all_nut_device_names) has the same slug, since it cannot say which of them
+    it was.
     """
     slug = slugify(device_name)
     if any(other != device_name and slugify(other) == slug for other in device_names):
@@ -98,6 +99,15 @@ def secondary_nut_device_names(data: UnraidData) -> set[str]:
     names = {status.device_name for status in data.nut.statuses or []}
     names.update(device.name for device in data.nut.devices or [])
     return {name for name in names if name and name != primary}
+
+
+def all_nut_device_names(data: UnraidData | None) -> set[str]:
+    """Return every NUT device name the agent reports, the primary UPS included."""
+    if data is None or data.nut is None:
+        return set()
+    names = {d.name for d in data.nut.devices or [] if d.name}
+    names.update(s.device_name for s in data.nut.statuses or [] if s.device_name)
+    return names
 
 
 def find_nut_status(
