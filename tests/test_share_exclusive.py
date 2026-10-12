@@ -232,6 +232,32 @@ async def test_sensor_without_share_data(
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_sensor_without_coordinator_data(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """A failed update or missing coordinator data leaves the sensor unavailable."""
+    entry = await _setup(hass, mock_async_unraid_client, [EXCLUSIVE])
+    coordinator = entry.runtime_data.coordinator
+    sensor = UnraidShareFuseFallbackBinarySensor(coordinator, "appdata")
+    assert sensor.available is True
+
+    coordinator.last_update_success = False
+    assert sensor.available is False
+
+    coordinator.last_update_success = True
+    coordinator.data = None
+    coordinator.async_update_listeners()
+    await hass.async_block_till_done()
+    assert sensor.available is False
+    assert sensor.is_on is False
+    assert _fallback_entities(entity_registry) == {
+        f"{ENTRY_ID}_share_appdata_fuse_fallback"
+    }
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
 async def test_sensor_recreated_after_registry_removal(
     hass: HomeAssistant,
     entity_registry: er.EntityRegistry,
@@ -357,15 +383,23 @@ async def test_issues_removed_with_config_entry(
         severity=ir.IssueSeverity.WARNING,
         translation_key="share_fuse_fallback_restart",
     )
+    ir.async_create_issue(
+        hass,
+        "other_domain",
+        f"{ISSUE_PREFIX}media",
+        is_fixable=False,
+        severity=ir.IssueSeverity.WARNING,
+        translation_key="share_fuse_fallback_restart",
+    )
     assert set(_issues(hass)) == {f"{ISSUE_PREFIX}domains"}
 
     await hass.config_entries.async_remove(entry.entry_id)
     await hass.async_block_till_done()
 
     assert _issues(hass) == {}
-    assert (DOMAIN, "share_fuse_fallback_other_entry_media") in ir.async_get(
-        hass
-    ).issues
+    issues = ir.async_get(hass).issues
+    assert (DOMAIN, "share_fuse_fallback_other_entry_media") in issues
+    assert ("other_domain", f"{ISSUE_PREFIX}media") in issues
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
