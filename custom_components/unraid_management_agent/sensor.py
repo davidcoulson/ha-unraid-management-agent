@@ -337,7 +337,9 @@ def _get_cpu_usage(data: UnraidData) -> float | None:
     if data and data.system:
         cpu_usage = data.system.cpu_usage_percent
         if cpu_usage is not None:
-            return round(float(cpu_usage), 1)
+            # Whole percent: pushed every ~15 s, and tenths change on every
+            # push, each one a recorder row
+            return round(float(cpu_usage))
     return None
 
 
@@ -415,7 +417,8 @@ def _get_cpu_power(data: UnraidData) -> float | None:
     if data and data.system:
         power = data.system.cpu_power_watts
         if power is not None:
-            return round(float(power), 1)
+            # Whole watts: tenths change on every ~15 s push
+            return round(float(power))
     return None
 
 
@@ -467,11 +470,11 @@ def _get_uptime_attrs(data: UnraidData) -> dict[str, Any]:
     _add_attr_if_set(attrs, "hostname", system.hostname)
     _add_attr_if_set(attrs, "version", system.version)
 
+    # Days and hours only: minutes and total seconds changed on every update,
+    # each change a recorder row (the state is the boot time)
     if uptime_seconds is not None:
         attrs["uptime_days"] = system.uptime_days
         attrs["uptime_hours"] = system.uptime_hours
-        attrs["uptime_minutes"] = system.uptime_minutes
-        attrs["uptime_total_seconds"] = uptime_seconds
 
     return attrs
 
@@ -1255,21 +1258,15 @@ def _get_zfs_arc_attrs(data: UnraidData) -> dict[str, Any]:
     arc = data.zfs_arc
     attrs: dict[str, Any] = {}
 
+    # No hit/miss counters and whole units for the size: those changed on
+    # every update, each change a recorder row (the state is the hit ratio)
     size = arc.size_bytes
     if size:
-        attrs["arc_size"] = format_bytes(size)
+        attrs["arc_size"] = format_bytes(size, precision=0)
 
     target = arc.target_size_bytes
     if target:
         attrs["target_size"] = format_bytes(target)
-
-    hits = arc.hits
-    if hits is not None:
-        attrs["hits"] = hits
-
-    misses = arc.misses
-    if misses is not None:
-        attrs["misses"] = misses
 
     return attrs
 
@@ -1285,7 +1282,7 @@ SYSTEM_SENSOR_DESCRIPTIONS: tuple[UnraidSensorEntityDescription, ...] = (
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:cpu-64-bit",
-        suggested_display_precision=1,
+        suggested_display_precision=0,
         value_fn=_get_cpu_usage,
         extra_state_attributes_fn=_get_cpu_attrs,
     ),
@@ -1328,7 +1325,7 @@ SYSTEM_SENSOR_DESCRIPTIONS: tuple[UnraidSensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfPower.WATT,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=1,
+        suggested_display_precision=0,
         value_fn=_get_cpu_power,
         supported_fn=lambda data: (
             data is not None
@@ -1996,7 +1993,15 @@ class UnraidHwmonTemperatureSensor(UnraidBaseEntity, SensorEntity):
     def native_value(self) -> float | None:
         """Return the temperature."""
         reading = self._current_reading()
-        return reading.value_celsius if reading else None
+        if reading is None or reading.value_celsius is None:
+            return None
+        # Rounded so sub-degree jitter (the Octo reports 0.01 °C) does not
+        # make a new state, and a recorder row, on every ~15 s push
+        if (reading.source or "").startswith("k10temp"):
+            # AMD Tctl/Tccd move in 0.125 °C steps and swing a degree or two
+            # between pushes; tenths would still change every time
+            return round(float(reading.value_celsius))
+        return round(float(reading.value_celsius), 1)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
@@ -4509,6 +4514,11 @@ class UnraidVMSensorEntityDescription(SensorEntityDescription):
     rate_of: str | None = None
 
 
+def _round_or_none(value: Any, digits: int = 1) -> float | None:
+    """Round a reading for state, or None (unrounded floats churn the recorder)."""
+    return round(float(value), digits) if value is not None else None
+
+
 def _vm_bytes(field: str) -> Callable[[Any], int | None]:
     """Return a getter for a byte field on a VM."""
     return lambda vm: getattr(vm, field, None)
@@ -4526,7 +4536,7 @@ VM_SENSOR_DESCRIPTIONS: tuple[UnraidVMSensorEntityDescription, ...] = (
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=1,
-        value_fn=lambda vm: getattr(vm, "guest_cpu_percent", None),
+        value_fn=lambda vm: _round_or_none(getattr(vm, "guest_cpu_percent", None)),
     ),
     UnraidVMSensorEntityDescription(
         key="vcpus",

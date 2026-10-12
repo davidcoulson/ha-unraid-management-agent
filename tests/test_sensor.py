@@ -157,7 +157,7 @@ async def test_cpu_usage_sensor(
 
     state = hass.states.get("sensor.unraid_test_cpu_usage")
     if state:
-        assert state.state == "25.5"
+        assert state.state == "26"  # whole percent
         assert state.attributes.get("unit_of_measurement") == PERCENTAGE
 
 
@@ -209,7 +209,7 @@ def test_get_cpu_usage_with_data():
     mock_data.system.cpu_usage_percent = 75.567
 
     result = _get_cpu_usage(mock_data)
-    assert result == 75.6
+    assert result == 76
 
 
 def test_get_cpu_usage_none_data():
@@ -451,10 +451,10 @@ def test_get_cpu_power_with_data():
     """Test _get_cpu_power with valid data."""
     mock_data = MagicMock(spec=UnraidData)
     mock_data.system = MagicMock()
-    mock_data.system.cpu_power_watts = 3.43
+    mock_data.system.cpu_power_watts = 3.63
 
     result = _get_cpu_power(mock_data)
-    assert result == 3.4
+    assert result == 4
 
 
 def test_get_cpu_power_none_data():
@@ -537,8 +537,9 @@ def test_get_uptime_attrs_with_data():
     assert attrs["version"] == "6.12.0"
     assert attrs["uptime_days"] == 1
     assert attrs["uptime_hours"] == 1
-    assert attrs["uptime_minutes"] == 1
-    assert attrs["uptime_total_seconds"] == 90061
+    # Minutes and seconds change on every update (recorder churn)
+    assert "uptime_minutes" not in attrs
+    assert "uptime_total_seconds" not in attrs
 
 
 def test_get_uptime_attrs_none_data():
@@ -1268,8 +1269,9 @@ def test_get_zfs_arc_attrs_with_data():
     attrs = _get_zfs_arc_attrs(mock_data)
     assert "arc_size" in attrs
     assert "target_size" in attrs
-    assert attrs["hits"] == 1000000
-    assert attrs["misses"] == 50000
+    # Cumulative counters change on every update (recorder churn)
+    assert "hits" not in attrs
+    assert "misses" not in attrs
 
 
 # =============================================================================
@@ -2463,8 +2465,9 @@ def test_get_zfs_arc_attrs_with_full_data() -> None:
     attrs = _get_zfs_arc_attrs(data)
     assert "arc_size" in attrs
     assert "target_size" in attrs
-    assert attrs["hits"] == 1000000
-    assert attrs["misses"] == 50000
+    # Cumulative counters change on every update (recorder churn)
+    assert "hits" not in attrs
+    assert "misses" not in attrs
 
 
 def test_get_zfs_arc_attrs_partial_data() -> None:
@@ -2480,8 +2483,7 @@ def test_get_zfs_arc_attrs_partial_data() -> None:
     attrs = _get_zfs_arc_attrs(data)
     assert "arc_size" not in attrs
     assert "target_size" not in attrs
-    assert attrs["hits"] == 500
-    assert "misses" not in attrs
+    assert attrs == {}
 
 
 # =============================================================================
@@ -3789,8 +3791,9 @@ def test_get_zfs_arc_attrs_full() -> None:
     attrs = _get_zfs_arc_attrs(data)
     assert "arc_size" in attrs
     assert "target_size" in attrs
-    assert attrs["hits"] == 1000000
-    assert attrs["misses"] == 50000
+    # Cumulative counters change on every update (recorder churn)
+    assert "hits" not in attrs
+    assert "misses" not in attrs
 
 
 def test_get_plugins_with_updates_updates_is_none() -> None:

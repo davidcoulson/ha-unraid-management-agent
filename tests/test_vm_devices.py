@@ -68,7 +68,7 @@ def _vm(  # noqa: PLR0913
         name=name,
         state=state,
         cpu_count=16,
-        guest_cpu_percent=12.5,
+        guest_cpu_percent=12.4567,
         memory_allocated_bytes=32 * GIB,
         memory_used_bytes=32 * GIB,
         disk_size_bytes=0,
@@ -252,6 +252,7 @@ async def test_vm_metric_sensors(hass: HomeAssistant, mock_config_entry) -> None
         is False
     )
     assert (
+        # Rounded to 0.1: the agent's raw float changes on every poll
         float(hass.states.get("sensor.unraid_test_vms_windows_10_cpu_usage").state)
         == 12.5
     )
