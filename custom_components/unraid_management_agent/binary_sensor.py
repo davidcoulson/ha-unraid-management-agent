@@ -249,8 +249,10 @@ def _flash_attributes(coordinator: UnraidDataUpdateCoordinator) -> dict[str, Any
         return {}
 
     flash = data.flash_info
+    usage = getattr(flash, "usage_percent", None)
     return {
-        "usage_percent": getattr(flash, "usage_percent", None),
+        # Rounded: the raw value wobbles in the 6th decimal on every update
+        "usage_percent": round(float(usage), 1) if usage is not None else None,
         "smart_available": getattr(flash, "smart_available", None),
         "model": getattr(flash, "model", None),
     }

@@ -356,6 +356,45 @@ def test_get_ram_attrs_minimal():
     assert "ram_total" not in attrs or attrs.get("ram_total") == "Unknown"
 
 
+def test_get_ram_attrs_stable_across_small_changes():
+    """RAM attributes are whole units of the total, so jitter does not change them."""
+    gib = 1024**3
+
+    def attrs_for(used: int) -> dict:
+        mock_data = MagicMock(spec=UnraidData)
+        mock_data.system = MagicMock()
+        mock_data.system.ram_total_bytes = 512 * gib
+        mock_data.system.ram_used_bytes = used
+        mock_data.system.ram_free_bytes = 300 * gib
+        mock_data.system.ram_cached_bytes = 80 * gib
+        mock_data.system.ram_buffers_bytes = 1 * gib
+        mock_data.system.server_model = None
+        return _get_ram_attrs(mock_data)
+
+    first = attrs_for(int(123.2 * gib))
+    assert first["ram_used"] == "123 GB"
+    assert first == attrs_for(int(123.3 * gib))
+
+
+def test_get_plugins_attrs_sorted():
+    """Plugin names are sorted, so a reordered agent response changes nothing."""
+
+    def attrs_for(names: list[str]) -> dict:
+        mock_data = MagicMock(spec=UnraidData)
+        mock_data.plugins = MagicMock()
+        mock_data.plugins.plugins = [
+            MagicMock(name=n, update_available=False) for n in names
+        ]
+        for plugin, name in zip(mock_data.plugins.plugins, names, strict=True):
+            plugin.name = name
+        mock_data.plugins.plugins_with_updates = 0
+        return _get_plugins_attrs(mock_data)
+
+    first = attrs_for(["zfs.master", "Appdata.backup", "ipmi"])
+    assert first["plugin_names"] == ["Appdata.backup", "ipmi", "zfs.master"]
+    assert first == attrs_for(["ipmi", "zfs.master", "Appdata.backup"])
+
+
 # =============================================================================
 # Value Function Tests - Temperature
 # =============================================================================
@@ -5271,7 +5310,7 @@ def test_gpu_energy_sensor_extra_state_attributes() -> None:
 
     attrs = sensor.extra_state_attributes
 
-    assert attrs["current_power_watts"] == 220.5
+    assert attrs["current_power_watts"] == 220
 
 
 def test_gpu_energy_sensor_extra_state_attributes_empty() -> None:

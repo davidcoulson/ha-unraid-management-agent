@@ -20,6 +20,7 @@ def format_bytes(
     value: float,
     precision: int = 1,
     binary: bool = True,
+    unit_of: float | None = None,
 ) -> str:
     """
     Format a byte value to a human-readable string.
@@ -28,6 +29,9 @@ def format_bytes(
         value: The number of bytes to format
         precision: Number of decimal places (default: 1)
         binary: If True, use binary units (1024). If False, use decimal (1000)
+        unit_of: Pick the unit from this value instead (e.g. the total, so a
+            used/free figure is shown in the total's unit and only changes
+            when it moves by a visible amount)
 
     Returns:
         Formatted string with appropriate unit (B, KB, MB, GB, TB, PB)
@@ -39,6 +43,8 @@ def format_bytes(
         '512.0 MB'
         >>> format_bytes(1024, precision=0)
         '1 KB'
+        >>> format_bytes(431000000, unit_of=80000000000000)
+        '0.0 TB'
 
     """
     base = 1024 if binary else 1000
@@ -46,13 +52,15 @@ def format_bytes(
 
     abs_value = abs(value)
     sign = "-" if value < 0 else ""
+    abs_unit = abs(unit_of) if unit_of else abs_value
 
     for unit in units[:-1]:
-        if abs_value < base:
+        if abs_unit < base:
             if precision == 0:
                 return f"{sign}{int(round(abs_value))} {unit}"
             return f"{sign}{abs_value:.{precision}f} {unit}"
         abs_value /= base
+        abs_unit /= base
 
     # Last unit (PB)
     if precision == 0:

@@ -389,18 +389,23 @@ def _get_ram_attrs(data: UnraidData) -> dict[str, Any]:
         attrs[ATTR_RAM_TOTAL] = format_bytes(ram_total)
     _add_attr_if_set(attrs, ATTR_SERVER_MODEL, system.server_model)
 
+    # Whole units of the total's unit (e.g. "123 GB"): finer values change on
+    # every update and each change writes a recorder row
+    def _ram(value: int) -> str:
+        return format_bytes(value, precision=0, unit_of=ram_total or None)
+
     if ram_used:
-        attrs["ram_used"] = format_bytes(ram_used)
+        attrs["ram_used"] = _ram(ram_used)
     if ram_free:
-        attrs["ram_free"] = format_bytes(ram_free)
+        attrs["ram_free"] = _ram(ram_free)
     if ram_cached:
-        attrs["ram_cached"] = format_bytes(ram_cached)
+        attrs["ram_cached"] = _ram(ram_cached)
     if ram_buffers:
-        attrs["ram_buffers"] = format_bytes(ram_buffers)
+        attrs["ram_buffers"] = _ram(ram_buffers)
 
     if ram_free and ram_cached and ram_buffers:
         ram_available = ram_free + ram_cached + ram_buffers
-        attrs["ram_available"] = format_bytes(ram_available)
+        attrs["ram_available"] = _ram(ram_available)
 
     return attrs
 
@@ -541,9 +546,13 @@ def _get_swap_usage_attrs(data: UnraidData) -> dict[str, Any]:
     if system.swap_total_bytes:
         attrs["swap_total"] = format_bytes(system.swap_total_bytes)
     if system.swap_used_bytes is not None:
-        attrs["swap_used"] = format_bytes(system.swap_used_bytes)
+        attrs["swap_used"] = format_bytes(
+            system.swap_used_bytes, unit_of=system.swap_total_bytes or None
+        )
     if system.swap_free_bytes is not None:
-        attrs["swap_free"] = format_bytes(system.swap_free_bytes)
+        attrs["swap_free"] = format_bytes(
+            system.swap_free_bytes, unit_of=system.swap_total_bytes or None
+        )
     if system.swappiness is not None:
         attrs["swappiness"] = system.swappiness
     return attrs
@@ -657,9 +666,9 @@ def _get_array_attrs(data: UnraidData) -> dict[str, Any]:
     if total:
         attrs["total_capacity"] = format_bytes(total)
     if used:
-        attrs["used_space"] = format_bytes(used)
+        attrs["used_space"] = format_bytes(used, unit_of=total or None)
     if free:
-        attrs["free_space"] = format_bytes(free)
+        attrs["free_space"] = format_bytes(free, unit_of=total or None)
 
     return attrs
 
@@ -769,9 +778,9 @@ def _get_flash_usage_attrs(data: UnraidData) -> dict[str, Any]:
     if total:
         attrs["total_size"] = format_bytes(total)
     if used:
-        attrs["used_size"] = format_bytes(used)
+        attrs["used_size"] = format_bytes(used, unit_of=total or None)
     if free:
-        attrs["free_size"] = format_bytes(free)
+        attrs["free_size"] = format_bytes(free, unit_of=total or None)
 
     guid = flash.guid
     if guid:
@@ -820,7 +829,9 @@ def _get_plugins_attrs(data: UnraidData) -> dict[str, Any]:
         return {}
 
     plugins_list = data.plugins.plugins or []
-    plugin_names = [p.name for p in plugins_list]
+    # The agent returns plugins in a different order each time; sort so the
+    # attribute only changes when the set of plugins does
+    plugin_names = sorted((p.name for p in plugins_list), key=str.casefold)
 
     attrs = {
         "plugin_count": len(plugins_list),
@@ -916,11 +927,13 @@ def _get_plugins_with_updates_attrs(data: UnraidData) -> dict[str, Any]:
     plugins = plugins or []
 
     if isinstance(plugins, list) and plugins:
-        return {"plugins_needing_update": plugins}
+        return {"plugins_needing_update": sorted(plugins, key=str.casefold)}
 
     if data.plugins:
         plugins_list = data.plugins.plugins or []
-        needing_update = [p.name for p in plugins_list if p.update_available]
+        needing_update = sorted(
+            (p.name for p in plugins_list if p.update_available), key=str.casefold
+        )
         if needing_update:
             return {"plugins_needing_update": needing_update}
     return {}
@@ -1175,9 +1188,9 @@ def _get_docker_vdisk_attrs(data: UnraidData) -> dict[str, Any]:
     if total:
         attrs["total_size"] = format_bytes(total)
     if used:
-        attrs["used_size"] = format_bytes(used)
+        attrs["used_size"] = format_bytes(used, unit_of=total or None)
     if free:
-        attrs["free_size"] = format_bytes(free)
+        attrs["free_size"] = format_bytes(free, unit_of=total or None)
 
     return attrs
 
@@ -1215,9 +1228,9 @@ def _get_log_filesystem_attrs(data: UnraidData) -> dict[str, Any]:
     if total:
         attrs["total_size"] = format_bytes(total)
     if used:
-        attrs["used_size"] = format_bytes(used)
+        attrs["used_size"] = format_bytes(used, unit_of=total or None)
     if free:
-        attrs["free_size"] = format_bytes(free)
+        attrs["free_size"] = format_bytes(free, unit_of=total or None)
 
     return attrs
 
@@ -1229,8 +1242,8 @@ def _get_log_filesystem_attrs(data: UnraidData) -> dict[str, Any]:
 
 def _get_zfs_arc_hit_ratio(data: UnraidData) -> float | None:
     """Get ZFS ARC hit ratio from coordinator data."""
-    if data and data.zfs_arc:
-        return data.zfs_arc.hit_ratio_percent
+    if data and data.zfs_arc and data.zfs_arc.hit_ratio_percent is not None:
+        return round(float(data.zfs_arc.hit_ratio_percent), 1)
     return None
 
 
@@ -2436,9 +2449,9 @@ class UnraidDiskUsageSensor(UnraidDiskSensorBase):
         if total:
             attrs["total_size"] = format_bytes(total)
         if used:
-            attrs["used_size"] = format_bytes(used)
+            attrs["used_size"] = format_bytes(used, unit_of=total or None)
         if free:
-            attrs["free_size"] = format_bytes(free)
+            attrs["free_size"] = format_bytes(free, unit_of=total or None)
 
         return attrs
 
@@ -2800,9 +2813,9 @@ class UnraidShareUsageSensor(UnraidBaseEntity, SensorEntity):
         if total:
             attrs["total_size"] = format_bytes(total)
         if used:
-            attrs["used_size"] = format_bytes(used)
+            attrs["used_size"] = format_bytes(used, unit_of=total or None)
         if free:
-            attrs["free_size"] = format_bytes(free)
+            attrs["free_size"] = format_bytes(free, unit_of=total or None)
 
         # Cache configuration attributes from the vendored API models
         use_cache = share.use_cache
@@ -2891,9 +2904,9 @@ class UnraidZFSPoolUsageSensor(UnraidZFSPoolSensorBase):
         if total:
             attrs["total_size"] = format_bytes(total)
         if used:
-            attrs["used_size"] = format_bytes(used)
+            attrs["used_size"] = format_bytes(used, unit_of=total or None)
         if free:
-            attrs["free_size"] = format_bytes(free)
+            attrs["free_size"] = format_bytes(free, unit_of=total or None)
 
         return attrs
 
@@ -2963,7 +2976,7 @@ class UnraidZFSPoolCorruptedFilesSensor(UnraidZFSPoolSensorBase):
         if not zfs_pool_devices_enabled(coordinator):
             # Named after the pool on the server device, as before the option.
             self._attr_translation_key = None
-            self._attr_translation_placeholders = {}
+            self._attr_translation_placeholders = dict[str, str]()
             self._attr_name = f"{pool_name} Corrupted Files"
 
     @property
@@ -4027,7 +4040,9 @@ class UnraidGPUEnergySensor(UnraidGPUEntity, RestoreEntity, SensorEntity):
         attrs: dict[str, Any] = {}
 
         if self._last_power is not None:
-            attrs["current_power_watts"] = self._last_power
+            # Whole watts: finer values change on every update (the GPU power
+            # sensor has the precise reading)
+            attrs["current_power_watts"] = round(self._last_power)
 
         gpu = self._find_gpu()
         if gpu is not None:
@@ -5537,7 +5552,7 @@ class UnraidRemoteShareSensor(UnraidBaseEntity, SensorEntity):
         if isinstance(total, (int, float)) and total > 0:
             attrs["total_size"] = format_bytes(int(total))
         if isinstance(used, (int, float)) and used >= 0:
-            attrs["used_size"] = format_bytes(int(used))
+            attrs["used_size"] = format_bytes(int(used), unit_of=total or None)
         if isinstance(free, (int, float)) and free >= 0:
-            attrs["free_size"] = format_bytes(int(free))
+            attrs["free_size"] = format_bytes(int(free), unit_of=total or None)
         return attrs

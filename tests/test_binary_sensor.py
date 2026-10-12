@@ -982,6 +982,17 @@ def test_flash_attributes_with_data():
     assert attrs["model"] == "SanDisk Ultra Fit"
 
 
+def test_flash_attributes_usage_rounded():
+    """usage_percent is rounded so float jitter does not change the attributes."""
+    coordinator = MagicMock()
+    coordinator.data = UnraidData()
+    coordinator.data.flash_info = MagicMock()
+    coordinator.data.flash_info.usage_percent = 26.761904761904766
+    assert _flash_attributes(coordinator)["usage_percent"] == 26.8
+    coordinator.data.flash_info.usage_percent = None
+    assert _flash_attributes(coordinator)["usage_percent"] is None
+
+
 # =============================================================================
 # Mover Function Tests (#17)
 # =============================================================================
