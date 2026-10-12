@@ -1229,6 +1229,54 @@ describe("Unraid Custom Cards", () => {
     document.body.removeChild(card);
   });
 
+  it("lists number-only fan controls of a USB controller device, not of another server", async () => {
+    const card = new UnraidFansCard();
+    card.setConfig({ type: "custom:unraid-fans-card" });
+    const hass = createMockHass();
+    for (const id of Object.keys(hass.states)) {
+      if (id.startsWith("sensor.") && id.includes("fan")) delete hass.states[id];
+    }
+    hass.devices = {
+      ...hass.devices,
+      octo: {
+        id: "octo",
+        name: "Octo (fan controller)",
+        identifiers: [["unraid_management_agent", "uuid-1234_hwmon_octo_x"]],
+        parent_device_id: "dev_1",
+      },
+      other_octo: {
+        id: "other_octo",
+        name: "Octo (fan controller)",
+        identifiers: [["unraid_management_agent", "other_hwmon_octo_y"]],
+        parent_device_id: "dev_2",
+      },
+    };
+    const add = (entityId: string, deviceId: string, name: string, rpm: number) => {
+      hass.states[entityId] = {
+        entity_id: entityId,
+        state: "50",
+        attributes: { friendly_name: name, rpm, fan_id: entityId },
+        last_changed: "",
+        last_updated: "",
+      };
+      hass.entities![entityId] = {
+        entity_id: entityId,
+        device_id: deviceId,
+        platform: "unraid_management_agent",
+      };
+    };
+    add("number.cube_fan_octo_fan2", "octo", "Octo child fan", 1234);
+    add("number.other_fan_octo_fan1", "other_octo", "Unrelated fan", 4321);
+    card.hass = hass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    const html = card.shadowRoot?.innerHTML ?? "";
+    expect(html).toContain("1234 RPM");
+    expect(html).not.toContain("4321 RPM");
+    document.body.removeChild(card);
+  });
+
   it("renders UnraidGpuCard with GPU loads and temperatures", async () => {
     const card = new UnraidGpuCard();
     card.setConfig({ type: "custom:unraid-gpu-card" });
