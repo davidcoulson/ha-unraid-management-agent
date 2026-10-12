@@ -123,11 +123,25 @@ async def test_sensors_only_for_services_without_network_service_sensor(
     assert entities["docker"].disabled_by is None
     assert entities["libvirt"].disabled_by is None
     assert entities["nginx"].disabled_by is er.RegistryEntryDisabler.INTEGRATION
+    docker = device_registry.async_get_device_by_identifier(
+        (DOMAIN, f"{ENTRY_ID}_docker"), ENTRY_ID
+    )
+    vms = device_registry.async_get_device_by_identifier(
+        (DOMAIN, f"{ENTRY_ID}_vms"), ENTRY_ID
+    )
+    assert docker is not None
+    assert vms is not None
     for entity in entities.values():
         assert entity.entity_category is EntityCategory.DIAGNOSTIC
-        assert entity.translation_key == "system_service"
-        assert entity.device_id == server.id
+    # Docker and libvirt sit on the Docker and VMs devices, named "Service"
+    assert entities["docker"].translation_key == "group_service"
+    assert entities["docker"].device_id == docker.id
+    assert entities["libvirt"].translation_key == "group_service"
+    assert entities["libvirt"].device_id == vms.id
+    assert entities["nginx"].translation_key == "system_service"
+    assert entities["nginx"].device_id == server.id
     assert entities["docker"].entity_id == "binary_sensor.unraid_test_docker_service"
+    assert entities["libvirt"].entity_id == "binary_sensor.unraid_test_vms_service"
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
@@ -152,8 +166,9 @@ async def test_state_and_attributes(
     assert docker.attributes["friendly_name"] == "unraid-test Docker Service"
     assert docker.attributes["enabled"] is True
 
-    libvirt = hass.states.get("binary_sensor.unraid_test_libvirt_service")
+    libvirt = hass.states.get("binary_sensor.unraid_test_vms_service")
     assert libvirt is not None
+    assert libvirt.attributes["friendly_name"] == "unraid-test VMs Service"
     assert libvirt.state == STATE_ON
     assert libvirt.attributes["enabled"] is False
 
@@ -161,6 +176,31 @@ async def test_state_and_attributes(
     assert nginx is not None
     assert nginx.state == STATE_OFF
     assert "enabled" not in nginx.attributes
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_service_without_display_name_uses_its_name(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    device_registry: dr.DeviceRegistry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """A service without a display name is named by its agent name, on the server."""
+    mock_async_unraid_client.list_services.return_value = _services(
+        ("tailscaled", True)
+    )
+    await _setup(hass, enable=("tailscaled",))
+
+    entity = _service_entities(entity_registry)["tailscaled"]
+    server = device_registry.async_get_device_by_identifier(
+        (DOMAIN, ENTRY_ID), ENTRY_ID
+    )
+    assert server is not None
+    assert entity.translation_key == "system_service"
+    assert entity.device_id == server.id
+    state = hass.states.get(entity.entity_id)
+    assert state is not None
+    assert state.attributes["friendly_name"] == "unraid-test tailscaled Service"
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")

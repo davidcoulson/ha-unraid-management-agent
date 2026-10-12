@@ -545,27 +545,40 @@ def async_cleanup_stale_entities(
 @callback
 def _async_remove_empty_devices(hass: HomeAssistant, entry: UnraidConfigEntry) -> None:
     """
-    Remove child devices (VMs, containers, GPUs, storage) that have no entities.
+    Remove devices (VMs, containers, GPUs, storage, Docker, VMs) without entities.
 
     That happens when the item is deleted from Unraid (its entities are
     removed above), when a "separate devices" option is turned off (its
     entities move back to the server device) or when a GPU's sensors move to
     the device of another GPU that took its index. The server device is never
-    removed here.
+    removed here, and neither is a device that still has child devices:
+    removing it would remove them and their entities too.
     """
     device_registry = dr.async_get(hass)
     entity_registry = er.async_get(hass)
     server_identifier = (DOMAIN, entry.entry_id)
-    devices: list[dr.DeviceEntry | dr.ChildDeviceEntry] = [
-        *dr.async_child_entries_for_config_entry(device_registry, entry.entry_id),
-        *dr.async_entries_for_config_entry(device_registry, entry.entry_id),
-    ]
-    for device in devices:
-        if server_identifier in device.identifiers:
-            continue
-        if er.async_entries_for_device(
-            entity_registry, device.id, include_disabled_entities=True
-        ):
-            continue
-        _LOGGER.debug("Removing device %s, which has no entities", device.name)
-        device_registry.async_remove_device(device.id)
+
+    def _is_empty(device: dr.DeviceEntry | dr.ChildDeviceEntry) -> bool:
+        return server_identifier not in device.identifiers and not (
+            er.async_entries_for_device(
+                entity_registry, device.id, include_disabled_entities=True
+            )
+        )
+
+    # Child devices first, so a parent left without children goes too
+    for child in dr.async_child_entries_for_config_entry(
+        device_registry, entry.entry_id
+    ):
+        if _is_empty(child):
+            _LOGGER.debug("Removing device %s, which has no entities", child.name)
+            device_registry.async_remove_device(child.id)
+    parent_ids = {
+        child.parent_device_id
+        for child in dr.async_child_entries_for_config_entry(
+            device_registry, entry.entry_id
+        )
+    }
+    for device in dr.async_entries_for_config_entry(device_registry, entry.entry_id):
+        if device.id not in parent_ids and _is_empty(device):
+            _LOGGER.debug("Removing device %s, which has no entities", device.name)
+            device_registry.async_remove_device(device.id)
