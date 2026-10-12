@@ -63,6 +63,7 @@
           "enable_container_updates": "Enable container update checks",
           "read_only": "Read-only (sensors only)",
           "enable_vm_devices": "Show virtual machines as separate devices",
+          "enable_gpu_devices": "Show GPUs as separate devices",
           "enable_container_devices": "Show Docker containers as separate devices"
         },
         "data_description": {
@@ -71,6 +72,7 @@
           "enable_container_updates": "Periodically check Docker containers for available image updates. This may slow down polling and uses additional network requests. Also creates an update entity for each container, from which its image update can be installed.",
           "read_only": "Only create sensors. Switches, buttons and number controls are not created (existing ones are removed), and the integration's actions refuse to run, so Home Assistant cannot start, stop or reboot anything on the server. Update entities still show available updates but do not offer to install them.",
           "enable_vm_devices": "Give each VM its own device under the server, holding its power switch, control buttons and metric sensors (CPU, memory, network and disk rates). When off, VM switches and buttons stay on the server device and no VM sensors are created.",
+          "enable_gpu_devices": "Give each GPU its own device under the server, holding its utilization, temperature, power, energy and VRAM sensors with short names. When off, GPU sensors stay on the server device, named after the GPU.",
           "enable_container_devices": "Give each container its own device under the server, holding its switches, restart button and metric sensors with short names (Running, CPU, Memory). When off, container entities stay on the server device, named after the container."
         }
       }
@@ -79,6 +81,9 @@
   "device": {
     "vm": {
       "name": "VM \u00b7 {name}"
+    },
+    "gpu": {
+      "name": "GPU \u00b7 {name}"
     }
   },
   "entity": {
@@ -154,6 +159,27 @@
       },
       "gpu_vram_usage": {
         "name": "GPU {gpu_name} VRAM Usage"
+      },
+      "gpu_device_utilization": {
+        "name": "Utilization"
+      },
+      "gpu_device_temperature": {
+        "name": "Temperature"
+      },
+      "gpu_device_power": {
+        "name": "Power"
+      },
+      "gpu_device_energy": {
+        "name": "Energy"
+      },
+      "gpu_device_vram_used": {
+        "name": "VRAM used"
+      },
+      "gpu_device_vram_total": {
+        "name": "VRAM total"
+      },
+      "gpu_device_vram_usage": {
+        "name": "VRAM usage"
       },
       "ups_battery": {
         "name": "UPS Battery"

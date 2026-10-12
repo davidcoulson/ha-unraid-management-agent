@@ -5004,6 +5004,7 @@ def test_gpu_energy_sensor_initialization() -> None:
     mock_coordinator.data = MagicMock()
     mock_coordinator.config_entry = MagicMock()
     mock_coordinator.config_entry.entry_id = "test_entry"
+    mock_coordinator.config_entry.options = {}
     mock_entry = MagicMock()
     mock_entry.entry_id = "test_entry"
 

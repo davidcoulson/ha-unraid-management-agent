@@ -17,6 +17,8 @@ export interface DeviceRegistryEntry {
   model?: string | null;
   sw_version?: string | null;
   hw_version?: string | null;
+  /** Set on child devices (VMs, containers, GPUs, storage) of a server device */
+  parent_device_id?: string | null;
 }
 
 export interface EntityRegistryEntry {

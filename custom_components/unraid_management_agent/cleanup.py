@@ -544,11 +544,12 @@ def async_cleanup_stale_entities(
 @callback
 def _async_remove_empty_devices(hass: HomeAssistant, entry: UnraidConfigEntry) -> None:
     """
-    Remove VM and container devices that no longer have any entities.
+    Remove child devices (VMs, containers, GPUs, storage) that have no entities.
 
-    That happens when the VM or container is deleted from Unraid (its entities
-    are removed above) or when its "separate devices" option is turned off (its
-    entities move back to the server device). The server device is never
+    That happens when the item is deleted from Unraid (its entities are
+    removed above), when a "separate devices" option is turned off (its
+    entities move back to the server device) or when a GPU's sensors move to
+    the device of another GPU that took its index. The server device is never
     removed here.
     """
     device_registry = dr.async_get(hass)

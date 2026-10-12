@@ -16,6 +16,7 @@ import { UnraidMaintenanceCard } from "../src/maintenance-card";
 import { UnraidRemoteSharesCard } from "../src/remote-shares-card";
 import { UnraidUnassignedDevicesCard } from "../src/unassigned-devices-card";
 import {
+  UnraidGpuCardEditor,
   UnraidNetworkCardEditor,
   UnraidServerCardEditor,
   UnraidSharesCardEditor,
@@ -1039,6 +1040,214 @@ describe("Unraid Custom Cards", () => {
     expect(card.shadowRoot?.innerHTML).toContain("1.25 kWh");
     expect(card.shadowRoot?.innerHTML).toContain("6.18.38-Unraid");
     document.body.removeChild(card);
+  });
+
+  it("renders UnraidGpuCard with GPU sensors on GPU devices (GPUs as separate devices)", async () => {
+    const card = new UnraidGpuCard();
+    card.setConfig({ type: "custom:unraid-gpu-card" });
+    const hass = createMockHass();
+    // Each GPU's sensors live on a "GPU · <name>" child device of the server.
+    // A 4090 took index 0 from the 3070: the index-0 sensors kept their 3070
+    // entity IDs and moved to the 4090's device, and the 3070's new index-1
+    // sensors got "_2" suffixed entity IDs.
+    hass.devices!["gpu_4090"] = {
+      id: "gpu_4090",
+      name: "GPU · NVIDIA GeForce RTX 4090",
+      identifiers: [["unraid_management_agent", "uuid-1234_gpu_uuid_gpu-4090"]],
+      parent_device_id: "dev_1",
+    };
+    hass.devices!["gpu_3070"] = {
+      id: "gpu_3070",
+      name: "GPU · NVIDIA GeForce RTX 3070",
+      identifiers: [["unraid_management_agent", "uuid-1234_gpu_uuid_gpu-3070"]],
+      parent_device_id: "dev_1",
+    };
+    hass.devices!["gpu_igpu"] = {
+      id: "gpu_igpu",
+      name: "GPU · Intel UHD Graphics 770",
+      name_by_user: "Transcoder",
+      identifiers: [["unraid_management_agent", "uuid-1234_gpu_pci_0000:00:02.0"]],
+      parent_device_id: "dev_1",
+    };
+    // A GPU of another server must not show up
+    hass.devices!["other_server"] = {
+      id: "other_server",
+      name: "Other",
+      identifiers: [["unraid_management_agent", "uuid-9999"]],
+    };
+    hass.devices!["other_gpu"] = {
+      id: "other_gpu",
+      name: "GPU · NVIDIA GeForce RTX 5090",
+      identifiers: [["unraid_management_agent", "uuid-9999_gpu_index_0"]],
+      parent_device_id: "other_server",
+    };
+    const rtx3070 = "sensor.cube_gpu_nvidia_geforce_rtx_3070";
+    const sensors: Array<[string, string, string, string, Record<string, unknown>]> = [
+      [`${rtx3070}_utilization`, "gpu_4090", "88", "gpu_device_utilization", { gpu_name: "NVIDIA GeForce RTX 4090", gpu_driver_version: "615.78.08" }],
+      [`${rtx3070}_temperature`, "gpu_4090", "71.0", "gpu_device_temperature", {}],
+      [`${rtx3070}_vram_usage`, "gpu_4090", "50.0", "gpu_device_vram_usage", {}],
+      [`${rtx3070}_vram_total`, "gpu_4090", "24.0", "gpu_device_vram_total", {}],
+      [`${rtx3070}_utilization_2`, "gpu_3070", "12", "gpu_device_utilization", { gpu_name: "NVIDIA GeForce RTX 3070" }],
+      [`${rtx3070}_temperature_2`, "gpu_3070", "61.0", "gpu_device_temperature", {}],
+      ["sensor.cube_gpu_intel_uhd_graphics_770_temperature", "gpu_igpu", "38.0", "gpu_device_temperature", {}],
+      ["sensor.cube_gpu_intel_uhd_graphics_770_utilization", "gpu_igpu", "7", "gpu_device_utilization", { gpu_name: "Intel UHD Graphics 770" }],
+      ["sensor.other_gpu_nvidia_geforce_rtx_5090_utilization", "other_gpu", "99", "gpu_device_utilization", {}],
+    ];
+    for (const [entityId, deviceId, state, translationKey, attributes] of sensors) {
+      hass.states[entityId] = {
+        entity_id: entityId,
+        state,
+        attributes,
+        last_changed: "",
+        last_updated: "",
+      };
+      hass.entities![entityId] = {
+        entity_id: entityId,
+        device_id: deviceId,
+        platform: "unraid_management_agent",
+        translation_key: translationKey,
+      };
+    }
+    // The server's own GPU sensors are still found by entity ID
+    hass.entities!["sensor.cube_gpu_0_utilization"] = {
+      entity_id: "sensor.cube_gpu_0_utilization",
+      device_id: "dev_1",
+      platform: "unraid_management_agent",
+    };
+    card.hass = hass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    const html = card.shadowRoot?.innerHTML ?? "";
+    const text = card.shadowRoot?.textContent?.replace(/\s+/g, " ") ?? "";
+    expect(text).toContain("NVIDIA GeForce RTX 4090");
+    expect(text).toContain("NVIDIA GeForce RTX 3070");
+    expect(html).not.toContain("· NVIDIA");
+    expect(html).toContain("71°C");
+    expect(html).toContain("61°C");
+    expect(html).toContain("615.78.08");
+    // The name the user gave the GPU device wins over the GPU model
+    expect(text).toContain("Transcoder");
+    expect(text).not.toContain("Intel UHD Graphics 770");
+    expect(html).toContain("38°C");
+    expect(text).not.toContain("RTX 5090");
+    expect(text).toContain("NVIDIA RTX 3080");
+    expect(text).toContain("4 GPUs");
+    document.body.removeChild(card);
+  });
+
+  it("renders UnraidGpuCard with GPU sensors on the server device (option off)", async () => {
+    const card = new UnraidGpuCard();
+    card.setConfig({ type: "custom:unraid-gpu-card" });
+    const hass = createMockHass();
+    const sensors: Array<[string, string, string, Record<string, unknown>]> = [
+      ["sensor.cube_gpu_nvidia_geforce_rtx_3070_utilization", "12", "gpu_utilization", { gpu_name: "NVIDIA GeForce RTX 3070", gpu_driver_version: "615.78.08" }],
+      ["sensor.cube_gpu_nvidia_geforce_rtx_3070_temperature", "61.0", "gpu_temperature", {}],
+      ["sensor.cube_gpu_nvidia_geforce_rtx_3070_vram_usage", "3.0", "gpu_vram_usage", {}],
+    ];
+    for (const [entityId, state, translationKey, attributes] of sensors) {
+      const metric = translationKey.replace("gpu_", "").replace("vram_usage", "VRAM Usage");
+      hass.states[entityId] = {
+        entity_id: entityId,
+        state,
+        attributes: {
+          friendly_name: `CUBE GPU NVIDIA GeForce RTX 3070 ${metric.charAt(0).toUpperCase()}${metric.slice(1)}`,
+          ...attributes,
+        },
+        last_changed: "",
+        last_updated: "",
+      };
+      hass.entities![entityId] = {
+        entity_id: entityId,
+        device_id: "dev_1",
+        platform: "unraid_management_agent",
+        translation_key: translationKey,
+      };
+    }
+    card.hass = hass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    const html = card.shadowRoot?.innerHTML ?? "";
+    const text = card.shadowRoot?.textContent?.replace(/\s+/g, " ") ?? "";
+    expect(text).toContain("NVIDIA GeForce RTX 3070");
+    expect(html).toContain("61°C");
+    expect(html).toContain("615.78.08");
+    expect(text).toContain("NVIDIA RTX 3080");
+    expect(text).toContain("2 GPUs");
+    document.body.removeChild(card);
+  });
+
+  it("renders UnraidGpuCard with suffixed sensors on the server device after an index shift", async () => {
+    const card = new UnraidGpuCard();
+    card.setConfig({ type: "custom:unraid-gpu-card" });
+    const hass = createMockHass();
+    // A 4090 took index 0: the index-0 sensors kept their 3070 entity IDs, and
+    // the 3070's index-1 sensors got "_2" suffixed entity IDs
+    const rtx3070 = "sensor.cube_gpu_nvidia_geforce_rtx_3070";
+    const sensors: Array<[string, string, string, Record<string, unknown>]> = [
+      [`${rtx3070}_utilization`, "88", "CUBE GPU NVIDIA GeForce RTX 4090 Utilization", { gpu_name: "NVIDIA GeForce RTX 4090" }],
+      [`${rtx3070}_temperature`, "71.0", "CUBE GPU NVIDIA GeForce RTX 4090 Temperature", {}],
+      [`${rtx3070}_utilization_2`, "12", "CUBE GPU NVIDIA GeForce RTX 3070 Utilization", { gpu_name: "NVIDIA GeForce RTX 3070" }],
+      [`${rtx3070}_temperature_2`, "61.0", "CUBE GPU NVIDIA GeForce RTX 3070 Temperature", {}],
+    ];
+    for (const [entityId, state, friendlyName, attributes] of sensors) {
+      hass.states[entityId] = {
+        entity_id: entityId,
+        state,
+        attributes: { friendly_name: friendlyName, ...attributes },
+        last_changed: "",
+        last_updated: "",
+      };
+      hass.entities![entityId] = {
+        entity_id: entityId,
+        device_id: "dev_1",
+        platform: "unraid_management_agent",
+      };
+    }
+    card.hass = hass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+
+    const html = card.shadowRoot?.innerHTML ?? "";
+    const text = card.shadowRoot?.textContent?.replace(/\s+/g, " ") ?? "";
+    expect(text).toContain("NVIDIA GeForce RTX 4090");
+    expect(text).toContain("NVIDIA GeForce RTX 3070");
+    expect(html).toContain("71°C");
+    expect(html).toContain("61°C");
+    expect(text).toContain("3 GPUs");
+    document.body.removeChild(card);
+  });
+
+  it("never offers or picks a child device as the Unraid server", async () => {
+    const card = new UnraidGpuCard();
+    card.setConfig({ type: "custom:unraid-gpu-card" });
+    const hass = createMockHass();
+    // Child devices can be listed before their server device
+    hass.devices = {
+      gpu_3070: {
+        id: "gpu_3070",
+        name: "GPU · NVIDIA GeForce RTX 3070",
+        identifiers: [["unraid_management_agent", "uuid-1234_gpu_uuid_gpu-3070"]],
+        parent_device_id: "dev_1",
+      },
+      ...hass.devices,
+    };
+    card.hass = hass;
+    document.body.appendChild(card);
+    await card.updateComplete;
+    expect(card.shadowRoot?.innerHTML).toContain("CUBE");
+    document.body.removeChild(card);
+
+    const editor = new UnraidGpuCardEditor();
+    editor.hass = hass;
+    editor.setConfig({ type: "custom:unraid-gpu-card" });
+    document.body.appendChild(editor);
+    await editor.updateComplete;
+    const editorHtml = editor.shadowRoot?.innerHTML ?? "";
+    expect(editorHtml).toContain("CUBE");
+    expect(editorHtml).not.toContain("RTX 3070");
+    document.body.removeChild(editor);
   });
 
   it("renders UnraidNotificationsCard with unread counts", async () => {
