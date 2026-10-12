@@ -17,7 +17,7 @@ This custom integration connects Home Assistant to the [Unraid Management Agent]
 - **Unified UI Setup & Zeroconf**: Effortless discovery via Zeroconf (`_unraid-mgmt-agent._tcp.local.`) or guided manual config flow.
 - **Hybrid Real-Time Updates**: Local push via WebSocket event stream with automatic reconnect and 30-second REST polling fallback.
 - **Dynamic Entity Discovery**: Automatically creates, tracks, and cleans up entities for Docker containers, virtual machines, disks, fans, network interfaces, ZFS pools, remote shares, unassigned devices, and SAS storage topology.
-- **Modular Device Organization**: Optional settings to split Docker containers and virtual machines into their own dedicated child devices with clean, short entity names.
+- **Modular Device Organization**: Docker-wide and VM-wide entities live on `<server> Docker` and `<server> VMs` devices linked to the server, and optional settings give each Docker container and virtual machine its own child device under them, with clean, short entity names.
 - **Update Management Platform**: Monitor Unraid OS versions, track plugin updates (with one-click install), and detect Docker container image updates via image digest tracking.
 - **Agent Alert Rules Engine**: Monitor custom and built-in UMA alert rules as problem binary sensors, track firing counts, and trigger automations from alert events.
 - **Enterprise SAS Storage Topology**: Discovers RAID/HBA controllers, SAS disk shelves/backplanes, power supplies, I/O modules, cabling maps, and path redundancy.
@@ -134,13 +134,13 @@ When the agent's `storage_topology` collector is active (`storcli` or `sg3_utils
 - **Status & Control**: Running binary sensor, power switch (`switch`), autostart switch, and restart button (`button`).
 - **Telemetry**: Container CPU utilization, memory allocated, memory percentage, restart count, and network RX/TX transfer rates.
 - **Image Updates**: Update entity (`update`) tracking upstream image digest updates; one-click image pull and container recreation from Home Assistant.
-- **Device Grouping**: Optional toggle to group each container into a child device in Home Assistant.
+- **Device Grouping**: Docker CPU, memory and vDisk usage, the Docker service sensor and Container Updates Available sit on a `<server> Docker` device linked to the server. An optional toggle gives each container its own child device under it.
 
 ### Virtual Machines
 
 - **Status & Control**: Running binary sensor, power switch (`switch`), restart button, pause/resume button, force-stop button, and hibernate action.
 - **Telemetry**: vCPU count, memory allocation, and network RX/TX transfer rates.
-- **Device Grouping**: Optional toggle to group each VM into a child device in Home Assistant, named `VM · <name>` so VMs stand out from container devices.
+- **Device Grouping**: The VM service (libvirt) sensor sits on a `<server> VMs` device linked to the server. An optional toggle gives each VM its own child device under it, named after the VM.
 
 ### ZFS Pools & Datasets
 
@@ -233,15 +233,15 @@ If your Unraid Management Agent advertises via Zeroconf (`_unraid-mgmt-agent._tc
 
 Click **Configure** on an active integration entry to adjust operational options at any time:
 
-| Option                                         | Default | Description                                                                                         |
-| :--------------------------------------------- | :-----: | :-------------------------------------------------------------------------------------------------- |
-| **Enable WebSocket**                           | `true`  | Real-time push updates via WebSocket with automatic 30s polling fallback.                           |
-| **Enable fan control entities**                | `false` | Exposes PWM number control entities (`number`) for configurable fan controllers.                    |
-| **Show Docker containers as separate devices** | `false` | Creates a child device for each container in Home Assistant with short entity names.                |
-| **Show virtual machines as separate devices**  | `false` | Creates a child device for each VM in Home Assistant keyed by libvirt UUID.                         |
-| **Show GPUs as separate devices**              | `false` | Creates a `GPU · <name>` child device for each GPU, keyed by its UUID or PCI address.               |
-| **Enable container update checks**             | `false` | Tracks container image digest updates and adds an `update` entity per container.                    |
-| **Read-only (sensors only)**                   | `false` | Restricts the integration to monitoring only, disabling all switches, buttons, and control actions. |
+| Option                                         | Default | Description                                                                                          |
+| :--------------------------------------------- | :-----: | :--------------------------------------------------------------------------------------------------- |
+| **Enable WebSocket**                           | `true`  | Real-time push updates via WebSocket with automatic 30s polling fallback.                            |
+| **Enable fan control entities**                | `false` | Exposes PWM number control entities (`number`) for configurable fan controllers.                     |
+| **Show Docker containers as separate devices** | `false` | Creates a child device for each container under the server's Docker device, with short entity names. |
+| **Show virtual machines as separate devices**  | `false` | Creates a child device for each VM under the server's VMs device, keyed by libvirt UUID.             |
+| **Show GPUs as separate devices**              | `false` | Creates a `GPU · <name>` child device for each GPU, keyed by its UUID or PCI address.                |
+| **Enable container update checks**             | `false` | Tracks container image digest updates and adds an `update` entity per container.                     |
+| **Read-only (sensors only)**                   | `false` | Restricts the integration to monitoring only, disabling all switches, buttons, and control actions.  |
 
 ---
 

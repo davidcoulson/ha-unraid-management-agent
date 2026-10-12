@@ -101,10 +101,10 @@ async def _push_vms(hass: HomeAssistant, entry, vms: list[VMInfo]) -> None:
 
 
 @pytest.mark.usefixtures("vm_client", "mock_unraid_websocket_client_class")
-async def test_each_vm_gets_a_child_device_of_the_server(
+async def test_each_vm_gets_a_child_device_of_the_vms_device(
     hass: HomeAssistant, mock_config_entry
 ) -> None:
-    """VM controls and metrics live on a per-VM child device of the server."""
+    """VM controls and metrics live on a per-VM child device of the VMs device."""
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
 
@@ -113,10 +113,14 @@ async def test_each_vm_gets_a_child_device_of_the_server(
     vm_device = devices.async_get_child_device_by_identifier(
         (DOMAIN, f"{ENTRY_ID}_vm_{WIN10_ID}"), ENTRY_ID
     )
+    vms = devices.async_get_device_by_identifier((DOMAIN, f"{ENTRY_ID}_vms"), ENTRY_ID)
     assert server is not None
+    assert vms is not None
+    assert vms.name == "unraid-test VMs"
+    assert vms.via_device_id == server.id
     assert vm_device is not None
-    assert vm_device.name == "VM \u00b7 Windows 10"
-    assert vm_device.parent_device_id == server.id
+    assert vm_device.name == "Windows 10"
+    assert vm_device.parent_device_id == vms.id
 
     entities = er.async_get(hass)
     on_vm_device = {
@@ -125,10 +129,10 @@ async def test_each_vm_gets_a_child_device_of_the_server(
             entities, vm_device.id, include_disabled_entities=True
         )
     }
-    assert "switch.unraid_test_vm_windows_10_power" in on_vm_device
-    assert "button.unraid_test_vm_windows_10_force_stop" in on_vm_device
-    assert "sensor.unraid_test_vm_windows_10_cpu_usage" in on_vm_device
-    assert "sensor.unraid_test_vm_windows_10_disk_read_rate" in on_vm_device
+    assert "switch.unraid_test_vms_windows_10_power" in on_vm_device
+    assert "button.unraid_test_vms_windows_10_force_stop" in on_vm_device
+    assert "sensor.unraid_test_vms_windows_10_cpu_usage" in on_vm_device
+    assert "sensor.unraid_test_vms_windows_10_disk_read_rate" in on_vm_device
 
 
 @pytest.mark.usefixtures("vm_client", "mock_unraid_websocket_client_class")
@@ -227,11 +231,11 @@ async def test_removed_vm_sensor_is_recreated(
     for entity in er.async_entries_for_config_entry(entities, ENTRY_ID):
         if entity.unique_id.startswith(f"{ENTRY_ID}_vm_{WIN10_ID}_"):
             entities.async_remove(entity.entity_id)
-    assert entities.async_get("sensor.unraid_test_vm_windows_10_state") is None
+    assert entities.async_get("sensor.unraid_test_vms_windows_10_state") is None
 
     await _push_vms(hass, mock_config_entry, [_vm()])
 
-    assert hass.states.get("sensor.unraid_test_vm_windows_10_state").state == "running"
+    assert hass.states.get("sensor.unraid_test_vms_windows_10_state").state == "running"
 
 
 @pytest.mark.usefixtures("vm_client", "mock_unraid_websocket_client_class")
@@ -240,30 +244,30 @@ async def test_vm_metric_sensors(hass: HomeAssistant, mock_config_entry) -> None
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
 
-    assert hass.states.get("sensor.unraid_test_vm_windows_10_state").state == "running"
+    assert hass.states.get("sensor.unraid_test_vms_windows_10_state").state == "running"
     assert (
-        hass.states.get("sensor.unraid_test_vm_windows_10_state").attributes[
+        hass.states.get("sensor.unraid_test_vms_windows_10_state").attributes[
             "autostart"
         ]
         is False
     )
     assert (
-        float(hass.states.get("sensor.unraid_test_vm_windows_10_cpu_usage").state)
+        float(hass.states.get("sensor.unraid_test_vms_windows_10_cpu_usage").state)
         == 12.5
     )
-    assert hass.states.get("sensor.unraid_test_vm_windows_10_vcpus").state == "16"
-    memory = hass.states.get("sensor.unraid_test_vm_windows_10_memory_allocated")
+    assert hass.states.get("sensor.unraid_test_vms_windows_10_vcpus").state == "16"
+    memory = hass.states.get("sensor.unraid_test_vms_windows_10_memory_allocated")
     assert float(memory.state) == 32
     assert memory.attributes["unit_of_measurement"] == "GiB"
-    assert hass.states.get("sensor.unraid_test_vm_ubuntu_state").state == "shut off"
+    assert hass.states.get("sensor.unraid_test_vms_ubuntu_state").state == "shut off"
 
     # Disabled by default: disk counters are often 0 and memory used == allocated
     entities = er.async_get(hass)
     assert entities.async_get(
-        "sensor.unraid_test_vm_windows_10_disk_read_rate"
+        "sensor.unraid_test_vms_windows_10_disk_read_rate"
     ).disabled_by
     assert entities.async_get(
-        "sensor.unraid_test_vm_windows_10_memory_used"
+        "sensor.unraid_test_vms_windows_10_memory_used"
     ).disabled_by
 
 
@@ -272,7 +276,7 @@ async def test_vm_network_rate(hass: HomeAssistant, mock_config_entry) -> None:
     """Network rate comes from successive agent samples of the byte counters."""
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
-    rx = "sensor.unraid_test_vm_windows_10_network_receive_rate"
+    rx = "sensor.unraid_test_vms_windows_10_network_receive_rate"
     # One sample is not a rate yet; like the host network sensors it reads 0
     assert float(hass.states.get(rx).state) == 0
 
@@ -321,7 +325,7 @@ async def test_vm_sensors_unavailable_when_vm_removed(
     await hass.async_block_till_done()
 
     await _push_vms(hass, mock_config_entry, [_vm()])
-    assert hass.states.get("sensor.unraid_test_vm_ubuntu_state").state == "unavailable"
+    assert hass.states.get("sensor.unraid_test_vms_ubuntu_state").state == "unavailable"
 
 
 @pytest.mark.usefixtures("vm_client", "mock_unraid_websocket_client_class")
@@ -337,7 +341,7 @@ async def test_vm_added_later_gets_sensors(
         mock_config_entry,
         [_vm(), _vm(vm_id="cc51802580ace090e783627716506e13", name="k3s-ag-2")],
     )
-    assert hass.states.get("sensor.unraid_test_vm_k3s_ag_2_state").state == "running"
+    assert hass.states.get("sensor.unraid_test_vms_k3s_ag_2_state").state == "running"
 
 
 @pytest.mark.usefixtures("vm_client", "mock_unraid_websocket_client_class")
@@ -357,52 +361,57 @@ async def test_renamed_vm_is_not_confused_with_one_reusing_its_name(
             _vm(name="Windows 10 (old)"),
         ],
     )
-    assert hass.states.get("sensor.unraid_test_vm_windows_10_state").state == "running"
+    assert hass.states.get("sensor.unraid_test_vms_windows_10_state").state == "running"
 
 
 @pytest.mark.usefixtures("vm_client", "mock_unraid_websocket_client_class")
-async def test_existing_vm_device_gets_the_vm_prefix(
+async def test_existing_vm_device_moves_under_the_vms_device(
     hass: HomeAssistant, mock_config_entry
 ) -> None:
-    """A VM device registered by an earlier version is renamed, entity IDs kept."""
+    """A "VM · " device under the server moves under the VMs device, renamed."""
     devices = dr.async_get(hass)
     entities = er.async_get(hass)
-    # The registry as an earlier version left it: the device named after the VM
+    # The registry as the previous version left it: a prefixed child device of
+    # the server
     server = devices.async_get_or_create(
         config_entry_id=ENTRY_ID, identifiers={(DOMAIN, ENTRY_ID)}, name="unraid-test"
     )
     vm_device = devices.async_get_or_create_child(
         config_entry_id=ENTRY_ID,
         identifiers={(DOMAIN, f"{ENTRY_ID}_vm_{WIN10_ID}")},
-        name="Windows 10",
+        name="VM · Windows 10",
         parent_device_id=server.id,
     )
+    old_device_id = vm_device.id
     cpu = entities.async_get_or_create(
         "sensor",
         DOMAIN,
         f"{ENTRY_ID}_vm_{WIN10_ID}_cpu_usage",
         config_entry=mock_config_entry,
         device_id=vm_device.id,
-        suggested_object_id="unraid_test_windows_10_cpu_usage",
+        suggested_object_id="unraid_test_vm_windows_10_cpu_usage",
     )
-    assert cpu.entity_id == "sensor.unraid_test_windows_10_cpu_usage"
+    assert cpu.entity_id == "sensor.unraid_test_vm_windows_10_cpu_usage"
 
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
 
+    vms = devices.async_get_device_by_identifier((DOMAIN, f"{ENTRY_ID}_vms"), ENTRY_ID)
     vm_device = devices.async_get_child_device_by_identifier(
         (DOMAIN, f"{ENTRY_ID}_vm_{WIN10_ID}"), ENTRY_ID
     )
+    assert vms is not None
     assert vm_device is not None
-    assert vm_device.name == "VM · Windows 10"
+    assert vm_device.id == old_device_id
+    assert vm_device.parent_device_id == vms.id
+    assert vm_device.name == "Windows 10"
+    cpu_entry = entities.async_get("sensor.unraid_test_vm_windows_10_cpu_usage")
+    assert cpu_entry is not None
+    assert cpu_entry.unique_id == f"{ENTRY_ID}_vm_{WIN10_ID}_cpu_usage"
+    assert cpu_entry.device_id == old_device_id
     assert (
-        entities.async_get_entity_id(
-            "sensor", DOMAIN, f"{ENTRY_ID}_vm_{WIN10_ID}_cpu_usage"
-        )
-        == "sensor.unraid_test_windows_10_cpu_usage"
-    )
-    assert (
-        float(hass.states.get("sensor.unraid_test_windows_10_cpu_usage").state) == 12.5
+        float(hass.states.get("sensor.unraid_test_vm_windows_10_cpu_usage").state)
+        == 12.5
     )
 
 
@@ -417,7 +426,7 @@ async def test_renamed_vm_device_follows_the_new_name(
     entities = er.async_get(hass)
     unique_id = f"{ENTRY_ID}_vm_{WIN10_ID}_cpu_usage"
     entity_id = entities.async_get_entity_id("sensor", DOMAIN, unique_id)
-    assert entity_id == "sensor.unraid_test_vm_windows_10_cpu_usage"
+    assert entity_id == "sensor.unraid_test_vms_windows_10_cpu_usage"
 
     vm_client.list_vms.return_value = [_vm(name="Windows 11")]
     assert await hass.config_entries.async_reload(mock_config_entry.entry_id)
@@ -427,7 +436,7 @@ async def test_renamed_vm_device_follows_the_new_name(
         (DOMAIN, f"{ENTRY_ID}_vm_{WIN10_ID}"), ENTRY_ID
     )
     assert vm_device is not None
-    assert vm_device.name == "VM · Windows 11"
+    assert vm_device.name == "Windows 11"
     assert entities.async_get_entity_id("sensor", DOMAIN, unique_id) == entity_id
 
 
@@ -450,4 +459,4 @@ async def test_user_set_vm_device_name_is_kept(
     vm_device = devices.async_get_child_device_by_identifier(identifier, ENTRY_ID)
     assert vm_device is not None
     assert vm_device.name_by_user == "Gaming PC"
-    assert vm_device.name == "VM · Windows 10"
+    assert vm_device.name == "Windows 10"

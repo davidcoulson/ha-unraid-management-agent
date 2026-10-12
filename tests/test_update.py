@@ -635,10 +635,10 @@ async def test_container_update_on_container_device(
     plex_device = dr.async_get(hass).async_get_child_device_by_identifier(
         (DOMAIN, f"{ENTRY_ID}_container_plex"), ENTRY_ID
     )
-    entry = er.async_get(hass).async_get("update.unraid_test_plex_image")
+    entry = er.async_get(hass).async_get("update.unraid_test_docker_plex_image")
     assert entry is not None
     assert entry.device_id == plex_device.id
-    assert hass.states.get("update.unraid_test_plex_image").state == STATE_ON
+    assert hass.states.get("update.unraid_test_docker_plex_image").state == STATE_ON
 
 
 # ── Read-only mode ────────────────────────────────────────────────────────────
