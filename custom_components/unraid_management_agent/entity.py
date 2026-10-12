@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from collections import Counter
 import re
+from collections import Counter
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Final
@@ -19,14 +19,11 @@ from homeassistant.util import dt as dt_util
 from .const import (
     CONF_ENABLE_CONTAINER_DEVICES,
     CONF_ENABLE_GPU_DEVICES,
-    CONF_ENABLE_VM_DEVICES,
-    CONF_READ_ONLY,
-    DEFAULT_ENABLE_CONTAINER_DEVICES,
-    DEFAULT_ENABLE_GPU_DEVICES,
     CONF_ENABLE_HWMON_DEVICES,
     CONF_ENABLE_VM_DEVICES,
     CONF_READ_ONLY,
     DEFAULT_ENABLE_CONTAINER_DEVICES,
+    DEFAULT_ENABLE_GPU_DEVICES,
     DEFAULT_ENABLE_HWMON_DEVICES,
     DEFAULT_ENABLE_VM_DEVICES,
     DEFAULT_READ_ONLY,

@@ -70,6 +70,7 @@ def _octo_fans(
 
 
 def _coolant(source: str, serial: str | None) -> TemperatureInfo:
+    """Build a coolant temperature reading from a USB controller."""
     return TemperatureInfo(
         name=f"{source}_Coolant_Temp_temp1_input",
         value_celsius=35.8,
@@ -89,6 +90,7 @@ CPU_TEMP = TemperatureInfo(
 
 
 def _entry(hass: HomeAssistant, *, controller_devices: bool) -> MockConfigEntry:
+    """Create the config entry, with the controller devices option set."""
     entry = MockConfigEntry(
         domain=DOMAIN,
         title="Unraid (unraid-test)",
@@ -107,6 +109,7 @@ def _entry(hass: HomeAssistant, *, controller_devices: bool) -> MockConfigEntry:
 def _register(
     registry: er.EntityRegistry, entry: MockConfigEntry, unique_id: str, entity_id: str
 ) -> None:
+    """Pre-register a sensor entity in the entity registry."""
     registry.async_get_or_create(
         "sensor",
         DOMAIN,
@@ -124,6 +127,7 @@ async def _setup(
     *,
     controller_devices: bool = True,
 ) -> MockConfigEntry:
+    """Set up the integration with a mocked client and coordinator data."""
     system = client.get_system_info.return_value
     system.fans = fans
     system.temperatures = temps
@@ -142,6 +146,7 @@ async def _setup(
 
 
 def _server(hass: HomeAssistant) -> dr.DeviceEntry:
+    """Return the server device of the config entry."""
     server = dr.async_get(hass).async_get_device_by_identifier(
         (DOMAIN, ENTRY_ID), ENTRY_ID
     )
@@ -150,6 +155,7 @@ def _server(hass: HomeAssistant) -> dr.DeviceEntry:
 
 
 def _controller(hass: HomeAssistant, identifier: tuple[str, str]) -> dr.DeviceEntry:
+    """Return the child device of the server with the given identifier."""
     device = dr.async_get(hass).async_get_child_device_by_identifier(
         identifier, ENTRY_ID
     )
@@ -158,6 +164,7 @@ def _controller(hass: HomeAssistant, identifier: tuple[str, str]) -> dr.DeviceEn
 
 
 def _entity(hass: HomeAssistant, unique_id: str) -> er.RegistryEntry:
+    """Return the registered sensor entity with the given unique ID."""
     registry = er.async_get(hass)
     entity_id = registry.async_get_entity_id("sensor", DOMAIN, unique_id)
     assert entity_id is not None, unique_id
@@ -167,6 +174,7 @@ def _entity(hass: HomeAssistant, unique_id: str) -> er.RegistryEntry:
 
 
 def _attrs(hass: HomeAssistant, entity_id: str) -> dict:
+    """Return the state attributes of an entity."""
     state = hass.states.get(entity_id)
     assert state is not None
     return dict(state.attributes)
@@ -440,6 +448,7 @@ async def test_partial_inventory_never_removes_controller(
     long_ago = dt_util.utcnow() - STALE_REMOVAL_GRACE * 2
 
     def cleanup_past_grace() -> None:
+        """Run stale cleanup with every candidate past its grace period."""
         async_cleanup_stale_entities(hass, entry, coordinator)
         for unique_id in list(coordinator.stale_entity_candidates):
             coordinator.stale_entity_candidates[unique_id] = long_ago
