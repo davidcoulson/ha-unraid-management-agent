@@ -379,10 +379,20 @@ def _async_move_child_devices_to_groups(
                     parent_device_id=parent.id,
                 )
             except HomeAssistantError as err:
-                # The entities stay, without a device, until their platform
-                # sets them up again on the device it creates.
                 _LOGGER.warning("Could not move device %s: %s", child.name, err)
-                continue
+                try:
+                    # Put it back where it was, with its entities
+                    moved = device_registry.async_get_or_create_child(
+                        config_entry_id=entry.entry_id,
+                        config_subentry_id=child.config_subentry_id,
+                        identifiers=set(child.identifiers),
+                        name=child.name,
+                        parent_device_id=child.parent_device_id,
+                    )
+                except HomeAssistantError:
+                    # The entities stay, without a device, until their
+                    # platform sets them up again on the device it creates.
+                    continue
             for entity_id in entity_ids:
                 entity_registry.async_update_entity(entity_id, device_id=moved.id)
             _LOGGER.debug("Moved device %s under %s", child.name, parent.name)

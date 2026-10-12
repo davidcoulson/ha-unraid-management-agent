@@ -500,37 +500,52 @@ async def test_cleanup_keeps_group_devices_with_children(hass: HomeAssistant) ->
 async def test_failed_move_keeps_the_entities(
     hass: HomeAssistant, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """If a device can't be recreated, its entities stay and are set up again."""
+    """A device that can't be moved is put back, or its entities set up again."""
     entry = _all_devices_on(hass)
     before = _previous_layout(hass, entry)
     entities = er.async_get(hass)
     registry = dr.async_get(hass)
+    server = _device(hass, SERVER)
+    plex_before = _child(hass, PLEX)
     original = registry.async_get_or_create_child
-    failed: list[str] = []
+    calls: list[str] = []
 
-    def fail_once(**kwargs: object) -> dr.ChildDeviceEntry:
-        if kwargs.get("name") == "plex" and not failed:
-            failed.append("plex")
+    def fail(**kwargs: object) -> dr.ChildDeviceEntry:
+        # Moving plex fails once; sonarr can be neither moved nor put back
+        name = str(kwargs.get("name"))
+        calls.append(name)
+        if (name == "plex" and calls.count("plex") == 1) or name == "sonarr":
             message = "boom"
             raise HomeAssistantError(message)
         return original(**kwargs)  # type: ignore[arg-type]
 
-    with patch.object(registry, "async_get_or_create_child", side_effect=fail_once):
+    with patch.object(registry, "async_get_or_create_child", side_effect=fail):
         _async_move_child_devices_to_groups(
             hass, entry, MagicMock(hass=hass, config_entry=entry, data=None)
         )
 
     assert "Could not move device plex: boom" in caplog.text
-    plex_cpu = entities.async_get(before["plex_cpu"].entity_id)
-    assert plex_cpu is not None
-    assert plex_cpu.device_id is None
-    assert _child(hass, SONARR).parent_device_id == _device(hass, DOCKER).id
-
-    # Setting up recreates the device under the Docker device and re-attaches
-    await _setup(hass, entry)
+    assert "Could not move device sonarr: boom" in caplog.text
+    # Plex is back under the server with its settings and entities
     plex = _child(hass, PLEX)
-    assert plex.parent_device_id == _device(hass, DOCKER).id
+    assert plex.id == plex_before.id
+    assert plex.parent_device_id == server.id
+    assert plex.name_by_user == "Plex Media Server"
     assert entities.async_get(before["plex_cpu"].entity_id).device_id == plex.id
+    # Sonarr's entities are left without a device
+    assert registry.async_get_child_device_by_identifier(SONARR, ENTRY_ID) is None
+    assert entities.async_get(before["sonarr_cpu"].entity_id).device_id is None
+    assert _child(hass, WIN10).parent_device_id == _device(hass, VMS).id
+
+    # Setting up moves plex and recreates sonarr under the Docker device
+    await _setup(hass, entry)
+    docker = _device(hass, DOCKER)
+    plex = _child(hass, PLEX)
+    sonarr = _child(hass, SONARR)
+    assert plex.parent_device_id == docker.id
+    assert sonarr.parent_device_id == docker.id
+    assert entities.async_get(before["plex_cpu"].entity_id).device_id == plex.id
+    assert entities.async_get(before["sonarr_cpu"].entity_id).device_id == sonarr.id
 
 
 async def test_without_server_device_entities_stay_on_the_server(

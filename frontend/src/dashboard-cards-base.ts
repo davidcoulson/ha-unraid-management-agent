@@ -112,9 +112,16 @@ export abstract class BaseUnraidCard extends LitElement {
         // (containers, VMs), are not servers
         !device.via_device_id &&
         !device.parent_device_id &&
-        device.identifiers?.some(
-          ([domain]) => domain === "unraid_management_agent" || domain === "unraid"
-        )
+        this.isUnraidDevice(device)
+    );
+  }
+
+  /** Whether a device was registered by this integration */
+  protected isUnraidDevice(device: DeviceRegistryEntry): boolean {
+    return (
+      device.identifiers?.some(
+        ([domain]) => domain === "unraid_management_agent" || domain === "unraid"
+      ) ?? false
     );
   }
 
@@ -136,12 +143,16 @@ export abstract class BaseUnraidCard extends LitElement {
   }
 
   /**
-   * IDs of the server device and the devices under it: its Docker and VMs
-   * devices (linked to it) and their child devices (containers and VMs).
+   * IDs of the server device and this integration's devices under it: its
+   * child devices (GPUs, storage), its Docker and VMs devices (linked to it)
+   * and their child devices (containers and VMs). Devices of other
+   * integrations linked to the server are left out.
    */
   protected getServerDeviceIds(serverId: string): Set<string> {
     const ids = new Set([serverId]);
-    const devices = Object.values(this.hass?.devices ?? {});
+    const devices = Object.values(this.hass?.devices ?? {}).filter((device) =>
+      this.isUnraidDevice(device)
+    );
     for (const device of devices) {
       if (device.via_device_id === serverId) ids.add(device.id);
     }

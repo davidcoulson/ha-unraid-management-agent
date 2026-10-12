@@ -815,15 +815,30 @@ describe("Unraid Custom Cards", () => {
         identifiers: [["unraid_management_agent", "uuid-9999_vm_gaming"]],
         parent_device_id: "other_vms",
       },
+      // Another integration's devices linked to the server
+      foreign: {
+        id: "foreign",
+        name: "Hypervisor",
+        identifiers: [["other_integration", "hypervisor"]],
+        via_device_id: "dev_1",
+      },
+      foreign_child: {
+        id: "foreign_child",
+        name: "Guest",
+        identifiers: [["other_integration", "guest"]],
+        parent_device_id: "dev_1",
+      },
     };
     // Entity IDs of VMs added under the VMs device have no "_vm_" in them
     // Only those on the server's devices count: not one without a device,
-    // nor one on another server's device
+    // nor one on another server's or another integration's device
     const vmSwitches: Array<[string, string | null, string]> = [
       ["switch.cube_vms_windows_10_power", "win10", "Windows 10 Power"],
       ["switch.other_vms_gaming_power", "other_vm", "Gaming Power"],
       ["switch.other_kiosk_power", "other", "Kiosk Power"],
       ["switch.orphan_power", null, "Orphan Power"],
+      ["switch.hypervisor_power", "foreign", "Hypervisor Power"],
+      ["switch.guest_power", "foreign_child", "Guest Power"],
     ];
     for (const [entityId, deviceId, name] of vmSwitches) {
       hass.states[entityId] = {
@@ -848,6 +863,8 @@ describe("Unraid Custom Cards", () => {
     expect(card.shadowRoot?.innerHTML).not.toContain("Gaming Power");
     expect(card.shadowRoot?.innerHTML).not.toContain("Kiosk Power");
     expect(card.shadowRoot?.innerHTML).not.toContain("Orphan Power");
+    expect(card.shadowRoot?.innerHTML).not.toContain("Hypervisor Power");
+    expect(card.shadowRoot?.innerHTML).not.toContain("Guest Power");
     document.body.removeChild(card);
   });
 
