@@ -337,9 +337,7 @@ def _get_cpu_usage(data: UnraidData) -> float | None:
     if data and data.system:
         cpu_usage = data.system.cpu_usage_percent
         if cpu_usage is not None:
-            # Whole percent: pushed every ~15 s, and tenths change on every
-            # push, each one a recorder row
-            return round(float(cpu_usage))
+            return round(float(cpu_usage), 1)
     return None
 
 
@@ -417,8 +415,7 @@ def _get_cpu_power(data: UnraidData) -> float | None:
     if data and data.system:
         power = data.system.cpu_power_watts
         if power is not None:
-            # Whole watts: tenths change on every ~15 s push
-            return round(float(power))
+            return round(float(power), 1)
     return None
 
 
@@ -1282,7 +1279,7 @@ SYSTEM_SENSOR_DESCRIPTIONS: tuple[UnraidSensorEntityDescription, ...] = (
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:cpu-64-bit",
-        suggested_display_precision=0,
+        suggested_display_precision=1,
         value_fn=_get_cpu_usage,
         extra_state_attributes_fn=_get_cpu_attrs,
     ),
@@ -1325,7 +1322,7 @@ SYSTEM_SENSOR_DESCRIPTIONS: tuple[UnraidSensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfPower.WATT,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=0,
+        suggested_display_precision=1,
         value_fn=_get_cpu_power,
         supported_fn=lambda data: (
             data is not None
@@ -1993,15 +1990,7 @@ class UnraidHwmonTemperatureSensor(UnraidBaseEntity, SensorEntity):
     def native_value(self) -> float | None:
         """Return the temperature."""
         reading = self._current_reading()
-        if reading is None or reading.value_celsius is None:
-            return None
-        # Rounded so sub-degree jitter (the Octo reports 0.01 °C) does not
-        # make a new state, and a recorder row, on every ~15 s push
-        if (reading.source or "").startswith("k10temp"):
-            # AMD Tctl/Tccd move in 0.125 °C steps and swing a degree or two
-            # between pushes; tenths would still change every time
-            return round(float(reading.value_celsius))
-        return round(float(reading.value_celsius), 1)
+        return reading.value_celsius if reading else None
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:

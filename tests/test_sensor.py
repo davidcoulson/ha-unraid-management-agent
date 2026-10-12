@@ -157,7 +157,7 @@ async def test_cpu_usage_sensor(
 
     state = hass.states.get("sensor.unraid_test_cpu_usage")
     if state:
-        assert state.state == "26"  # whole percent
+        assert state.state == "25.5"
         assert state.attributes.get("unit_of_measurement") == PERCENTAGE
 
 
@@ -209,7 +209,7 @@ def test_get_cpu_usage_with_data():
     mock_data.system.cpu_usage_percent = 75.567
 
     result = _get_cpu_usage(mock_data)
-    assert result == 76
+    assert result == 75.6
 
 
 def test_get_cpu_usage_none_data():
@@ -451,10 +451,10 @@ def test_get_cpu_power_with_data():
     """Test _get_cpu_power with valid data."""
     mock_data = MagicMock(spec=UnraidData)
     mock_data.system = MagicMock()
-    mock_data.system.cpu_power_watts = 3.63
+    mock_data.system.cpu_power_watts = 3.43
 
     result = _get_cpu_power(mock_data)
-    assert result == 4
+    assert result == 3.4
 
 
 def test_get_cpu_power_none_data():

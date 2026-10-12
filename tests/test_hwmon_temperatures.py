@@ -164,38 +164,6 @@ async def test_hwmon_temperature_sensors(
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
-async def test_hwmon_temperature_rounded(
-    hass: HomeAssistant,
-    entity_registry: er.EntityRegistry,
-    mock_async_unraid_client: MagicMock,
-) -> None:
-    """Readings are rounded so sub-degree jitter does not make a new state."""
-    coolant = _reading("octo-hid-3-3_Coolant_Temp_temp1_input", 34.03, "octo-hid-3-3")
-    # AMD Tctl moves in 0.125 °C steps: whole degrees
-    tctl = _reading("k10temp-pci-00c3_CPU_Temp_temp1_input", 45.625, "k10temp-pci-00c3")
-    mock_async_unraid_client.get_system_info.return_value.temperatures = [
-        coolant,
-        tctl,
-    ]
-    entry = _entry(hass)
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-    temps = _temperature_entities(entity_registry)
-    for entity in temps.values():
-        entity_registry.async_update_entity(entity.entity_id, disabled_by=None)
-    await hass.config_entries.async_reload(entry.entry_id)
-    await hass.async_block_till_done()
-
-    states = {
-        uid: hass.states.get(entity.entity_id).state for uid, entity in temps.items()
-    }
-    assert states == {
-        f"{PREFIX}octo_hid_temp1": "34.0",
-        f"{PREFIX}k10temp_pci_00c3_temp1": "46",
-    }
-
-
-@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
 async def test_created_without_fan_control(
     hass: HomeAssistant,
     entity_registry: er.EntityRegistry,
