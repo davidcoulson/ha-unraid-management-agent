@@ -499,6 +499,12 @@
           "on": "mdi:bell-alert",
           "off": "mdi:bell-check-outline"
         }
+      },
+      "share_fuse_fallback": {
+        "default": "mdi:folder-alert",
+        "state": {
+          "off": "mdi:folder-check"
+        }
       }
     },
     "switch": {
