@@ -1,28 +1,40 @@
-name: HACS Action
-
-permissions: {}
+name: Validate
 
 on:
   push:
-    branches:
-      - main
-      - "enhancement/**"
-      - "feature/**"
-      - "fix/**"
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    types: [opened, synchronize, reopened, ready_for_review]
   schedule:
-    - cron: "0 0 * * *"
+    - cron: 0 0 * * *
+      timezone: Australia/Brisbane
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   hacs:
-    name: HACS Action
-    runs-on: "ubuntu-latest"
+    name: HACS
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - name: HACS Action
-        uses: "hacs/action@1ebf01c408f29afcb6406bd431bc98fd8cbb15aa" # main
+        uses: hacs/action@1ebf01c408f29afcb6406bd431bc98fd8cbb15aa # main
         with:
-          category: "integration"
+          category: integration
+
+  validate:
+    name: Hassfest
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # check out the repository
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: home-assistant/actions/hassfest@50baf3a307f87100cf550d4ae127746595030d5d # master

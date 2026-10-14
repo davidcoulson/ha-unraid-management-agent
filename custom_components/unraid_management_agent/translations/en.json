@@ -64,6 +64,7 @@
           "read_only": "Read-only (sensors only)",
           "enable_vm_devices": "Show virtual machines as separate devices",
           "enable_gpu_devices": "Show GPUs as separate devices",
+          "enable_nic_devices": "Show network cards as separate devices",
           "enable_container_devices": "Show Docker containers as separate devices",
           "enable_zfs_pool_devices": "Show ZFS pools as separate devices"
         },
@@ -74,6 +75,7 @@
           "read_only": "Only create sensors. Switches, buttons and number controls are not created (existing ones are removed), and the integration's actions refuse to run, so Home Assistant cannot start, stop or reboot anything on the server. Update entities still show available updates but do not offer to install them.",
           "enable_vm_devices": "Give each VM its own device under the server's VMs device, holding its power switch, control buttons and metric sensors (CPU, memory, network and disk rates). When off, VM switches and buttons stay on the server device and no VM sensors are created.",
           "enable_gpu_devices": "Give each GPU its own device under the server, holding its utilization, temperature, power, energy and VRAM sensors with short names. When off, GPU sensors stay on the server device, named after the GPU.",
+          "enable_nic_devices": "Give each PCI network card its own device under the server, with its ASIC, PHY and MAC temperatures, and per port the link speed and the plugged optic's diagnostics (module temperature and voltage, RX and TX power, alarm and warning flags, vendor and part number). Needs an agent that reports network cards. When off, no network card entities are created (existing ones are removed).",
           "enable_container_devices": "Give each container its own device under the server's Docker device, holding its switches, restart button and metric sensors with short names (Running, CPU, Memory). When off, container entities stay on the server device, named after the container.",
           "enable_zfs_pool_devices": "Give each ZFS pool its own device under the server, holding its usage, health, scrub and error sensors with short names, plus drive health roll-ups: hottest drive temperature, worst NVMe wear, media errors, failing drives and a drive count with per-drive details. Drive health needs agent 2026.10 or later. When off, pool entities stay on the server device, named after the pool."
         }
@@ -469,6 +471,51 @@
       "storage_slot_errors": {
         "name": "Slot {index} Errors"
       },
+      "nic_asic_temperature": {
+        "name": "ASIC Temperature"
+      },
+      "nic_phy_temperature": {
+        "name": "PHY Temperature"
+      },
+      "nic_port_phy_temperature": {
+        "name": "{port} PHY Temperature"
+      },
+      "nic_mac_temperature": {
+        "name": "MAC Temperature"
+      },
+      "nic_port_mac_temperature": {
+        "name": "{port} MAC Temperature"
+      },
+      "nic_temperature": {
+        "name": "{label}"
+      },
+      "nic_port_temperature": {
+        "name": "{port} {label}"
+      },
+      "nic_firmware": {
+        "name": "Firmware"
+      },
+      "nic_link_speed": {
+        "name": "{port} Link Speed"
+      },
+      "nic_module_temperature": {
+        "name": "{port} Module Temperature"
+      },
+      "nic_module_voltage": {
+        "name": "{port} Module Voltage"
+      },
+      "nic_rx_power": {
+        "name": "{port} RX Power"
+      },
+      "nic_tx_power": {
+        "name": "{port} TX Power"
+      },
+      "nic_module_vendor": {
+        "name": "{port} Optic Vendor"
+      },
+      "nic_module_part_number": {
+        "name": "{port} Optic Part Number"
+      },
       "alerts_firing": {
         "name": "Firing alerts"
       },
@@ -610,6 +657,9 @@
       "storage_drive_health": {
         "name": "Drive Health"
       },
+      "nic_module_problem": {
+        "name": "{port} Optic"
+      },
       "alert_rule": {
         "name": "Alert {rule_name}",
         "state_attributes": {
@@ -633,6 +683,9 @@
       },
       "zfs_pool_device_problem": {
         "name": "Problem"
+      },
+      "share_fuse_fallback": {
+        "name": "Share {share_name} FUSE Fallback"
       }
     },
     "switch": {
@@ -1135,6 +1188,26 @@
     "parity_check_stuck": {
       "title": "Parity Check May Be Stuck",
       "description": "Parity check is at {sync_percent}% and may be stuck.\n\n**Recommended Actions:**\n1. Check system logs for errors\n2. Monitor progress for changes\n3. Consider pausing and resuming the check\n4. Check disk health status\n\nClick Submit to acknowledge this issue."
+    },
+    "share_fuse_fallback": {
+      "title": "Share {share_name} is not using exclusive access",
+      "description": "Share **{share_name}** is set to live only on pool **{pool}**, but Unraid is serving it through the slower FUSE user share layer (`/mnt/user`) instead of exclusive access, because a `{share_name}` folder also exists on: **{locations}**.\n\n**To fix:**\n1. Check the `{share_name}` folder on {locations} (it may hold data) and move its contents to pool {pool}\n2. Remove the folder from {locations}\n3. Stop and start the array so Unraid switches the share back to exclusive access\n\nThis issue clears automatically once the share is exclusive again."
+    },
+    "share_fuse_fallback_stray_unchecked": {
+      "title": "Share {share_name} is not using exclusive access",
+      "description": "Share **{share_name}** is set to live only on pool **{pool}**, but Unraid is serving it through the slower FUSE user share layer (`/mnt/user`) instead of exclusive access, because a `{share_name}` folder also exists on: **{locations}**. The agent did not check these spun-down disks or pools, to avoid waking them, so one may exist there too: **{unchecked}**.\n\n**To fix:**\n1. Check the `{share_name}` folder on {locations} (it may hold data) and move its contents to pool {pool}\n2. Look for a `{share_name}` folder on {unchecked} and do the same\n3. Remove the folders outside pool {pool}\n4. Stop and start the array so Unraid switches the share back to exclusive access\n\nThis issue clears automatically once the share is exclusive again."
+    },
+    "share_fuse_fallback_unchecked": {
+      "title": "Share {share_name} is not using exclusive access",
+      "description": "Share **{share_name}** is set to live only on pool **{pool}**, but Unraid is serving it through the slower FUSE user share layer (`/mnt/user`) instead of exclusive access.\n\nNo `{share_name}` folder was found outside pool {pool} on the disks and pools that are awake. The agent did not check these spun-down disks or pools, to avoid waking them: **{unchecked}**. Look for a `{share_name}` folder there, move its contents to pool {pool} and remove it. Unraid decides exclusive access when the array starts, so stop and start the array afterwards.\n\nThis issue clears automatically once the share is exclusive again."
+    },
+    "share_fuse_fallback_restart": {
+      "title": "Share {share_name} is not using exclusive access",
+      "description": "Share **{share_name}** is set to live only on pool **{pool}**, but Unraid is serving it through the slower FUSE user share layer (`/mnt/user`) instead of exclusive access.\n\nThe agent found no `{share_name}` folder outside pool {pool}. Unraid decides exclusive access when the array starts, so if a stray folder was removed since then, stop and start the array.\n\nThis issue clears automatically once the share is exclusive again."
+    },
+    "share_fuse_fallback_unknown": {
+      "title": "Share {share_name} is not using exclusive access",
+      "description": "Share **{share_name}** is set to live only on pool **{pool}**, but Unraid is serving it through the slower FUSE user share layer (`/mnt/user`) instead of exclusive access.\n\nThis usually means a `{share_name}` folder also exists on another disk or pool. The agent could not check where, so look for one outside pool {pool}, move its contents to pool {pool} and remove it, then stop and start the array.\n\nThis issue clears automatically once the share is exclusive again."
     }
   }
 }

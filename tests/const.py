@@ -422,6 +422,11 @@ def mock_shares() -> list[MagicMock]:
     share.use_cache = "prefer"
     share.floor = "0"
     share.split_level = None
+    # Older agent: no exclusive share state
+    share.exclusive = None
+    share.exclusive_eligible = None
+    share.exclusive_pool = None
+    share.locations = None
     return [share]
 
 

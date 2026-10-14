@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Final
+from typing import Any, Final, cast
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -26,7 +26,7 @@ from .alerts import (
     find_alert_rule,
     find_alert_status,
 )
-from .api.models import SystemService
+from .api.models import ShareInfo, SystemService
 from .cleanup import async_prune_seen_names
 from .const import ATTR_PARITY_CHECK_STATUS
 from .entity import (
@@ -36,6 +36,13 @@ from .entity import (
     UnraidEntityDescription,
     UnraidZFSPoolEntity,
     build_group_device_info,
+)
+from .nic import (
+    NICEntitySpec,
+    UnraidNICBinarySensorEntityDescription,
+    UnraidNICEntity,
+    async_setup_nic_entities,
+    nic_binary_sensor_specs,
 )
 from .nut import (
     async_move_legacy_nut_entities,
@@ -588,6 +595,42 @@ async def async_setup_entry(
 
     _add_alert_rule_sensors()
 
+    # Share FUSE fallback binary sensors - one per share that is (or can be)
+    # exclusive, created once the agent reports exclusive share state
+    seen_exclusive_shares: set[str] = set()
+
+    def _add_share_fuse_fallback_sensors() -> None:
+        if not coordinator.is_collector_enabled("shares"):
+            return
+        current_data = coordinator.data
+        if not current_data or not current_data.shares:
+            return
+        # Allow re-creation of entities removed from the registry (see #83)
+        async_prune_seen_names(
+            hass,
+            "binary_sensor",
+            seen_exclusive_shares,
+            lambda name: f"{entry.entry_id}_share_{name}_fuse_fallback",
+        )
+        new_entities: list[BinarySensorEntity] = []
+        for share in current_data.shares:
+            if (
+                share.name
+                and share.name not in seen_exclusive_shares
+                and (share.exclusive is True or share.exclusive_eligible is True)
+            ):
+                seen_exclusive_shares.add(share.name)
+                new_entities.append(
+                    UnraidShareFuseFallbackBinarySensor(coordinator, share.name)
+                )
+        if new_entities:
+            async_add_entities(new_entities)
+
+    _add_share_fuse_fallback_sensors()
+    entry.async_on_unload(
+        coordinator.async_add_listener(callback(_add_share_fuse_fallback_sensors))
+    )
+
     # Register listeners so entities are added when new unassigned/remote-share
     # data or new alert rules arrive
     entry.async_on_unload(
@@ -694,6 +737,15 @@ async def async_setup_entry(
         "binary_sensor",
         storage_binary_sensor_specs,
         UnraidStorageBinarySensor,
+        async_add_entities,
+    )
+
+    # Network cards (opt-in; each a child device of the server)
+    async_setup_nic_entities(
+        entry,
+        "binary_sensor",
+        nic_binary_sensor_specs,
+        UnraidNICBinarySensor,
         async_add_entities,
     )
 
@@ -1036,6 +1088,64 @@ class UnraidRemoteShareBinarySensor(UnraidBaseEntity, BinarySensorEntity):
         return attrs
 
 
+class UnraidShareFuseFallbackBinarySensor(UnraidBaseEntity, BinarySensorEntity):
+    """Problem sensor: an exclusive-eligible user share fell back to FUSE."""
+
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self,
+        coordinator: UnraidDataUpdateCoordinator,
+        share_name: str,
+    ) -> None:
+        """Initialize the share FUSE fallback binary sensor."""
+        self._share_name = share_name
+        super().__init__(coordinator, f"share_{share_name}_fuse_fallback")
+        self._attr_translation_key = "share_fuse_fallback"
+        self._attr_translation_placeholders = {"share_name": share_name}
+
+    def _get_share(self) -> ShareInfo | None:
+        """Return the share data from coordinator."""
+        data = self.coordinator.data
+        for share in (data.shares if data else None) or []:
+            if share.name == self._share_name:
+                return share
+        return None
+
+    @property
+    def available(self) -> bool:
+        """Return True while the agent reports the share's exclusive state."""
+        share = self._get_share()
+        return super().available and share is not None and share.exclusive_state_known
+
+    @property
+    def is_on(self) -> bool:
+        """Return True if the share is served through FUSE although eligible."""
+        share = self._get_share()
+        return share is not None and share.fuse_fallback
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return the exclusive share details."""
+        share = self._get_share()
+        if share is None:
+            return {}
+        attrs: dict[str, Any] = {
+            "exclusive": share.exclusive,
+            "exclusive_eligible": share.exclusive_eligible,
+        }
+        if share.exclusive_pool:
+            attrs["exclusive_pool"] = share.exclusive_pool
+        # Locations are only reported when the agent scanned the disks
+        if share.fuse_fallback and share.locations is not None:
+            attrs["locations"] = list(share.locations)
+            attrs["stray_locations"] = share.stray_locations
+            if share.locations_unchecked:
+                attrs["locations_unchecked"] = list(share.locations_unchecked)
+        return attrs
+
+
 class UnraidStorageBinarySensor(UnraidStorageEntity, BinarySensorEntity):
     """A problem indicator of a storage controller or enclosure."""
 
@@ -1052,6 +1162,27 @@ class UnraidStorageBinarySensor(UnraidStorageEntity, BinarySensorEntity):
     def is_on(self) -> bool | None:
         """Return True when there is a problem."""
         ctx = self._storage_context()
+        return self.entity_description.is_on_fn(ctx) if ctx else None
+
+
+class UnraidNICBinarySensor(UnraidNICEntity, BinarySensorEntity):
+    """A problem indicator of a network card port's optic."""
+
+    entity_description: UnraidNICBinarySensorEntityDescription
+
+    def __init__(
+        self, coordinator: UnraidDataUpdateCoordinator, spec: NICEntitySpec
+    ) -> None:
+        """Initialize the binary sensor."""
+        super().__init__(coordinator, spec)
+        self.entity_description = cast(
+            "UnraidNICBinarySensorEntityDescription", spec.description
+        )
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return True while an alarm or warning flag is raised."""
+        ctx = self._nic_context()
         return self.entity_description.is_on_fn(ctx) if ctx else None
 
 

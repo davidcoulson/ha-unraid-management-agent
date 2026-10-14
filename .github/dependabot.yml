@@ -1,39 +1,62 @@
+# Dependabot (tinkerologie standard: see STANDARDS.md in tinkerologie/.github)
 version: 2
 updates:
   # Update pip dependencies in requirements.txt
   - package-ecosystem: pip
-    directory: "/"
+    directory: /
     schedule:
-      interval: weekly
-      day: monday
-      time: "03:00"
+      interval: daily
     open-pull-requests-limit: 10
-    reviewers:
-      - ruaan-deysel
     labels:
       - dependencies
-      - python
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      pip-minor-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
     allow:
       - dependency-type: all
-    commit-message:
-      prefix: "chore(deps):"
-      include: "scope"
     pull-request-branch-name:
-      separator: "/"
+      separator: /
 
   # Update GitHub Actions
   - package-ecosystem: github-actions
-    directory: "/"
+    directory: /
     schedule:
       interval: weekly
       day: monday
-      time: "03:00"
-    open-pull-requests-limit: 5
-    reviewers:
-      - ruaan-deysel
+    open-pull-requests-limit: 10
     labels:
       - dependencies
-      - github-actions
     commit-message:
-      prefix: "chore(ci):"
-      include: "scope"
+      prefix: chore(deps)
+    groups:
+      github-actions-minor-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  # Frontend card (frontend/package.json and package-lock.json).
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      npm-minor-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
