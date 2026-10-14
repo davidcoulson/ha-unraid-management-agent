@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Final
+from typing import Any, Final, cast
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -35,6 +35,13 @@ from .entity import (
     UnraidBaseEntity,
     UnraidEntityDescription,
     build_group_device_info,
+)
+from .nic import (
+    NICEntitySpec,
+    UnraidNICBinarySensorEntityDescription,
+    UnraidNICEntity,
+    async_setup_nic_entities,
+    nic_binary_sensor_specs,
 )
 from .nut import (
     async_move_legacy_nut_entities,
@@ -732,6 +739,15 @@ async def async_setup_entry(
         async_add_entities,
     )
 
+    # Network cards (opt-in; each a child device of the server)
+    async_setup_nic_entities(
+        entry,
+        "binary_sensor",
+        nic_binary_sensor_specs,
+        UnraidNICBinarySensor,
+        async_add_entities,
+    )
+
     _LOGGER.debug("Adding %d Unraid binary sensor entities", len(entities))
     async_add_entities(entities)
 
@@ -1145,6 +1161,27 @@ class UnraidStorageBinarySensor(UnraidStorageEntity, BinarySensorEntity):
     def is_on(self) -> bool | None:
         """Return True when there is a problem."""
         ctx = self._storage_context()
+        return self.entity_description.is_on_fn(ctx) if ctx else None
+
+
+class UnraidNICBinarySensor(UnraidNICEntity, BinarySensorEntity):
+    """A problem indicator of a network card port's optic."""
+
+    entity_description: UnraidNICBinarySensorEntityDescription
+
+    def __init__(
+        self, coordinator: UnraidDataUpdateCoordinator, spec: NICEntitySpec
+    ) -> None:
+        """Initialize the binary sensor."""
+        super().__init__(coordinator, spec)
+        self.entity_description = cast(
+            "UnraidNICBinarySensorEntityDescription", spec.description
+        )
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return True while an alarm or warning flag is raised."""
+        ctx = self._nic_context()
         return self.entity_description.is_on_fn(ctx) if ctx else None
 
 

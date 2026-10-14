@@ -234,15 +234,16 @@ If your Unraid Management Agent advertises via Zeroconf (`_unraid-mgmt-agent._tc
 
 Click **Configure** on an active integration entry to adjust operational options at any time:
 
-| Option                                         | Default | Description                                                                                          |
-| :--------------------------------------------- | :-----: | :--------------------------------------------------------------------------------------------------- |
-| **Enable WebSocket**                           | `true`  | Real-time push updates via WebSocket with automatic 30s polling fallback.                            |
-| **Enable fan control entities**                | `false` | Exposes PWM number control entities (`number`) for configurable fan controllers.                     |
-| **Show Docker containers as separate devices** | `false` | Creates a child device for each container under the server's Docker device, with short entity names. |
-| **Show virtual machines as separate devices**  | `false` | Creates a child device for each VM under the server's VMs device, keyed by libvirt UUID.             |
-| **Show GPUs as separate devices**              | `false` | Creates a `GPU · <name>` child device for each GPU, keyed by its UUID or PCI address.                |
-| **Enable container update checks**             | `false` | Tracks container image digest updates and adds an `update` entity per container.                     |
-| **Read-only (sensors only)**                   | `false` | Restricts the integration to monitoring only, disabling all switches, buttons, and control actions.  |
+| Option                                         | Default | Description                                                                                                                                                      |
+| :--------------------------------------------- | :-----: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Enable WebSocket**                           | `true`  | Real-time push updates via WebSocket with automatic 30s polling fallback.                                                                                        |
+| **Enable fan control entities**                | `false` | Exposes PWM number control entities (`number`) for configurable fan controllers.                                                                                 |
+| **Show Docker containers as separate devices** | `false` | Creates a child device for each container under the server's Docker device, with short entity names.                                                             |
+| **Show virtual machines as separate devices**  | `false` | Creates a child device for each VM under the server's VMs device, keyed by libvirt UUID.                                                                         |
+| **Show GPUs as separate devices**              | `false` | Creates a `GPU · <name>` child device for each GPU, keyed by its UUID or PCI address.                                                                            |
+| **Show network cards as separate devices**     | `false` | Creates a child device per PCI network card with ASIC/PHY/MAC temperatures, link speed and SFP/QSFP optic diagnostics (needs an agent with the `nic` collector). |
+| **Enable container update checks**             | `false` | Tracks container image digest updates and adds an `update` entity per container.                                                                                 |
+| **Read-only (sensors only)**                   | `false` | Restricts the integration to monitoring only, disabling all switches, buttons, and control actions.                                                              |
 
 ---
 
