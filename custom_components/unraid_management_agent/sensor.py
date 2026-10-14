@@ -4616,6 +4616,25 @@ def _async_watch_gpus(
 # =============================================================================
 
 
+def _system_sensor_entity(
+    coordinator: UnraidDataUpdateCoordinator,
+    description: UnraidSensorEntityDescription,
+) -> SensorEntity:
+    """Build the entity for a system sensor description."""
+    if description.key == "uptime":
+        return UnraidUptimeSensorEntity(coordinator, description)
+    return UnraidSensorEntity(coordinator, description)
+
+
+def _arc_configured_max_reported(data: UnraidData | None) -> bool:
+    """Return True when the agent reports the configured ZFS ARC maximum."""
+    return (
+        data is not None
+        and data.zfs_arc is not None
+        and getattr(data.zfs_arc, "configured_max_bytes", None) is not None
+    )
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: UnraidConfigEntry,
@@ -4629,13 +4648,13 @@ async def async_setup_entry(
 
     entities: list[SensorEntity] = []
 
-    # System sensors (always enabled - system collector is required)
+    # System sensors (always enabled - system collector is required). Those
+    # whose value the agent does not report yet are added by a listener below.
+    seen_system_keys: set[str] = set()
     for description in SYSTEM_SENSOR_DESCRIPTIONS:
         if description.supported_fn(data):
-            if description.key == "uptime":
-                entities.append(UnraidUptimeSensorEntity(coordinator, description))
-            else:
-                entities.append(UnraidSensorEntity(coordinator, description))
+            seen_system_keys.add(description.key)
+            entities.append(_system_sensor_entity(coordinator, description))
 
     entities.append(UnraidSystemStatusSensor(coordinator))
 
@@ -4774,6 +4793,8 @@ async def async_setup_entry(
                 entities.append(UnraidShareUsageSensor(coordinator, entry, share.name))
 
     # ZFS pool sensors - only if zfs collector is enabled
+    seen_arc_keys: set[str] = set()
+    arc_configured_max_added = False
     if coordinator.is_collector_enabled("zfs"):
         zfs_pools = data.zfs_pools if data else []
         if zfs_pools:
@@ -4795,16 +4816,15 @@ async def async_setup_entry(
                         for description in ZFS_POOL_SENSOR_DESCRIPTIONS
                     )
 
-            # ZFS ARC sensors
+            # ZFS ARC sensors. Those the agent does not report yet are added
+            # by a listener below.
             for description in ZFS_ARC_SENSOR_DESCRIPTIONS:
                 if description.supported_fn(data):
+                    seen_arc_keys.add(description.key)
                     entities.append(UnraidSensorEntity(coordinator, description))
 
-            if (
-                data
-                and data.zfs_arc
-                and getattr(data.zfs_arc, "configured_max_bytes", None) is not None
-            ):
+            if _arc_configured_max_reported(data):
+                arc_configured_max_added = True
                 entities.append(UnraidZFSArcConfiguredMaxSensor(coordinator))
 
     # Flash drive sensors
@@ -5101,6 +5121,42 @@ async def async_setup_entry(
         async_add_entities([UnraidSensorEntity(coordinator, ALERTS_FIRING_DESCRIPTION)])
 
     _add_alerts_firing_sensor()
+
+    # System and ZFS ARC sensors whose value the agent reports only after the
+    # first samples (CPU/DRAM power needs two RAPL readings, the ARC hit ratio
+    # needs ARC activity), or only after an agent upgrade. Without this they
+    # were skipped until the entry was reloaded and then showed as "no longer
+    # provided by the integration" if they had existed before.
+    def _add_late_system_sensors() -> None:
+        nonlocal arc_configured_max_added
+        current_data = coordinator.data
+        if not current_data:
+            return
+        new_entities: list[SensorEntity] = []
+        for description in SYSTEM_SENSOR_DESCRIPTIONS:
+            if description.key not in seen_system_keys and description.supported_fn(
+                current_data
+            ):
+                seen_system_keys.add(description.key)
+                new_entities.append(_system_sensor_entity(coordinator, description))
+        if coordinator.is_collector_enabled("zfs") and current_data.zfs_pools:
+            for description in ZFS_ARC_SENSOR_DESCRIPTIONS:
+                if description.key not in seen_arc_keys and description.supported_fn(
+                    current_data
+                ):
+                    seen_arc_keys.add(description.key)
+                    new_entities.append(UnraidSensorEntity(coordinator, description))
+            if not arc_configured_max_added and _arc_configured_max_reported(
+                current_data
+            ):
+                arc_configured_max_added = True
+                new_entities.append(UnraidZFSArcConfiguredMaxSensor(coordinator))
+        if new_entities:
+            async_add_entities(new_entities)
+
+    entry.async_on_unload(
+        coordinator.async_add_listener(callback(_add_late_system_sensors))
+    )
 
     entry.async_on_unload(
         coordinator.async_add_listener(callback(_add_unassigned_device_sensors))
