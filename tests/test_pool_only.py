@@ -9,7 +9,10 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import entity_registry as er
 
-from custom_components.unraid_management_agent import PARITY_ENTITY_KEYS
+from custom_components.unraid_management_agent import (
+    PARITY_ENTITY_KEYS,
+    _array_started,
+)
 from custom_components.unraid_management_agent.api.models import (
     ParityCheckRecord,
     ParityHistory,
@@ -485,3 +488,79 @@ async def test_disabled_parity_entities_kept_when_counts_unknown(
     entry = registry.async_get(registry_entry.entity_id)
     assert entry is not None
     assert entry.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+
+
+@pytest.mark.parametrize(
+    ("data", "expected"),
+    [
+        (None, False),
+        (UnraidData(array=None), False),
+        (UnraidData(array=_stopped(mock_array_status())), False),
+        (UnraidData(array=mock_array_status()), True),
+    ],
+)
+def test_array_started(data: UnraidData | None, expected: bool) -> None:
+    """Only an array reported as started counts as started."""
+    assert _array_started(data) is expected
+
+
+@pytest.mark.usefixtures("pool_only_client", "mock_unraid_websocket_client_class")
+async def test_user_disabled_parity_entity_kept_without_array_disks(
+    hass: HomeAssistant,
+    mock_config_entry,
+) -> None:
+    """A parity entity the user disabled stays user-disabled on pool-only servers."""
+    registry = er.async_get(hass)
+    registry_entry = registry.async_get_or_create(
+        "button",
+        DOMAIN,
+        f"{mock_config_entry.entry_id}_parity_check_start",
+        config_entry=mock_config_entry,
+        disabled_by=er.RegistryEntryDisabler.USER,
+    )
+
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    entry = registry.async_get(registry_entry.entity_id)
+    assert entry is not None
+    assert entry.disabled_by is er.RegistryEntryDisabler.USER
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_no_reload_when_restarted_array_is_unchanged(
+    hass: HomeAssistant,
+    mock_config_entry,
+    pool_only_client,
+) -> None:
+    """A re-check that finds the same disk layout does not reload."""
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    with patch.object(hass.config_entries, "async_schedule_reload") as reload:
+        await _restart_array(
+            hass, mock_config_entry, pool_only_client, _pool_only_array()
+        )
+
+    reload.assert_not_called()
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_reload_scheduled_once(
+    hass: HomeAssistant,
+    mock_config_entry,
+    pool_only_client,
+) -> None:
+    """Further updates after a reload is scheduled do not schedule another."""
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    with patch.object(hass.config_entries, "async_schedule_reload") as reload:
+        await _restart_array(
+            hass, mock_config_entry, pool_only_client, mock_array_status()
+        )
+        await _restart_array(
+            hass, mock_config_entry, pool_only_client, mock_array_status()
+        )
+
+    reload.assert_called_once_with(mock_config_entry.entry_id)
