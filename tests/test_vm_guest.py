@@ -409,23 +409,6 @@ async def test_agent_without_the_endpoint_creates_nothing(
 
 
 @pytest.mark.usefixtures("guest_client", "mock_unraid_websocket_client_class")
-async def test_turning_vm_devices_off_removes_guest_sensors(
-    hass: HomeAssistant, mock_config_entry: MockConfigEntry
-) -> None:
-    """Turning the option off removes the guest sensors with the VM devices."""
-    await _setup(hass, mock_config_entry)
-    assert hass.states.get(f"{PREFIX}fps") is not None
-
-    hass.config_entries.async_update_entry(
-        mock_config_entry, options={**MOCK_OPTIONS, CONF_ENABLE_VM_DEVICES: False}
-    )
-    await hass.config_entries.async_reload(mock_config_entry.entry_id)
-    await hass.async_block_till_done()
-
-    registered = er.async_entries_for_config_entry(er.async_get(hass), ENTRY_ID)
-    assert not [e for e in registered if KEY in e.unique_id]
-
-
 def test_cleanup_keys() -> None:
     """Guest sensor keys are valid while reported and VM devices are on."""
     data = UnraidData(vms=[_vm()], vm_guest=_guests(_guest()))

@@ -71,8 +71,10 @@ from .api.websocket import UnraidWebSocketClient
 from .const import (
     CONF_ENABLE_CONTAINER_UPDATES,
     CONF_ENABLE_NIC_DEVICES,
+    CONF_ENABLE_VM_DEVICES,
     DEFAULT_ENABLE_CONTAINER_UPDATES,
     DEFAULT_ENABLE_NIC_DEVICES,
+    DEFAULT_ENABLE_VM_DEVICES,
     DOMAIN,
     UPDATE_INTERVAL,
 )
@@ -440,6 +442,14 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
         return bool(
             self.config_entry.options.get(
                 CONF_ENABLE_NIC_DEVICES, DEFAULT_ENABLE_NIC_DEVICES
+            )
+        )
+
+    def is_vm_devices_enabled(self) -> bool:
+        """Return True when VMs are shown as separate devices."""
+        return bool(
+            self.config_entry.options.get(
+                CONF_ENABLE_VM_DEVICES, DEFAULT_ENABLE_VM_DEVICES
             )
         )
 
