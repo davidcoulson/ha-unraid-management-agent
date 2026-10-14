@@ -2074,6 +2074,53 @@ class ZFSVdev(ZFSDevice):
     devices: list[ZFSDevice] | None = Field(None, description="Member devices")
 
 
+class DriveHealth(BaseModel):
+    """SMART summary of one disk in a ZFS pool (no serial numbers)."""
+
+    model: str | None = Field(None, description="Drive model")
+    protocol: str | None = Field(None, description="NVMe, ATA or SCSI")
+    media_type: str | None = Field(None, description="nvme, ssd or hdd")
+    standby: bool = Field(
+        False,
+        description="Asleep at the last check; other values are from the last read",
+    )
+    smart_passed: bool | None = Field(None, description="SMART overall health")
+    temperature_celsius: CoercedInt = Field(None, description="Temperature")
+    percentage_used: CoercedInt = Field(
+        None, description="NVMe endurance used (may exceed 100)"
+    )
+    available_spare_percent: CoercedInt = Field(
+        None, description="NVMe available spare"
+    )
+    critical_warning: CoercedInt = Field(
+        None, description="NVMe critical warning bitmask (0 = none)"
+    )
+    media_errors: CoercedInt = Field(
+        None, description="Unrecovered media/data-integrity errors"
+    )
+    power_on_hours: CoercedInt = Field(None, description="Power-on hours")
+    collected_at: str | None = Field(None, description="When the values were read")
+
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+    @property
+    def is_failing(self) -> bool:
+        """Return True when SMART failed or the NVMe critical warning is set."""
+        return self.smart_passed is False or bool(self.critical_warning)
+
+
+class ZFSDrive(BaseModel):
+    """A leaf member of a ZFS pool and the health of the disk it is on."""
+
+    name: str | None = Field(None, description="Member name from zpool status")
+    disk: str | None = Field(None, description="Whole-disk kernel name")
+    vdev: str | None = Field(None, description="Parent vdev")
+    state: str | None = Field(None, description="Member state")
+    health: DriveHealth | None = Field(None, description="SMART health")
+
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+
 class ZFSPool(BaseModel):
     """ZFS pool information."""
 
@@ -2105,6 +2152,9 @@ class ZFSPool(BaseModel):
     write_errors: CoercedInt = Field(None, description="Pool-level write errors")
     checksum_errors: CoercedInt = Field(None, description="Pool-level checksum errors")
     vdevs: list[ZFSVdev] | None = Field(None, description="Pool vdevs")
+    drives: list[ZFSDrive] | None = Field(
+        None, description="Leaf members with disk health (agent 2026.10+)"
+    )
     scan_status: str | None = Field(
         None, description="Last scan, e.g. 'scrub completed' or 'resilver in progress'"
     )
