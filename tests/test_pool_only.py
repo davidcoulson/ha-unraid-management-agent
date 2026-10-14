@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from homeassistant.core import HomeAssistant
@@ -13,6 +13,7 @@ from custom_components.unraid_management_agent import PARITY_ENTITY_KEYS
 from custom_components.unraid_management_agent.const import DOMAIN
 from custom_components.unraid_management_agent.coordinator import (
     UnraidData,
+    array_disks_absent,
     has_no_array_disks,
 )
 
@@ -83,6 +84,21 @@ def _array(**counts: int | None) -> MagicMock:
 def test_has_no_array_disks(data: UnraidData | None, expected: bool) -> None:
     """Only explicit zero data and parity disk counts mean a pool-only server."""
     assert has_no_array_disks(data) is expected
+
+
+@pytest.mark.parametrize(
+    ("data", "expected"),
+    [
+        (None, None),
+        (UnraidData(), None),
+        (UnraidData(array=_array(num_data_disks=0, num_parity_disks=None)), None),
+        (UnraidData(array=_array(num_data_disks=0, num_parity_disks=0)), True),
+        (UnraidData(array=_array(num_data_disks=3, num_parity_disks=0)), False),
+    ],
+)
+def test_array_disks_absent(data: UnraidData | None, expected: bool | None) -> None:
+    """Missing array data or counts are reported as unknown."""
+    assert array_disks_absent(data) is expected
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
@@ -262,3 +278,74 @@ async def test_array_actions_work_without_array_disks(
     await hass.services.async_call(DOMAIN, service, {}, blocking=True)
 
     getattr(pool_only_client, client_method).assert_called_once()
+
+
+async def _refresh(hass: HomeAssistant, entry) -> None:
+    await entry.runtime_data.coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_reload_when_array_disks_disappear(
+    hass: HomeAssistant,
+    mock_config_entry,
+    mock_async_unraid_client,
+) -> None:
+    """Parity entities are disabled once the server stops reporting array disks."""
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    entity_id = _entity_id(
+        hass, mock_config_entry.entry_id, "button", "parity_check_start"
+    )
+    assert entity_id is not None
+
+    mock_async_unraid_client.get_array_status.return_value = _pool_only_array()
+    await _refresh(hass, mock_config_entry)
+
+    entry = er.async_get(hass).async_get(entity_id)
+    assert entry is not None
+    assert entry.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_reload_when_array_disks_appear(
+    hass: HomeAssistant,
+    mock_config_entry,
+    pool_only_client,
+) -> None:
+    """Parity entities are created once the server reports array disks."""
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert (
+        _entity_id(hass, mock_config_entry.entry_id, "button", "parity_check_start")
+        is None
+    )
+
+    pool_only_client.get_array_status.return_value = mock_array_status()
+    await _refresh(hass, mock_config_entry)
+
+    entity_id = _entity_id(
+        hass, mock_config_entry.entry_id, "button", "parity_check_start"
+    )
+    assert entity_id is not None
+    assert hass.states.get(entity_id) is not None
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_no_reload_when_disk_counts_unknown(
+    hass: HomeAssistant,
+    mock_config_entry,
+    pool_only_client,
+) -> None:
+    """Missing disk counts on a pool-only server do not bring parity back."""
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    unknown = _pool_only_array()
+    unknown.num_data_disks = None
+    unknown.num_parity_disks = None
+    pool_only_client.get_array_status.return_value = unknown
+    with patch.object(hass.config_entries, "async_schedule_reload") as reload:
+        await _refresh(hass, mock_config_entry)
+
+    reload.assert_not_called()

@@ -165,9 +165,23 @@ def has_no_array_disks(data: UnraidData | None) -> bool:
     Missing array data or missing counts mean "unknown" and return False, so a
     failed fetch never hides parity support on a server that has an array.
     """
+    return array_disks_absent(data) is True
+
+
+def array_disks_absent(data: UnraidData | None) -> bool | None:
+    """
+    Return whether the server has no Unraid array disks, or None if unknown.
+
+    None means the array data or its disk counts are missing (for example a
+    failed fetch), so callers can tell "unknown" apart from a known answer.
+    """
     if data is None or data.array is None:
-        return False
-    return data.array.num_data_disks == 0 and data.array.num_parity_disks == 0
+        return None
+    num_data = data.array.num_data_disks
+    num_parity = data.array.num_parity_disks
+    if num_data is None or num_parity is None:
+        return None
+    return num_data == 0 and num_parity == 0
 
 
 @dataclass

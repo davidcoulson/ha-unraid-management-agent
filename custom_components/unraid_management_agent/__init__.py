@@ -43,6 +43,7 @@ from .coordinator import (
     UnraidConfigEntry,
     UnraidDataUpdateCoordinator,
     UnraidRuntimeData,
+    array_disks_absent,
     has_no_array_disks,
 )
 from .entity import (
@@ -567,16 +568,14 @@ def _async_sync_parity_entities(
 ) -> None:
     """Disable parity entities on pool-only servers; re-enable them otherwise."""
     no_array_disks = has_no_array_disks(coordinator.data)
+    parity_ids = {
+        (domain, f"{entry.entry_id}_{key}") for domain, key in PARITY_ENTITY_KEYS
+    }
     registry = er.async_get(hass)
-    for domain, key in PARITY_ENTITY_KEYS:
-        entity_id = registry.async_get_entity_id(
-            domain, DOMAIN, f"{entry.entry_id}_{key}"
-        )
-        if entity_id is None:
+    for registry_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if (registry_entry.domain, registry_entry.unique_id) not in parity_ids:
             continue
-        registry_entry = registry.async_get(entity_id)
-        if registry_entry is None:
-            continue
+        entity_id = registry_entry.entity_id
         if no_array_disks and registry_entry.disabled_by is None:
             _LOGGER.info("Disabling %s: server has no Unraid array disks", entity_id)
             registry.async_update_entity(
@@ -698,11 +697,29 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
     if enable_websocket:
         await coordinator.async_start_websocket()
 
+    # Parity entities were set up for this answer; reload if the server later
+    # reports the opposite (array disks added or removed). Unknown counts, such
+    # as a failed array fetch, never trigger a reload.
+    no_array_disks_at_setup = has_no_array_disks(coordinator.data)
+    parity_reload_scheduled = False
+
     # Register stale entity cleanup: runs on every successful coordinator update
     # and removes entity registry entries for items no longer returned by the API.
     @callback
     def _on_coordinator_update() -> None:
+        nonlocal parity_reload_scheduled
         async_cleanup_stale_entities(hass, entry, coordinator)
+        no_array_disks = array_disks_absent(coordinator.data)
+        if (
+            not parity_reload_scheduled
+            and no_array_disks is not None
+            and no_array_disks != no_array_disks_at_setup
+        ):
+            parity_reload_scheduled = True
+            _LOGGER.info(
+                "Array disk configuration changed; reloading to update parity entities"
+            )
+            hass.config_entries.async_schedule_reload(entry.entry_id)
 
     entry.async_on_unload(coordinator.async_add_listener(_on_coordinator_update))
 
