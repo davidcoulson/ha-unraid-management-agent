@@ -30,6 +30,7 @@ from custom_components.unraid_management_agent.const import (
 )
 from custom_components.unraid_management_agent.coordinator import UnraidData
 from custom_components.unraid_management_agent.vm_guest import (
+    _ident,
     parse_number,
     vm_guest_descriptions,
 )
@@ -418,7 +419,7 @@ async def test_turning_vm_devices_off_removes_guest_sensors(
 def test_cleanup_keys() -> None:
     """Guest sensor keys are valid while reported and VM devices are on."""
     data = UnraidData(vms=[_vm()], vm_guest=_guests(_guest()))
-    fps = f"{KEY}sensor_fps"
+    fps = f"{KEY}sensor_{_ident('fps')}"
     assert fps in _build_valid_dynamic_entity_keys(data, vm_devices=True)
     assert fps not in _build_valid_dynamic_entity_keys(data, vm_devices=False)
     assert fps not in _build_valid_dynamic_entity_keys(
@@ -453,10 +454,19 @@ def test_descriptions_skip_what_has_no_identity() -> None:
     ]
     assert keys.count(f"{KEY}gpu_0_temperature") == 1
     assert f"{KEY}gpu_None_temperature" not in keys
-    assert f"{KEY}disk_s1_temperature" in keys
-    assert f"{KEY}fs_d_used" in keys
-    assert f"{KEY}sensor_up" in keys
+    assert f"{KEY}disk_{_ident('S1')}_temperature" in keys
+    assert f"{KEY}fs_{_ident('D:\\')}_used" in keys
+    assert f"{KEY}sensor_{_ident('up')}" in keys
     assert len(keys) == len(set(keys))
+
+    # Names that slugify alike keep separate sensors
+    alike = _guest(sensors=[{"name": "CPU Temp"}, {"name": "CPU-Temp"}])
+    alike_keys = [
+        d.key
+        for d in vm_guest_descriptions(UnraidData(vms=[_vm()], vm_guest=_guests(alike)))
+        if "_sensor_" in d.key
+    ]
+    assert len(alike_keys) == 2
 
     # A VM without a UUID is identified by its name
     named = UnraidData(vms=[VMInfo(name="Windows 11")], vm_guest=_guests(_guest()))
