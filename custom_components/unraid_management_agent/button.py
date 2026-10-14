@@ -47,6 +47,18 @@ class UnraidButtonEntityDescription(
     ) = None
 
 
+async def _async_start_array(coordinator: UnraidDataUpdateCoordinator) -> None:
+    """Start the array."""
+    await coordinator.client.start_array()
+    await coordinator.async_request_refresh()
+
+
+async def _async_stop_array(coordinator: UnraidDataUpdateCoordinator) -> None:
+    """Stop the array."""
+    await coordinator.client.stop_array()
+    await coordinator.async_request_refresh()
+
+
 async def _async_start_parity_check(coordinator: UnraidDataUpdateCoordinator) -> None:
     """Start parity check."""
     await coordinator.client.start_parity_check()
@@ -113,6 +125,22 @@ def _has_array_disks(coordinator: UnraidDataUpdateCoordinator) -> bool:
 
 
 BUTTON_DESCRIPTIONS: tuple[UnraidButtonEntityDescription, ...] = (
+    # Disabled by default so a dashboard tap cannot start or stop the array on
+    # new installs. Entities that already exist keep their enabled state.
+    UnraidButtonEntityDescription(
+        key="array_start",
+        translation_key="array_start",
+        icon="mdi:harddisk",
+        entity_registry_enabled_default=False,
+        press_fn=_async_start_array,
+    ),
+    UnraidButtonEntityDescription(
+        key="array_stop",
+        translation_key="array_stop",
+        icon="mdi:harddisk",
+        entity_registry_enabled_default=False,
+        press_fn=_async_stop_array,
+    ),
     UnraidButtonEntityDescription(
         key="array_clear_disk_stats",
         translation_key="array_clear_disk_stats",

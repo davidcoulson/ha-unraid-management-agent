@@ -28,7 +28,7 @@ async def test_button_setup(
         if entity_id.startswith("button.unraid_")
     ]
 
-    # Should have array disk stats and parity check buttons
+    # Should have array and parity check buttons
     assert len(button_entities) >= 4
 
 
@@ -36,16 +36,26 @@ async def test_button_setup(
     "mock_unraid_client_class",
     "mock_unraid_websocket_client_class",
 )
-async def test_no_array_start_stop_buttons(
+async def test_array_start_stop_buttons_disabled_by_default(
     hass: HomeAssistant,
     mock_config_entry,
 ) -> None:
-    """Test array start/stop are actions only, not buttons."""
+    """Test array start/stop buttons are created disabled on new installs."""
+    from homeassistant.helpers import entity_registry as er
+
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
 
-    assert hass.states.get("button.unraid_test_start_array") is None
-    assert hass.states.get("button.unraid_test_stop_array") is None
+    entity_reg = er.async_get(hass)
+    for key in ("array_start", "array_stop"):
+        entity_id = entity_reg.async_get_entity_id(
+            "button", "unraid_management_agent", f"{mock_config_entry.entry_id}_{key}"
+        )
+        assert entity_id is not None, key
+        entry = entity_reg.async_get(entity_id)
+        assert entry is not None
+        assert entry.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+        assert hass.states.get(entity_id) is None
     assert hass.states.get("button.unraid_test_clear_array_disk_stats") is not None
 
 
@@ -53,34 +63,39 @@ async def test_no_array_start_stop_buttons(
     "mock_unraid_client_class",
     "mock_unraid_websocket_client_class",
 )
-async def test_retired_array_buttons_removed_from_registry(
+@pytest.mark.parametrize(
+    ("key", "client_method"),
+    [("array_start", "start_array"), ("array_stop", "stop_array")],
+)
+async def test_existing_array_buttons_stay_enabled(
     hass: HomeAssistant,
     mock_config_entry,
+    mock_async_unraid_client,
+    key: str,
+    client_method: str,
 ) -> None:
-    """Test array start/stop buttons from older releases are removed at setup."""
+    """Test array buttons from earlier releases stay enabled and still work."""
     from homeassistant.helpers import entity_registry as er
 
-    entity_reg = er.async_get(hass)
-    for key in ("array_start", "array_stop"):
-        entity_reg.async_get_or_create(
+    entity_id = (
+        er.async_get(hass)
+        .async_get_or_create(
             "button",
             "unraid_management_agent",
             f"{mock_config_entry.entry_id}_{key}",
             config_entry=mock_config_entry,
         )
+        .entity_id
+    )
 
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
 
-    for key in ("array_start", "array_stop"):
-        assert (
-            entity_reg.async_get_entity_id(
-                "button",
-                "unraid_management_agent",
-                f"{mock_config_entry.entry_id}_{key}",
-            )
-            is None
-        )
+    assert hass.states.get(entity_id) is not None
+    await hass.services.async_call(
+        "button", "press", {"entity_id": entity_id}, blocking=True
+    )
+    getattr(mock_async_unraid_client, client_method).assert_called_once()
 
 
 @pytest.mark.usefixtures(
@@ -168,7 +183,7 @@ async def test_user_script_button(
         for entity_id in hass.states.async_entity_ids("button")
         if entity_id.startswith("button.unraid_")
     ]
-    # Should have at least the array disk stats and parity check buttons
+    # Should have at least the array and parity check buttons
     assert len(button_entities) >= 4
 
 

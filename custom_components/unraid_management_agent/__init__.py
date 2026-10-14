@@ -524,16 +524,6 @@ def _async_move_child_devices_to_groups(
             _LOGGER.debug("Moved device %s under %s", child.name, parent.name)
 
 
-# Entities that earlier releases created and that no longer exist. Each entry is
-# (domain, key); the unique ID is "{entry_id}_{key}".
-# array_start/array_stop buttons: removed so a dashboard tap cannot start or
-# stop the array. The array_start/array_stop actions remain.
-RETIRED_ENTITY_KEYS: tuple[tuple[str, str], ...] = (
-    ("button", "array_start"),
-    ("button", "array_stop"),
-)
-
-
 # Parity entities are not created on pool-only servers (no Unraid array disks).
 # Registry entries left from before are disabled by the integration, and enabled
 # again if the server later reports array disks. Each entry is (domain, key).
@@ -596,20 +586,6 @@ def _array_started(data: UnraidData | None) -> bool:
     if data is None or data.array is None:
         return False
     return str(data.array.state or "").lower() == "started"
-
-
-def _async_remove_retired_entities(
-    hass: HomeAssistant, entry: UnraidConfigEntry
-) -> None:
-    """Remove registry entries for entities that earlier releases created."""
-    registry = er.async_get(hass)
-    for domain, key in RETIRED_ENTITY_KEYS:
-        entity_id = registry.async_get_entity_id(
-            domain, DOMAIN, f"{entry.entry_id}_{key}"
-        )
-        if entity_id is not None:
-            _LOGGER.info("Removing retired entity %s", entity_id)
-            registry.async_remove(entity_id)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -676,7 +652,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
     entry.runtime_data = UnraidRuntimeData(
         coordinator=coordinator, client=client, platforms=platforms
     )
-    _async_remove_retired_entities(hass, entry)
     _async_sync_parity_entities(hass, entry, coordinator)
     if read_only:
         _async_remove_control_entities(hass, entry)

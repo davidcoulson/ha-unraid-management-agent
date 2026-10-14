@@ -647,6 +647,12 @@
       }
     },
     "button": {
+      "array_start": {
+        "default": "mdi:harddisk"
+      },
+      "array_stop": {
+        "default": "mdi:harddisk"
+      },
       "array_clear_disk_stats": {
         "default": "mdi:database-remove"
       },

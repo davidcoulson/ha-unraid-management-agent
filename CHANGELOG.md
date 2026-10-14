@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Start Array and Stop Array buttons disabled by default**: New installs get
+  the `array_start` and `array_stop` buttons disabled, so the array cannot be
+  started or stopped by an accidental tap on a dashboard. Existing button
+  entities keep their current state, so automations that press them keep
+  working. The `unraid_management_agent.array_start` and
+  `unraid_management_agent.array_stop` actions are unchanged.
 - **Parity support on pool-only servers**: On servers with no Unraid array
   disks (the agent reports zero data and zero parity disks, for example a
   ZFS-only server), parity entities are no longer created: parity progress,
@@ -73,16 +79,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated repository and documentation URLs to `tinkerologie` organization
 - Configured Codecov GitHub Actions workflow for tokenless coverage uploads
-
-### Removed
-
-- **Start Array and Stop Array buttons**: Removed the `array_start` and
-  `array_stop` button entities so the array cannot be started or stopped by an
-  accidental tap on a dashboard. Use the `unraid_management_agent.array_start`
-  and `unraid_management_agent.array_stop` actions from scripts, automations or
-  Developer Tools instead. Existing button entities are removed from the entity
-  registry at setup; automations or dashboards that pressed them must be
-  changed to call the actions.
 
 ### Added
 

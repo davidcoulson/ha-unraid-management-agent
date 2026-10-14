@@ -750,6 +750,12 @@
       }
     },
     "button": {
+      "array_start": {
+        "name": "Start Array"
+      },
+      "array_stop": {
+        "name": "Stop Array"
+      },
       "array_clear_disk_stats": {
         "name": "Clear Array Disk Stats"
       },
