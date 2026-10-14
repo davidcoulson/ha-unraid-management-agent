@@ -4783,8 +4783,18 @@ class UnraidVMGuestSensor(UnraidBaseEntity, SensorEntity):
         """Find this VM's guest agent data (the VM may have been renamed)."""
         data = self.coordinator.data
         description = self.entity_description
-        vm = find_vm(self.coordinator, description.vm_identifier, description.vm_name)
-        name = getattr(vm, "name", None) or description.vm_name
+        # Match by identifier only: a new VM reusing a removed VM's name must
+        # not feed its readings to the removed VM's sensors
+        vm = next(
+            (
+                v
+                for v in (data.vms if data else None) or []
+                if (getattr(v, "id", None) or getattr(v, "name", None))
+                == description.vm_identifier
+            ),
+            None,
+        )
+        name = getattr(vm, "name", None)
         return next(
             (g for g in (data.vm_guest if data else None) or [] if g.vm_name == name),
             None,
