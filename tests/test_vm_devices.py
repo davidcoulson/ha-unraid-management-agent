@@ -460,3 +460,55 @@ async def test_user_set_vm_device_name_is_kept(
     assert vm_device is not None
     assert vm_device.name_by_user == "Gaming PC"
     assert vm_device.name == "Windows 10"
+
+
+@pytest.mark.usefixtures("vm_client", "mock_unraid_websocket_client_class")
+async def test_toggling_vm_devices_option_removes_sensors_and_devices(
+    hass: HomeAssistant,
+) -> None:
+    """Toggling VM devices from True to False removes VM sensors and removes VM child devices."""
+    entry = _entry(hass, vm_devices=True)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    devices = dr.async_get(hass)
+    entities = er.async_get(hass)
+    server = devices.async_get_device_by_identifier((DOMAIN, ENTRY_ID), ENTRY_ID)
+    assert server is not None
+
+    vm_device = devices.async_get_child_device_by_identifier(
+        (DOMAIN, f"{ENTRY_ID}_vm_{WIN10_ID}"), ENTRY_ID
+    )
+    assert vm_device is not None
+
+    # Per-VM sensor exists on the VM device
+    cpu_sensor = entities.async_get("sensor.unraid_test_vms_windows_10_cpu_usage")
+    assert cpu_sensor is not None
+    assert cpu_sensor.device_id == vm_device.id
+
+    # VM switch exists on the VM device
+    vm_switch = entities.async_get("switch.unraid_test_vms_windows_10_power")
+    assert vm_switch is not None
+    assert vm_switch.device_id == vm_device.id
+
+    hass.config_entries.async_update_entry(
+        entry, options={**entry.options, CONF_ENABLE_VM_DEVICES: False}
+    )
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+
+    # VM device is gone immediately
+    assert (
+        devices.async_get_child_device_by_identifier(
+            (DOMAIN, f"{ENTRY_ID}_vm_{WIN10_ID}"), ENTRY_ID
+        )
+        is None
+    )
+
+    # Per-VM sensor is removed from registry
+    assert entities.async_get("sensor.unraid_test_vms_windows_10_cpu_usage") is None
+
+    # VM switch is preserved and reparented to server
+    vm_switch = entities.async_get("switch.unraid_test_vms_windows_10_power")
+    assert vm_switch is not None
+    assert vm_switch.device_id == server.id

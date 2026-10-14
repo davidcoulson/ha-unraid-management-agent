@@ -68,10 +68,22 @@ from .api.models import (
 )
 from .api.websocket import UnraidWebSocketClient
 from .const import (
+    CONF_ENABLE_CONTAINER_DEVICES,
     CONF_ENABLE_CONTAINER_UPDATES,
+    CONF_ENABLE_FAN_CONTROL,
+    CONF_ENABLE_GPU_DEVICES,
+    CONF_ENABLE_HWMON_DEVICES,
     CONF_ENABLE_NIC_DEVICES,
+    CONF_ENABLE_VM_DEVICES,
+    CONF_ENABLE_ZFS_POOL_DEVICES,
+    DEFAULT_ENABLE_CONTAINER_DEVICES,
     DEFAULT_ENABLE_CONTAINER_UPDATES,
+    DEFAULT_ENABLE_FAN_CONTROL,
+    DEFAULT_ENABLE_GPU_DEVICES,
+    DEFAULT_ENABLE_HWMON_DEVICES,
     DEFAULT_ENABLE_NIC_DEVICES,
+    DEFAULT_ENABLE_VM_DEVICES,
+    DEFAULT_ENABLE_ZFS_POOL_DEVICES,
     DOMAIN,
     UPDATE_INTERVAL,
 )
@@ -407,6 +419,54 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
         """
         return self.config_entry.options.get(
             CONF_ENABLE_CONTAINER_UPDATES, DEFAULT_ENABLE_CONTAINER_UPDATES
+        )
+
+    def is_fan_control_enabled(self) -> bool:
+        """Return True when fan control is enabled in options."""
+        return bool(
+            self.config_entry.options.get(
+                CONF_ENABLE_FAN_CONTROL, DEFAULT_ENABLE_FAN_CONTROL
+            )
+        )
+
+    def is_container_devices_enabled(self) -> bool:
+        """Return True when containers are shown as separate devices."""
+        return bool(
+            self.config_entry.options.get(
+                CONF_ENABLE_CONTAINER_DEVICES, DEFAULT_ENABLE_CONTAINER_DEVICES
+            )
+        )
+
+    def is_vm_devices_enabled(self) -> bool:
+        """Return True when VMs are shown as separate devices."""
+        return bool(
+            self.config_entry.options.get(
+                CONF_ENABLE_VM_DEVICES, DEFAULT_ENABLE_VM_DEVICES
+            )
+        )
+
+    def is_gpu_devices_enabled(self) -> bool:
+        """Return True when GPUs are shown as separate devices."""
+        return bool(
+            self.config_entry.options.get(
+                CONF_ENABLE_GPU_DEVICES, DEFAULT_ENABLE_GPU_DEVICES
+            )
+        )
+
+    def is_hwmon_devices_enabled(self) -> bool:
+        """Return True when hwmon controllers are shown as separate devices."""
+        return bool(
+            self.config_entry.options.get(
+                CONF_ENABLE_HWMON_DEVICES, DEFAULT_ENABLE_HWMON_DEVICES
+            )
+        )
+
+    def is_zfs_pool_devices_enabled(self) -> bool:
+        """Return True when ZFS pools are shown as separate devices."""
+        return bool(
+            self.config_entry.options.get(
+                CONF_ENABLE_ZFS_POOL_DEVICES, DEFAULT_ENABLE_ZFS_POOL_DEVICES
+            )
         )
 
     def is_nic_devices_enabled(self) -> bool:

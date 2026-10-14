@@ -614,3 +614,6 @@ def _async_remove_empty_devices(hass: HomeAssistant, entry: UnraidConfigEntry) -
         if device.id not in parent_ids and _is_empty(device):
             _LOGGER.debug("Removing device %s, which has no entities", device.name)
             device_registry.async_remove_device(device.id)
+
+
+async_remove_empty_devices = _async_remove_empty_devices

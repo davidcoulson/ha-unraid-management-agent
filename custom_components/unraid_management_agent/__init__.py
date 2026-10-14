@@ -30,7 +30,7 @@ from .api import (
     UnraidConnectionError,
     UnraidWebSocketClient,
 )
-from .cleanup import async_cleanup_stale_entities
+from .cleanup import async_cleanup_stale_entities, async_remove_empty_devices
 from .const import (
     CONF_ENABLE_WEBSOCKET,
     CONF_READ_ONLY,
@@ -326,6 +326,108 @@ def _async_remove_control_entities(
 
 
 @callback
+def _async_cleanup_disabled_option_devices(
+    hass: HomeAssistant,
+    entry: UnraidConfigEntry,
+    coordinator: UnraidDataUpdateCoordinator,
+) -> None:
+    """Clean up child devices and entities when their corresponding options are disabled."""
+    device_registry = dr.async_get(hass)
+    entity_registry = er.async_get(hass)
+    server = device_registry.async_get_device_by_identifier(
+        (DOMAIN, entry.entry_id), entry.entry_id
+    )
+    if server is None:
+        return
+
+    # 1. Container devices option disabled: reparent container entities to server device, remove container devices
+    if not coordinator.is_container_devices_enabled():
+        container_prefix = f"{entry.entry_id}_container_"
+        for device in dr.async_entries_for_config_entry(
+            device_registry, entry.entry_id
+        ):
+            if device.id == server.id:
+                continue
+            if any(
+                domain == DOMAIN and identifier.startswith(container_prefix)
+                for domain, identifier in device.identifiers
+            ):
+                for entity in er.async_entries_for_device(
+                    entity_registry, device.id, include_disabled_entities=True
+                ):
+                    entity_registry.async_update_entity(
+                        entity.entity_id, device_id=server.id
+                    )
+                device_registry.async_remove_device(device.id)
+
+    # 2. VM devices option disabled: remove per-VM sensors, reparent VM switches/buttons to server, remove VM devices
+    if not coordinator.is_vm_devices_enabled():
+        vm_prefix = f"{entry.entry_id}_vm_"
+        for entity in er.async_entries_for_config_entry(
+            entity_registry, entry.entry_id
+        ):
+            if entity.domain == "sensor" and entity.unique_id.startswith(vm_prefix):
+                entity_registry.async_remove(entity.entity_id)
+
+        for device in dr.async_entries_for_config_entry(
+            device_registry, entry.entry_id
+        ):
+            if device.id == server.id:
+                continue
+            if any(
+                domain == DOMAIN and identifier.startswith(vm_prefix)
+                for domain, identifier in device.identifiers
+            ):
+                for entity in er.async_entries_for_device(
+                    entity_registry, device.id, include_disabled_entities=True
+                ):
+                    entity_registry.async_update_entity(
+                        entity.entity_id, device_id=server.id
+                    )
+                device_registry.async_remove_device(device.id)
+
+    # 3. GPU devices option disabled: reparent GPU entities to server device, remove GPU devices
+    if not coordinator.is_gpu_devices_enabled():
+        gpu_prefix = gpu_device_identifier(entry.entry_id, "")
+        for device in dr.async_entries_for_config_entry(
+            device_registry, entry.entry_id
+        ):
+            if device.id == server.id:
+                continue
+            if any(
+                domain == DOMAIN and identifier.startswith(gpu_prefix)
+                for domain, identifier in device.identifiers
+            ):
+                for entity in er.async_entries_for_device(
+                    entity_registry, device.id, include_disabled_entities=True
+                ):
+                    entity_registry.async_update_entity(
+                        entity.entity_id, device_id=server.id
+                    )
+                device_registry.async_remove_device(device.id)
+
+    # 4. Hwmon devices option disabled: reparent hwmon entities to server device, remove hwmon devices
+    if not coordinator.is_hwmon_devices_enabled():
+        hwmon_prefix = f"{entry.entry_id}_hwmon_"
+        for device in dr.async_entries_for_config_entry(
+            device_registry, entry.entry_id
+        ):
+            if device.id == server.id:
+                continue
+            if any(
+                domain == DOMAIN and identifier.startswith(hwmon_prefix)
+                for domain, identifier in device.identifiers
+            ):
+                for entity in er.async_entries_for_device(
+                    entity_registry, device.id, include_disabled_entities=True
+                ):
+                    entity_registry.async_update_entity(
+                        entity.entity_id, device_id=server.id
+                    )
+                device_registry.async_remove_device(device.id)
+
+
+@callback
 def _async_move_child_devices_to_groups(
     hass: HomeAssistant,
     entry: UnraidConfigEntry,
@@ -483,10 +585,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
         name=(system.hostname if system else None) or "Unraid",
         manufacturer=MANUFACTURER,
     )
+    _async_cleanup_disabled_option_devices(hass, entry, coordinator)
     _async_move_child_devices_to_groups(hass, entry, coordinator)
 
     # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, platforms)
+    async_remove_empty_devices(hass, entry)
 
     # Start WebSocket for real-time updates
     if enable_websocket:

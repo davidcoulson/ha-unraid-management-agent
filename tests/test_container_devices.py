@@ -176,3 +176,36 @@ async def test_container_device_falls_back_to_server_when_server_missing(
     info = build_container_device_info(coordinator, "plex")
 
     assert info == {"identifiers": {(DOMAIN, ENTRY_ID)}}
+
+
+@pytest.mark.usefixtures(
+    "mock_unraid_client_class", "mock_unraid_websocket_client_class"
+)
+async def test_toggling_container_devices_option_moves_entities_and_removes_devices(
+    hass: HomeAssistant,
+) -> None:
+    """Toggling container devices from True to False reparents entities to server and removes child devices."""
+    entry = await _setup(hass, container_devices=True)
+    devices = dr.async_get(hass)
+    entities = er.async_get(hass)
+    server = devices.async_get_device_by_identifier((DOMAIN, ENTRY_ID), ENTRY_ID)
+    plex = devices.async_get_child_device_by_identifier(PLEX, ENTRY_ID)
+    assert plex is not None
+
+    switch = entities.async_get("switch.unraid_test_docker_plex_running")
+    assert switch is not None
+    assert switch.device_id == plex.id
+
+    hass.config_entries.async_update_entry(
+        entry, options={**entry.options, CONF_ENABLE_CONTAINER_DEVICES: False}
+    )
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+
+    # The container device is removed immediately
+    assert devices.async_get_child_device_by_identifier(PLEX, ENTRY_ID) is None
+
+    # The container switch is reparented to the server device (keeping entity_id)
+    switch = entities.async_get("switch.unraid_test_docker_plex_running")
+    assert switch is not None
+    assert switch.device_id == server.id

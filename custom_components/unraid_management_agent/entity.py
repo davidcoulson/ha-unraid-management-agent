@@ -479,6 +479,8 @@ class UnraidZFSPoolEntity(UnraidBaseEntity):
         else:
             self._attr_translation_key = f"zfs_pool_{sensor_type}"
             self._attr_translation_placeholders = {"pool_name": pool_name}
+
+
 class UnraidEntity(UnraidBaseEntity):
     """Entity with description support for Unraid Management Agent."""
 
