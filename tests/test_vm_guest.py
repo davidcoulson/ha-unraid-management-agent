@@ -360,6 +360,16 @@ async def test_renamed_vm_keeps_its_sensors(
     assert _state(hass, "fps").state == "144.0"
 
 
+@pytest.mark.usefixtures("guest_client", "mock_unraid_websocket_client_class")
+async def test_vm_reusing_a_removed_vms_name_does_not_feed_its_sensors(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
+    """Readings of a replacement VM (new UUID, same name) are not shown."""
+    await _setup(hass, mock_config_entry)
+    await _push(hass, mock_config_entry, vms=[_vm(vm_id="f" * 32)])
+    assert _state(hass, "fps").state == "unavailable"
+
+
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
 async def test_option_off_fetches_and_creates_nothing(
     hass: HomeAssistant, mock_async_unraid_client: MagicMock
