@@ -320,6 +320,8 @@ automation:
 
 ### Critical UPS Battery Shutdown
 
+The Stop Array button is disabled by default; enable it first. The button targets this server, whereas the `array_stop` action acts on the first configured server.
+
 ```yaml
 automation:
   - alias: "Unraid: UPS Critical Battery Shutdown"
@@ -328,7 +330,9 @@ automation:
         entity_id: sensor.unraid_tower_ups_battery
         below: 15
     action:
-      - action: unraid_management_agent.array_stop
+      - action: button.press
+        target:
+          entity_id: button.unraid_tower_stop_array
       - delay:
           seconds: 30
       - action: button.press

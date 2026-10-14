@@ -557,8 +557,14 @@ def _async_sync_parity_entities(
     entry: UnraidConfigEntry,
     coordinator: UnraidDataUpdateCoordinator,
 ) -> None:
-    """Disable parity entities on pool-only servers; re-enable them otherwise."""
-    no_array_disks = has_no_array_disks(coordinator.data)
+    """
+    Disable parity entities on pool-only servers; re-enable them otherwise.
+
+    Unknown disk counts leave the registry unchanged.
+    """
+    no_array_disks = array_disks_absent(coordinator.data)
+    if no_array_disks is None:
+        return
     parity_ids = {
         (domain, f"{entry.entry_id}_{key}") for domain, key in PARITY_ENTITY_KEYS
     }

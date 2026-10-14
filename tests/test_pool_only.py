@@ -457,3 +457,31 @@ async def test_recheck_pending_when_counts_unknown_at_setup(
         await _refresh(hass, mock_config_entry)
 
     reload.assert_called_once_with(mock_config_entry.entry_id)
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_disabled_parity_entities_kept_when_counts_unknown(
+    hass: HomeAssistant,
+    mock_config_entry,
+    mock_async_unraid_client,
+) -> None:
+    """Unknown counts at setup do not re-enable integration-disabled entities."""
+    registry = er.async_get(hass)
+    registry_entry = registry.async_get_or_create(
+        "button",
+        DOMAIN,
+        f"{mock_config_entry.entry_id}_parity_check_start",
+        config_entry=mock_config_entry,
+        disabled_by=er.RegistryEntryDisabler.INTEGRATION,
+    )
+    unknown = mock_array_status()
+    unknown.num_data_disks = None
+    unknown.num_parity_disks = None
+    mock_async_unraid_client.get_array_status.return_value = unknown
+
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    entry = registry.async_get(registry_entry.entity_id)
+    assert entry is not None
+    assert entry.disabled_by is er.RegistryEntryDisabler.INTEGRATION
