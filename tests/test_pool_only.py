@@ -10,6 +10,11 @@ from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import entity_registry as er
 
 from custom_components.unraid_management_agent import PARITY_ENTITY_KEYS
+from custom_components.unraid_management_agent.api.models import (
+    ParityCheckRecord,
+    ParityHistory,
+    ParitySchedule,
+)
 from custom_components.unraid_management_agent.const import DOMAIN
 from custom_components.unraid_management_agent.coordinator import (
     UnraidData,
@@ -132,6 +137,33 @@ async def test_parity_entities_not_created_without_array_disks(
         _entity_id(hass, mock_config_entry.entry_id, "sensor", "array_usage")
         is not None
     )
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_parity_schedule_entities_created_with_parity_array(
+    hass: HomeAssistant,
+    mock_config_entry,
+    mock_async_unraid_client,
+) -> None:
+    """A parity schedule and history add entities when the array has disks."""
+    mock_async_unraid_client.get_parity_schedule.return_value = ParitySchedule(
+        mode="custom", cron="0 7 * * 6"
+    )
+    mock_async_unraid_client.get_parity_history.return_value = ParityHistory(
+        records=[
+            ParityCheckRecord(
+                action="Parity-Check", date="2026-10-01T03:00:00Z", status="OK"
+            )
+        ]
+    )
+
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    for key in ("next_parity_check", "last_parity_check"):
+        entity_id = _entity_id(hass, mock_config_entry.entry_id, "sensor", key)
+        assert entity_id is not None, key
+        assert hass.states.get(entity_id) is not None, key
 
 
 @pytest.mark.usefixtures("pool_only_client", "mock_unraid_websocket_client_class")
