@@ -125,13 +125,6 @@ export abstract class BaseUnraidCard extends LitElement {
     );
   }
 
-  /** True when a device is the given server device or one of its child devices */
-  protected isServerOrChildDevice(deviceId: string, serverId: string): boolean {
-    return (
-      deviceId === serverId ||
-      this.hass?.devices?.[deviceId]?.parent_device_id === serverId
-    );
-  }
 
   /** Resolve the active Unraid device based on config or default */
   protected getActiveDevice(): DeviceRegistryEntry | undefined {
@@ -170,6 +163,11 @@ export abstract class BaseUnraidCard extends LitElement {
       }
     }
     return ids;
+  }
+
+  /** True when a device is the given server device or one of its child devices */
+  protected isServerOrChildDevice(deviceId: string, serverId: string): boolean {
+    return this.getServerDeviceIds(serverId).has(deviceId);
   }
 
   /**

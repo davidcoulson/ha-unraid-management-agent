@@ -387,6 +387,9 @@
       "alerts_firing": {
         "default": "mdi:bell-alert-outline"
       },
+      "hwmon_device_fan": {
+        "default": "mdi:fan"
+      },
       "zfs_pool_device_usage": {
         "default": "mdi:database"
       },

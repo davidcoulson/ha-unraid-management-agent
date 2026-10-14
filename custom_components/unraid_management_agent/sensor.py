@@ -34,7 +34,9 @@ from homeassistant.const import (
     UnitOfTime,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.device_registry import ChildDeviceInfo, DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
@@ -81,12 +83,14 @@ from .entity import (
     build_container_device_info,
     build_gpu_device_info,
     build_group_device_info,
+    build_hwmon_controller_device_info,
     build_vm_device_info,
     container_devices_enabled,
     find_vm,
     gpu_device_key,
     gpu_device_keys,
     gpu_devices_enabled,
+    hwmon_devices_enabled,
     vm_devices_enabled,
     zfs_pool_devices_enabled,
 )
@@ -94,6 +98,8 @@ from .hwmon import (
     async_adopt_unique_id,
     fan_legacy_unique_ids,
     fan_model_is_shared,
+    hwmon_controller_names,
+    hwmon_controller_of,
     temperature_legacy_unique_ids,
 )
 from .nic import (
@@ -1903,6 +1909,39 @@ def _hwmon_temperature_channels(
     return channels
 
 
+def _hwmon_controller_device(
+    coordinator: UnraidDataUpdateCoordinator, item: Any
+) -> DeviceInfo | ChildDeviceInfo | None:
+    """
+    Return the device of the USB sensor controller a fan or reading is on.
+
+    None unless the "USB sensor controllers as separate devices" option is on
+    and the agent reports the controller's device_id.
+    """
+    controller = hwmon_controller_of(item)
+    data = coordinator.data
+    if controller is None or not hwmon_devices_enabled(coordinator):
+        return None
+    system = data.system if data else None
+    entry_id = coordinator.config_entry.entry_id
+    registry = dr.async_get(coordinator.hass)
+    known = {
+        identifier
+        for device in dr.async_child_entries_for_config_entry(registry, entry_id)
+        for domain, identifier in device.identifiers
+        if domain == DOMAIN and identifier.startswith(f"{entry_id}_hwmon_")
+    }
+    names = hwmon_controller_names(
+        entry_id,
+        (system.fans or []) if system else [],
+        (system.temperatures or []) if system else [],
+        known,
+    )
+    return build_hwmon_controller_device_info(
+        coordinator, *controller, names[controller]
+    )
+
+
 class UnraidHwmonTemperatureSensor(UnraidBaseEntity, SensorEntity):
     """Temperature of one hwmon channel (lm-sensors) on the server."""
 
@@ -1923,6 +1962,11 @@ class UnraidHwmonTemperatureSensor(UnraidBaseEntity, SensorEntity):
         super().__init__(coordinator, f"temperature_{key}")
         self._key = key
         self._attr_translation_placeholders = {"name": display_name}
+        reading = self._current_reading()
+        if (device := _hwmon_controller_device(coordinator, reading)) is not None:
+            # On the controller's device, named by its label ("Coolant Temp")
+            self._attr_device_info = device
+            self._attr_name = reading.label if reading else None
 
     def _current_reading(self) -> TemperatureInfo | None:
         """Return this channel's reading from the latest data, if present."""
@@ -1972,6 +2016,11 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
         self._normalized_name = normalized_name
         self._attr_translation_key = "fan"
         self._attr_translation_placeholders = {"name": normalized_name}
+        current = self._current_fan()
+        if isinstance(current, FanInfo) and current.is_flow:
+            # A flow meter on a fan header (labelled in sensors.conf); the
+            # reading stays in RPM.
+            self._attr_icon = "mdi:waves-arrow-right"
 
     def _get_fan_control_device(self) -> Any:
         """
@@ -2067,6 +2116,11 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
         attrs: dict[str, Any] = {}
         if self._original_fan_name != self._normalized_name:
             attrs["original_name"] = self._original_fan_name
+        current = self._current_fan()
+        if isinstance(current, FanInfo) and current.label:
+            attrs["label"] = current.label
+            if current.is_flow:
+                attrs["channel_type"] = "flow"
 
         device = self._get_fan_control_device()
         if device is not None:
@@ -2104,9 +2158,33 @@ class UnraidDeviceFanSensor(UnraidFanSensor):
     It only ever reads its own controller: when that controller is missing the
     sensor is unavailable rather than matching another one's fan by number,
     and it takes no fan_control data, which cannot be tied to a controller.
+    With the "USB sensor controllers as separate devices" option on, it sits
+    on the controller's device, named by its lm-sensors label ("Array Fan1")
+    or channel ("Fan 1").
     """
 
     _device_keyed = True
+
+    def __init__(
+        self,
+        coordinator: UnraidDataUpdateCoordinator,
+        entry: UnraidConfigEntry,
+        fan_name: str,
+        normalized_name: str,
+        key: str | None = None,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, entry, fan_name, normalized_name, key)
+        fan = self._current_fan()
+        if (device := _hwmon_controller_device(coordinator, fan)) is None:
+            return
+        self._attr_device_info = device
+        if fan.label:
+            self._attr_name = fan.label
+        else:
+            self._attr_translation_key = "hwmon_device_fan"
+            channel = (fan.name or "").rsplit("fan", 1)[-1]
+            self._attr_translation_placeholders = {"channel": channel}
 
 
 class UnraidNetworkSensorBase(UnraidBaseEntity, RestoreEntity, SensorEntity):
