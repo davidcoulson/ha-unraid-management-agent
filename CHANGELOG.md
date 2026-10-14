@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - per GPU: temperature, utilization, memory used (total as an attribute), power, fan speed and clock;
   - per disk: temperature and wear; per filesystem: used percent (bytes as attributes);
   - per custom command sensor: a number when the output parses as one, otherwise text, with `error` and `updated_at` attributes; and the guest hostname (diagnostic) with OS name and agent state as attributes.
+  - extra `attributes` a custom command sensor reports (for example a graph string) are shown as attributes and kept out of the recorder; names that appear after the sensor was created are recorded until the integration is reloaded;
   - The sensors stay available with an unknown state while the VM is off or a reading is null, and only become unavailable when the agent cannot be reached. Entity IDs are named after the VM and the item (`sensor.<server>_vms_<vm>_gpu_0_temperature`, `..._disk_<model>_wear`, `..._filesystem_c_used`, `..._<sensor name>`); unique IDs use the GPU index, disk serial number, mount point and sensor name. Older agents answer 404 and get no guest entities.
 
 ### Changed

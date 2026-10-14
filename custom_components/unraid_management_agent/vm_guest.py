@@ -68,6 +68,8 @@ class UnraidVMGuestSensorEntityDescription(SensorEntityDescription):
     attributes_fn: Callable[[VMGuestInfo], dict[str, Any]] | None = None
     # Custom sensors: a number when the output parses as one, else text
     parse_number: bool = False
+    # Attribute names Home Assistant must not record (see sensor_description)
+    unrecorded_attributes: frozenset[str] = frozenset()
 
 
 def parse_number(value: str | None) -> float | None:
@@ -272,8 +274,10 @@ def _filesystem_description(
 
 
 def _sensor_description(
-    vm_identifier: str, vm_name: str, name: str
+    vm_identifier: str, vm_name: str, sensor: Any
 ) -> UnraidVMGuestSensorEntityDescription:
+    name = sensor.name
+
     def value(guest: VMGuestInfo) -> Any:
         text = getattr(_find(guest.sensors, "name", name), "value", None)
         if text is None:
@@ -284,6 +288,7 @@ def _sensor_description(
     def attributes(guest: VMGuestInfo) -> dict[str, Any]:
         found = _find(guest.sensors, "name", name)
         return {
+            **(getattr(found, "attributes", None) or {}),
             "error": getattr(found, "error", None) or None,
             "updated_at": getattr(found, "updated_at", None),
         }
@@ -296,6 +301,12 @@ def _sensor_description(
         value_fn=value,
         attributes_fn=attributes,
         parse_number=True,
+        # Extra attributes can be large and change on every update (a graph
+        # string, say), so they are kept out of the recorder. The names are
+        # only known from the agent's data, so they are fixed when the entity
+        # is created: an attribute that shows up later is displayed but
+        # recorded until the integration is reloaded.
+        unrecorded_attributes=frozenset(sensor.attributes or ()),
     )
 
 
@@ -361,7 +372,7 @@ def vm_guest_descriptions(
             if fs.mountpoint
         )
         found.extend(
-            _sensor_description(vm_identifier, vm_name, sensor.name)
+            _sensor_description(vm_identifier, vm_name, sensor)
             for sensor in guest.sensors or []
             if sensor.name
         )

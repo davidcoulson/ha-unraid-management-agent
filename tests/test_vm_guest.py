@@ -535,3 +535,49 @@ async def test_client_get_vm_guest(
     aioclient_mock.clear_requests()
     aioclient_mock.get(url, text="null", headers={"Content-Type": "application/json"})
     assert await client.get_vm_guest() == []
+
+
+GRAPH = "74|10.1,10.1,10.2"
+
+
+def _unrecorded(hass: HomeAssistant, entity_id: str) -> frozenset[str]:
+    """Return the attribute names Home Assistant leaves out of the recorder."""
+    entity = hass.data["sensor"].get_entity(entity_id)
+    return entity._state_info["unrecorded_attributes"]
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_sensor_attributes_are_exposed_and_kept_out_of_the_recorder(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, guest_client: MagicMock
+) -> None:
+    """The agent's attributes show on the sensor but are never recorded."""
+    sensors = [
+        {
+            "name": "frames_avg",
+            "value": "99.4",
+            "attributes": {"graph": GRAPH, "limit": 120, "ok": True, "gone": None},
+        },
+        {"name": "plain", "value": "1"},
+    ]
+    guest_client.get_vm_guest.return_value = _guests(_guest(sensors=sensors))
+    await _setup(hass, mock_config_entry)
+
+    frames = _state(hass, "frames_avg")
+    assert frames.attributes["graph"] == GRAPH
+    assert frames.attributes["limit"] == 120
+    assert frames.attributes["ok"] is True
+    assert "gone" in frames.attributes
+    assert frames.attributes["gone"] is None
+    assert {"graph", "limit", "ok", "gone"} <= _unrecorded(hass, f"{PREFIX}frames_avg")
+    # Sensors without attributes use the plain class and record as before
+    assert "graph" not in _state(hass, "plain").attributes
+    assert "graph" not in _unrecorded(hass, f"{PREFIX}plain")
+    assert type(hass.data["sensor"].get_entity(f"{PREFIX}plain")).__name__ == (
+        "UnraidVMGuestSensor"
+    )
+
+    # An attribute that appears later is shown, and recorded until a reload
+    sensors[0] = {**sensors[0], "attributes": {"graph": GRAPH, "extra": "x"}}
+    await _push(hass, mock_config_entry, vm_guest=_guests(_guest(sensors=sensors)))
+    assert _state(hass, "frames_avg").attributes["extra"] == "x"
+    assert "extra" not in _unrecorded(hass, f"{PREFIX}frames_avg")

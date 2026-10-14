@@ -13,6 +13,7 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from functools import cache
 from typing import Any, cast
 
 from homeassistant.components.sensor import (
@@ -4828,6 +4829,27 @@ class UnraidVMGuestSensor(UnraidBaseEntity, SensorEntity):
         return attributes_fn(guest) if guest and attributes_fn else None
 
 
+@cache
+def _vm_guest_sensor_class(
+    unrecorded_attributes: frozenset[str],
+) -> type[UnraidVMGuestSensor]:
+    """
+    Return the guest sensor class that keeps these attributes out of the recorder.
+
+    Home Assistant reads the excluded names from the class
+    (``_unrecorded_attributes``, combined in ``__init_subclass__``), and the
+    names of a custom sensor's attributes come from the agent's data, so each
+    distinct set gets its own subclass.
+    """
+    if not unrecorded_attributes:
+        return UnraidVMGuestSensor
+    return type(
+        "UnraidVMGuestSensorUnrecorded",
+        (UnraidVMGuestSensor,),
+        {"_unrecorded_attributes": unrecorded_attributes},
+    )
+
+
 class UnraidStorageSensor(UnraidStorageEntity, SensorEntity):
     """A measurement of a storage controller, enclosure or drive slot."""
 
@@ -5319,7 +5341,11 @@ async def async_setup_entry(
         for description in descriptions:
             if description.key not in seen_vm_guest:
                 seen_vm_guest.add(description.key)
-                new_entities.append(UnraidVMGuestSensor(coordinator, description))
+                new_entities.append(
+                    _vm_guest_sensor_class(description.unrecorded_attributes)(
+                        coordinator, description
+                    )
+                )
         if new_entities:
             async_add_entities(new_entities)
 

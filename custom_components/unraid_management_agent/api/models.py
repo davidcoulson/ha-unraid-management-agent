@@ -3936,6 +3936,9 @@ class VMGuestSensor(BaseModel):
     value: str | None = Field(None, description="Trimmed output, null when unknown")
     updated_at: str | None = Field(None, description="Time of the last run")
     error: str | None = Field(None, description="Error of the last run")
+    attributes: dict[str, str | float | bool | None] | None = Field(
+        None, description="Extra values the command reported; omitted when none"
+    )
 
     model_config = ConfigDict(frozen=True, extra="allow")
 
