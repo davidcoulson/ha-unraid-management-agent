@@ -1644,6 +1644,34 @@ class TestServiceHandlers:
             )
 
     @pytest.mark.asyncio
+    async def test_array_services_call_client(
+        self,
+        hass: HomeAssistant,
+        mock_config_entry,
+        mock_async_unraid_client,
+        mock_websocket_client,
+    ) -> None:
+        """Test array_start/array_stop services call the client."""
+        with (
+            patch(
+                "custom_components.unraid_management_agent.UnraidClient",
+                return_value=mock_async_unraid_client,
+            ),
+            patch(
+                "custom_components.unraid_management_agent.UnraidWebSocketClient",
+                return_value=mock_websocket_client,
+            ),
+        ):
+            await hass.config_entries.async_setup(mock_config_entry.entry_id)
+            await hass.async_block_till_done()
+
+        await hass.services.async_call(DOMAIN, "array_start", {}, blocking=True)
+        mock_async_unraid_client.start_array.assert_called_once()
+
+        await hass.services.async_call(DOMAIN, "array_stop", {}, blocking=True)
+        mock_async_unraid_client.stop_array.assert_called_once()
+
+    @pytest.mark.asyncio
     async def test_array_start_service_error(
         self,
         hass: HomeAssistant,

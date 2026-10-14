@@ -157,6 +157,19 @@ class UnraidData:
     system_services: list[SystemService] | None = None
 
 
+def has_no_array_disks(data: UnraidData | None) -> bool:
+    """
+    Return True when the server has no Unraid array disks (pool-only server).
+
+    Only an explicit report of zero data disks and zero parity disks counts.
+    Missing array data or missing counts mean "unknown" and return False, so a
+    failed fetch never hides parity support on a server that has an array.
+    """
+    if data is None or data.array is None:
+        return False
+    return data.array.num_data_disks == 0 and data.array.num_parity_disks == 0
+
+
 @dataclass
 class UnraidRuntimeData:
     """Runtime data for Unraid Management Agent."""

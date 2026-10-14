@@ -16,6 +16,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Parity support on pool-only servers**: On servers with no Unraid array
+  disks (the agent reports zero data and zero parity disks, for example a
+  ZFS-only server), parity entities are no longer created: parity progress,
+  next and last parity check, parity check running, parity valid, parity check
+  scheduled, and the parity check buttons. Existing ones are disabled by the
+  integration rather than deleted, and are enabled again if the server later
+  reports array disks. The `parity_check_*` actions stay registered but fail
+  with a "this server has no parity array" error instead of calling the agent.
+  Servers with an array, including arrays without parity disks (which run
+  read-checks), are unchanged. `array_start` and `array_stop` still work on
+  pool-only servers, where starting the array imports the pools and starts
+  Docker and VMs.
 - **Re-organized integration options**: Options in the configuration options dialog are now sorted alphabetically by display title with consistent active verb phrasing ("Enable...", "Show..."), proper punctuation, and clean formatting.
 - Dependabot also updates the frontend's npm dependencies (`frontend/`). The deprecated `reviewers` setting is removed; CODEOWNERS requests the review.
 - PR labeler (now the shared tinkerologie workflow) applies at most one type label: the title's Conventional Commit type decides (`feat` → `enhancement`, `fix` → `bug`, other types → neither), then the branch prefix, then a single ticked Type of Change box, then the linked issues. A contradicting type label added by automation is removed; one added by a person is kept. The label is re-evaluated when the title or description is edited, and a CHANGELOG.md-only change no longer adds `documentation`.
@@ -59,6 +71,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated repository and documentation URLs to `tinkerologie` organization
 - Configured Codecov GitHub Actions workflow for tokenless coverage uploads
+
+### Removed
+
+- **Start Array and Stop Array buttons**: Removed the `array_start` and
+  `array_stop` button entities so the array cannot be started or stopped by an
+  accidental tap on a dashboard. Use the `unraid_management_agent.array_start`
+  and `unraid_management_agent.array_stop` actions from scripts, automations or
+  Developer Tools instead. Existing button entities are removed from the entity
+  registry at setup; automations or dashboards that pressed them must be
+  changed to call the actions.
 
 ### Added
 

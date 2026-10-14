@@ -292,6 +292,10 @@ data:
 - `unraid_management_agent.parity_check_pause`: Pause parity check operations.
 - `unraid_management_agent.parity_check_resume`: Resume paused parity operations.
 
+Starting and stopping the array is only available as these actions, not as button entities, so it cannot be triggered by an accidental tap on a dashboard. Call them from a script, an automation or Developer Tools.
+
+On a server with no Unraid array disks (for example ZFS pools only), parity entities are not created and the parity actions fail with a "no parity array" error.
+
 ---
 
 ## Example Automations
@@ -324,9 +328,7 @@ automation:
         entity_id: sensor.unraid_tower_ups_battery
         below: 15
     action:
-      - action: button.press
-        target:
-          entity_id: button.unraid_tower_stop_array
+      - action: unraid_management_agent.array_stop
       - delay:
           seconds: 30
       - action: button.press

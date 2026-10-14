@@ -43,6 +43,7 @@ from .coordinator import (
     UnraidConfigEntry,
     UnraidDataUpdateCoordinator,
     UnraidRuntimeData,
+    has_no_array_disks,
 )
 from .entity import (
     DOCKER_DEVICE,
@@ -521,6 +522,89 @@ def _async_move_child_devices_to_groups(
             _LOGGER.debug("Moved device %s under %s", child.name, parent.name)
 
 
+# Entities that earlier releases created and that no longer exist. Each entry is
+# (domain, key); the unique ID is "{entry_id}_{key}".
+# array_start/array_stop buttons: removed so a dashboard tap cannot start or
+# stop the array. The array_start/array_stop actions remain.
+RETIRED_ENTITY_KEYS: tuple[tuple[str, str], ...] = (
+    ("button", "array_start"),
+    ("button", "array_stop"),
+)
+
+
+# Parity entities are not created on pool-only servers (no Unraid array disks).
+# Registry entries left from before are disabled by the integration, and enabled
+# again if the server later reports array disks. Each entry is (domain, key).
+PARITY_ENTITY_KEYS: tuple[tuple[str, str], ...] = (
+    ("sensor", "parity_progress"),
+    ("sensor", "next_parity_check"),
+    ("sensor", "last_parity_check"),
+    ("binary_sensor", "parity_check_running"),
+    ("binary_sensor", "parity_valid"),
+    ("binary_sensor", "parity_check_scheduled"),
+    ("button", "parity_check_start"),
+    ("button", "parity_check_stop"),
+    ("button", "parity_check_pause"),
+    ("button", "parity_check_resume"),
+)
+
+# Client methods behind the parity actions; refused on pool-only servers.
+PARITY_SERVICE_METHODS: frozenset[str] = frozenset(
+    {
+        "start_parity_check",
+        "stop_parity_check",
+        "pause_parity_check",
+        "resume_parity_check",
+    }
+)
+
+
+@callback
+def _async_sync_parity_entities(
+    hass: HomeAssistant,
+    entry: UnraidConfigEntry,
+    coordinator: UnraidDataUpdateCoordinator,
+) -> None:
+    """Disable parity entities on pool-only servers; re-enable them otherwise."""
+    no_array_disks = has_no_array_disks(coordinator.data)
+    registry = er.async_get(hass)
+    for domain, key in PARITY_ENTITY_KEYS:
+        entity_id = registry.async_get_entity_id(
+            domain, DOMAIN, f"{entry.entry_id}_{key}"
+        )
+        if entity_id is None:
+            continue
+        registry_entry = registry.async_get(entity_id)
+        if registry_entry is None:
+            continue
+        if no_array_disks and registry_entry.disabled_by is None:
+            _LOGGER.info("Disabling %s: server has no Unraid array disks", entity_id)
+            registry.async_update_entity(
+                entity_id, disabled_by=er.RegistryEntryDisabler.INTEGRATION
+            )
+        elif (
+            not no_array_disks
+            and registry_entry.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+        ):
+            _LOGGER.info("Re-enabling %s: server reports array disks", entity_id)
+            registry.async_update_entity(entity_id, disabled_by=None)
+
+
+@callback
+def _async_remove_retired_entities(
+    hass: HomeAssistant, entry: UnraidConfigEntry
+) -> None:
+    """Remove registry entries for entities that earlier releases created."""
+    registry = er.async_get(hass)
+    for domain, key in RETIRED_ENTITY_KEYS:
+        entity_id = registry.async_get_entity_id(
+            domain, DOMAIN, f"{entry.entry_id}_{key}"
+        )
+        if entity_id is not None:
+            _LOGGER.info("Removing retired entity %s", entity_id)
+            registry.async_remove(entity_id)
+
+
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up Unraid Management Agent integration."""
     # Register dashboard card frontend
@@ -585,6 +669,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
     entry.runtime_data = UnraidRuntimeData(
         coordinator=coordinator, client=client, platforms=platforms
     )
+    _async_remove_retired_entities(hass, entry)
+    _async_sync_parity_entities(hass, entry, coordinator)
     if read_only:
         _async_remove_control_entities(hass, entry)
     if not coordinator.is_nic_devices_enabled():
@@ -821,6 +907,13 @@ async def async_setup_services(hass: HomeAssistant) -> None:
 
         async def handler(call: ServiceCall) -> None:
             coordinator = _get_coordinator(call)
+            if method_name in PARITY_SERVICE_METHODS and has_no_array_disks(
+                coordinator.data
+            ):
+                raise ServiceValidationError(
+                    translation_domain=DOMAIN,
+                    translation_key="no_parity_array",
+                )
             args: tuple[Any, ...] = ()
             placeholders: dict[str, str] | None = None
             if id_attr and id_placeholder:
