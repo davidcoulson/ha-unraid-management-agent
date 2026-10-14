@@ -20,11 +20,14 @@ sit on the VM's own device:
 
 Entities stay available with an unknown state while the VM is off or a
 reading is null; they only become unavailable when the agent cannot be
-reached. Unique IDs are ``vmguest_<VM UUID>_<kind>_<id>_<metric>``.
+reached. Unique IDs are ``vmguest_<VM UUID>_<kind>_<id>_<metric>``, where the id of a disk, filesystem
+or sensor is its slug plus a short hash of the original, so names that slugify
+alike stay apart.
 """
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Callable
 from dataclasses import dataclass
 from math import isfinite
@@ -199,7 +202,7 @@ def _disk_descriptions(
             "bus": getattr(found, "bus", None),
         }
 
-    base = f"{_prefix(vm_identifier)}disk_{slugify(serial)}"
+    base = f"{_prefix(vm_identifier)}disk_{_ident(serial)}"
     return [
         UnraidVMGuestSensorEntityDescription(
             key=f"{base}_temperature",
@@ -256,7 +259,7 @@ def _filesystem_description(
         }
 
     return UnraidVMGuestSensorEntityDescription(
-        key=f"{_prefix(vm_identifier)}fs_{slugify(mountpoint)}_used",
+        key=f"{_prefix(vm_identifier)}fs_{_ident(mountpoint)}_used",
         name=f"Filesystem {mountpoint} used",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -286,7 +289,7 @@ def _sensor_description(
         }
 
     return UnraidVMGuestSensorEntityDescription(
-        key=f"{_prefix(vm_identifier)}sensor_{slugify(name)}",
+        key=f"{_prefix(vm_identifier)}sensor_{_ident(name)}",
         name=name,
         vm_identifier=vm_identifier,
         vm_name=vm_name,
@@ -313,6 +316,12 @@ def _hostname_description(
             "error": guest.error or None,
         },
     )
+
+
+def _ident(value: str) -> str:
+    """Return a readable, collision-free key part: slug plus a hash of the original."""
+    digest = hashlib.md5(value.encode(), usedforsecurity=False).hexdigest()[:6]
+    return f"{slugify(value)}_{digest}"
 
 
 def _prefix(vm_identifier: str) -> str:
