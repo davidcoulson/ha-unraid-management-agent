@@ -684,10 +684,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
     # disk layout while the array is stopped, so re-check it when the array
     # starts or the agent answers again after being unreachable (it may have
     # restarted), not on every update. Reload if the answer has changed. Unknown
-    # counts, such as a failed array fetch, keep the re-check pending.
+    # counts, at setup or later (such as a failed array fetch), keep the re-check
+    # pending until the agent reports them.
     no_array_disks_at_setup = has_no_array_disks(coordinator.data)
     array_was_started = _array_started(coordinator.data)
-    array_recheck_pending = False
+    array_recheck_pending = array_disks_absent(coordinator.data) is None
     parity_reload_scheduled = False
 
     # Register stale entity cleanup: runs on every successful coordinator update

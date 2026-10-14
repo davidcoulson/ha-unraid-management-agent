@@ -436,3 +436,24 @@ async def test_unknown_disk_counts_keep_recheck_pending(
         await _refresh(hass, mock_config_entry)
 
     reload.assert_called_once_with(mock_config_entry.entry_id)
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_recheck_pending_when_counts_unknown_at_setup(
+    hass: HomeAssistant,
+    mock_config_entry,
+    mock_async_unraid_client,
+) -> None:
+    """Unknown counts at setup are re-checked once the agent reports them."""
+    unknown = mock_array_status()
+    unknown.num_data_disks = None
+    unknown.num_parity_disks = None
+    mock_async_unraid_client.get_array_status.return_value = unknown
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    mock_async_unraid_client.get_array_status.return_value = _pool_only_array()
+    with patch.object(hass.config_entries, "async_schedule_reload") as reload:
+        await _refresh(hass, mock_config_entry)
+
+    reload.assert_called_once_with(mock_config_entry.entry_id)
