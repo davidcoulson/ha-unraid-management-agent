@@ -41,6 +41,7 @@ from .const import (
 )
 from .coordinator import (
     UnraidConfigEntry,
+    UnraidData,
     UnraidDataUpdateCoordinator,
     UnraidRuntimeData,
     array_disks_absent,
@@ -590,6 +591,13 @@ def _async_sync_parity_entities(
 
 
 @callback
+def _array_started(data: UnraidData | None) -> bool:
+    """Return True if the agent reports the Unraid array as started."""
+    if data is None or data.array is None:
+        return False
+    return str(data.array.state or "").lower() == "started"
+
+
 def _async_remove_retired_entities(
     hass: HomeAssistant, entry: UnraidConfigEntry
 ) -> None:
@@ -697,24 +705,36 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
     if enable_websocket:
         await coordinator.async_start_websocket()
 
-    # Parity entities were set up for this answer; reload if the server later
-    # reports the opposite (array disks added or removed). Unknown counts, such
-    # as a failed array fetch, never trigger a reload.
+    # Parity entities were set up for this answer. Unraid only changes the array
+    # disk layout while the array is stopped, so re-check it when the array
+    # starts or the agent answers again after being unreachable (it may have
+    # restarted), not on every update. Reload if the answer has changed. Unknown
+    # counts, such as a failed array fetch, keep the re-check pending.
     no_array_disks_at_setup = has_no_array_disks(coordinator.data)
+    array_was_started = _array_started(coordinator.data)
+    array_recheck_pending = False
     parity_reload_scheduled = False
 
     # Register stale entity cleanup: runs on every successful coordinator update
     # and removes entity registry entries for items no longer returned by the API.
     @callback
     def _on_coordinator_update() -> None:
-        nonlocal parity_reload_scheduled
+        nonlocal array_was_started, array_recheck_pending, parity_reload_scheduled
         async_cleanup_stale_entities(hass, entry, coordinator)
+        if not coordinator.last_update_success:
+            array_recheck_pending = True
+            return
+        array_started = _array_started(coordinator.data)
+        if array_started and not array_was_started:
+            array_recheck_pending = True
+        array_was_started = array_started
+        if not array_recheck_pending or parity_reload_scheduled:
+            return
         no_array_disks = array_disks_absent(coordinator.data)
-        if (
-            not parity_reload_scheduled
-            and no_array_disks is not None
-            and no_array_disks != no_array_disks_at_setup
-        ):
+        if no_array_disks is None:
+            return
+        array_recheck_pending = False
+        if no_array_disks != no_array_disks_at_setup:
             parity_reload_scheduled = True
             _LOGGER.info(
                 "Array disk configuration changed; reloading to update parity entities"

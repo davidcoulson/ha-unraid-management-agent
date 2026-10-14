@@ -22,7 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   next and last parity check, parity check running, parity valid, parity check
   scheduled, and the parity check buttons. Existing ones are disabled by the
   integration rather than deleted, and are enabled again if the server later
-  reports array disks. The `parity_check_*` actions stay registered but fail
+  reports array disks. Unraid only changes the array layout while the array is
+  stopped, so the disk counts are checked at setup, when the array starts, and
+  when the agent answers again after being unreachable. The `parity_check_*` actions stay registered but fail
   with a "this server has no parity array" error instead of calling the agent.
   Servers with an array, including arrays without parity disks (which run
   read-checks), are unchanged. `array_start` and `array_stop` still work on

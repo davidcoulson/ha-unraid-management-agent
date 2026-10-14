@@ -317,13 +317,26 @@ async def _refresh(hass: HomeAssistant, entry) -> None:
     await hass.async_block_till_done()
 
 
+def _stopped(array: MagicMock) -> MagicMock:
+    array.state = "Stopped"
+    return array
+
+
+async def _restart_array(hass: HomeAssistant, entry, client, array) -> None:
+    """Report the array stopped with the new layout, then started again."""
+    client.get_array_status.return_value = _stopped(array)
+    await _refresh(hass, entry)
+    array.state = "Started"
+    await _refresh(hass, entry)
+
+
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
 async def test_reload_when_array_disks_disappear(
     hass: HomeAssistant,
     mock_config_entry,
     mock_async_unraid_client,
 ) -> None:
-    """Parity entities are disabled once the server stops reporting array disks."""
+    """Parity entities are disabled once the restarted array has no disks."""
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
     entity_id = _entity_id(
@@ -331,8 +344,9 @@ async def test_reload_when_array_disks_disappear(
     )
     assert entity_id is not None
 
-    mock_async_unraid_client.get_array_status.return_value = _pool_only_array()
-    await _refresh(hass, mock_config_entry)
+    await _restart_array(
+        hass, mock_config_entry, mock_async_unraid_client, _pool_only_array()
+    )
 
     entry = er.async_get(hass).async_get(entity_id)
     assert entry is not None
@@ -345,7 +359,7 @@ async def test_reload_when_array_disks_appear(
     mock_config_entry,
     pool_only_client,
 ) -> None:
-    """Parity entities are created once the server reports array disks."""
+    """Parity entities are created once the restarted array has disks."""
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
     assert (
@@ -353,8 +367,7 @@ async def test_reload_when_array_disks_appear(
         is None
     )
 
-    pool_only_client.get_array_status.return_value = mock_array_status()
-    await _refresh(hass, mock_config_entry)
+    await _restart_array(hass, mock_config_entry, pool_only_client, mock_array_status())
 
     entity_id = _entity_id(
         hass, mock_config_entry.entry_id, "button", "parity_check_start"
@@ -364,20 +377,62 @@ async def test_reload_when_array_disks_appear(
 
 
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
-async def test_no_reload_when_disk_counts_unknown(
+async def test_no_recheck_while_array_stays_started(
     hass: HomeAssistant,
     mock_config_entry,
     pool_only_client,
 ) -> None:
-    """Missing disk counts on a pool-only server do not bring parity back."""
+    """Disk counts are not re-checked on routine updates of a started array."""
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    pool_only_client.get_array_status.return_value = mock_array_status()
+    with patch.object(hass.config_entries, "async_schedule_reload") as reload:
+        await _refresh(hass, mock_config_entry)
+        pool_only_client.get_array_status.return_value = _stopped(mock_array_status())
+        await _refresh(hass, mock_config_entry)
+
+    reload.assert_not_called()
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_recheck_when_agent_answers_again(
+    hass: HomeAssistant,
+    mock_config_entry,
+    pool_only_client,
+) -> None:
+    """Disk counts are re-checked after the agent was unreachable."""
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    coordinator = mock_config_entry.runtime_data.coordinator
+
+    pool_only_client.get_array_status.return_value = mock_array_status()
+    with patch.object(hass.config_entries, "async_schedule_reload") as reload:
+        coordinator.async_set_update_error(Exception("agent restarting"))
+        reload.assert_not_called()
+        await _refresh(hass, mock_config_entry)
+
+    reload.assert_called_once_with(mock_config_entry.entry_id)
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_unknown_disk_counts_keep_recheck_pending(
+    hass: HomeAssistant,
+    mock_config_entry,
+    pool_only_client,
+) -> None:
+    """Unknown counts after an array start defer the re-check, never reload."""
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
 
     unknown = _pool_only_array()
     unknown.num_data_disks = None
     unknown.num_parity_disks = None
-    pool_only_client.get_array_status.return_value = unknown
     with patch.object(hass.config_entries, "async_schedule_reload") as reload:
+        await _restart_array(hass, mock_config_entry, pool_only_client, unknown)
+        reload.assert_not_called()
+
+        pool_only_client.get_array_status.return_value = mock_array_status()
         await _refresh(hass, mock_config_entry)
 
-    reload.assert_not_called()
+    reload.assert_called_once_with(mock_config_entry.entry_id)
