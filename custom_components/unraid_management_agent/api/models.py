@@ -1161,6 +1161,31 @@ class ShareInfo(BaseModel):
         "array_to_cache, cache_prefer",
     )
 
+    # Exclusive share state (Unraid 6.12+); absent on older agents and while
+    # the array is stopped
+    exclusive: bool | None = Field(
+        None,
+        description="/mnt/user/<share> is a symlink to its pool (bypasses FUSE)",
+    )
+    exclusive_eligible: bool | None = Field(
+        None,
+        description="Exclusive shares are enabled and the share is pool-only",
+    )
+    exclusive_pool: str | None = Field(
+        None,
+        description="The share's pool: symlink target when exclusive, otherwise "
+        "the pool a pool-only share would be exclusive on",
+    )
+    locations: list[str] | None = Field(
+        None,
+        description="Pools/disks holding a top-level folder for an eligible share "
+        "that is not exclusive",
+    )
+    locations_unchecked: list[str] | None = Field(
+        None,
+        description="Spun-down pools/disks the agent did not check for a folder",
+    )
+
     timestamp: str | None = Field(None, description="Data collection timestamp")
 
     model_config = ConfigDict(frozen=True, extra="allow")
@@ -1187,6 +1212,54 @@ class ShareInfo(BaseModel):
         if self.total_bytes and self.used_bytes is not None and self.total_bytes > 0:
             return round((self.used_bytes / self.total_bytes) * 100, 1)
         return None
+
+    @property
+    def exclusive_state_known(self) -> bool:
+        """
+        Return True when the agent reported whether the share is on FUSE.
+
+        Older agents, a stopped array or unreadable config leave the
+        exclusive fields (or just the eligibility) unset.
+
+        Example:
+            >>> ShareInfo(exclusive=False).exclusive_state_known
+            False
+
+        """
+        return self.exclusive is True or (
+            self.exclusive is False and self.exclusive_eligible is not None
+        )
+
+    @property
+    def fuse_fallback(self) -> bool:
+        """
+        Return True when an exclusive-eligible share is served through FUSE.
+
+        Unraid gives a pool-only share exclusive access (a /mnt/user symlink
+        that bypasses FUSE) unless a folder for it exists on another disk or
+        pool; then it silently keeps the share on FUSE.
+
+        Example:
+            >>> ShareInfo(exclusive_eligible=True, exclusive=False).fuse_fallback
+            True
+
+        """
+        return self.exclusive_eligible is True and self.exclusive is False
+
+    @property
+    def stray_locations(self) -> list[str]:
+        """
+        Return the disks/pools other than the share's pool holding its folder.
+
+        These are what keep an eligible share off exclusive access.
+
+        Example:
+            >>> ShareInfo(exclusive_pool="cache", locations=["cache", "disk1"]).stray_locations
+            ['disk1']
+
+        """
+        pool = self.exclusive_pool or self.cache_pool
+        return [loc for loc in self.locations or [] if loc != pool]
 
 
 class NetworkInterface(BaseModel):
@@ -2022,6 +2095,53 @@ class ZFSVdev(ZFSDevice):
     devices: list[ZFSDevice] | None = Field(None, description="Member devices")
 
 
+class DriveHealth(BaseModel):
+    """SMART summary of one disk in a ZFS pool (no serial numbers)."""
+
+    model: str | None = Field(None, description="Drive model")
+    protocol: str | None = Field(None, description="NVMe, ATA or SCSI")
+    media_type: str | None = Field(None, description="nvme, ssd or hdd")
+    standby: bool = Field(
+        False,
+        description="Asleep at the last check; other values are from the last read",
+    )
+    smart_passed: bool | None = Field(None, description="SMART overall health")
+    temperature_celsius: CoercedInt = Field(None, description="Temperature")
+    percentage_used: CoercedInt = Field(
+        None, description="NVMe endurance used (may exceed 100)"
+    )
+    available_spare_percent: CoercedInt = Field(
+        None, description="NVMe available spare"
+    )
+    critical_warning: CoercedInt = Field(
+        None, description="NVMe critical warning bitmask (0 = none)"
+    )
+    media_errors: CoercedInt = Field(
+        None, description="Unrecovered media/data-integrity errors"
+    )
+    power_on_hours: CoercedInt = Field(None, description="Power-on hours")
+    collected_at: str | None = Field(None, description="When the values were read")
+
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+    @property
+    def is_failing(self) -> bool:
+        """Return True when SMART failed or the NVMe critical warning is set."""
+        return self.smart_passed is False or bool(self.critical_warning)
+
+
+class ZFSDrive(BaseModel):
+    """A leaf member of a ZFS pool and the health of the disk it is on."""
+
+    name: str | None = Field(None, description="Member name from zpool status")
+    disk: str | None = Field(None, description="Whole-disk kernel name")
+    vdev: str | None = Field(None, description="Parent vdev")
+    state: str | None = Field(None, description="Member state")
+    health: DriveHealth | None = Field(None, description="SMART health")
+
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+
 class ZFSPool(BaseModel):
     """ZFS pool information."""
 
@@ -2053,6 +2173,9 @@ class ZFSPool(BaseModel):
     write_errors: CoercedInt = Field(None, description="Pool-level write errors")
     checksum_errors: CoercedInt = Field(None, description="Pool-level checksum errors")
     vdevs: list[ZFSVdev] | None = Field(None, description="Pool vdevs")
+    drives: list[ZFSDrive] | None = Field(
+        None, description="Leaf members with disk health (agent 2026.10+)"
+    )
     scan_status: str | None = Field(
         None, description="Last scan, e.g. 'scrub completed' or 'resilver in progress'"
     )
@@ -3627,6 +3750,139 @@ class StorageTopology(BaseModel):
     controllers: list[StorageController] = Field(default_factory=list)
     enclosures: list[StorageEnclosure] = Field(default_factory=list)
     drives: list[StorageDrive] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list, description="Collection errors")
+    timestamp: str | None = Field(None, description="Collection time")
+
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+
+# =============================================================================
+# Network cards (GET /network/cards)
+# =============================================================================
+
+NIC_STATE_OK = "ok"
+
+
+class NICTemperature(BaseModel):
+    """A hwmon temperature sensor of a network card."""
+
+    sensor: str = Field("other", description="asic, phy, mac, module or other")
+    label: str = Field("", description="hwmon label")
+    interface: str | None = Field(None, description="Port of a module sensor")
+    pci_address: str = Field("", description="PCI function of the hwmon chip")
+    celsius: CoercedFloat = Field(None, description="Current reading")
+    highest_celsius: CoercedFloat = Field(None, description="Highest since boot")
+    max_celsius: CoercedFloat = Field(None, description="High limit")
+    crit_celsius: CoercedFloat = Field(None, description="Critical limit")
+
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+
+class NICModuleLane(BaseModel):
+    """One lane of a transceiver."""
+
+    lane: int = Field(1, description="Lane number, from 1")
+    tx_bias_ma: CoercedFloat = Field(None, description="Laser bias (mA)")
+    tx_power_mw: CoercedFloat = Field(None, description="TX power (mW)")
+    tx_power_dbm: CoercedFloat = Field(None, description="TX power (dBm)")
+    rx_power_mw: CoercedFloat = Field(None, description="RX power (mW)")
+    rx_power_dbm: CoercedFloat = Field(None, description="RX power (dBm)")
+
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+
+class NICThreshold(BaseModel):
+    """Alarm and warning limits of one transceiver reading."""
+
+    high_alarm: CoercedFloat = None
+    high_warning: CoercedFloat = None
+    low_warning: CoercedFloat = None
+    low_alarm: CoercedFloat = None
+
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+
+class NICModuleThresholds(BaseModel):
+    """Alarm and warning limits of a transceiver."""
+
+    temperature_celsius: NICThreshold | None = None
+    voltage_volts: NICThreshold | None = None
+    tx_bias_ma: NICThreshold | None = None
+    tx_power_dbm: NICThreshold | None = None
+    rx_power_dbm: NICThreshold | None = None
+
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+
+class NICModule(BaseModel):
+    """A pluggable transceiver (SFP/QSFP) and its diagnostics (DDM)."""
+
+    identifier: str | None = Field(None, description="SFF-8024 module type")
+    standard: str | None = Field(None, description="SFF-8472, SFF-8636 or SFF-8436")
+    connector: str | None = Field(None, description="Connector type")
+    compliance: str | None = Field(None, description="Ethernet compliance code")
+    vendor_name: str | None = Field(None, description="Vendor name")
+    vendor_pn: str | None = Field(None, description="Vendor part number")
+    vendor_rev: str | None = Field(None, description="Vendor revision")
+    vendor_oui: str | None = Field(None, description="Vendor IEEE company ID")
+    wavelength_nm: CoercedFloat = Field(None, description="Laser wavelength (nm)")
+    ddm_supported: bool = Field(False, description="Module reports diagnostics")
+    data_not_ready: bool = Field(False, description="Monitors not ready yet")
+    temperature_celsius: CoercedFloat = Field(None, description="Module temperature")
+    voltage_volts: CoercedFloat = Field(None, description="Supply voltage")
+    rx_power_type: str | None = Field(None, description="average or oma")
+    lanes: list[NICModuleLane] = Field(default_factory=list)
+    alarms: list[str] = Field(default_factory=list, description="Set alarm flags")
+    warnings: list[str] = Field(default_factory=list, description="Set warning flags")
+    thresholds: NICModuleThresholds | None = None
+    error: str | None = Field(None, description="Why the module was not decoded")
+
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+
+class NICPort(BaseModel):
+    """A network interface of a card."""
+
+    id: str = Field(..., description="PCI function address (+ -<dev_port>)")
+    interface: str = Field("", description="Kernel interface name")
+    pci_address: str = Field("", description="PCI function address")
+    dev_port: int = Field(0, description="Port within the PCI function")
+    operstate: str | None = Field(None, description="Operational state")
+    carrier: bool = Field(False, description="Link is up")
+    speed_mbps: CoercedInt = Field(None, description="Link speed (Mbit/s)")
+    duplex: str | None = Field(None, description="full or half")
+    mtu: CoercedInt = Field(None, description="MTU")
+    master: str | None = Field(None, description="Bond or bridge")
+    module: NICModule | None = None
+
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+
+class NICCard(BaseModel):
+    """A physical network card: the PCI functions sharing a slot."""
+
+    id: str = Field(..., description="PCI slot (domain:bus:device)")
+    vendor: str | None = Field(None, description="PCI vendor name")
+    model: str | None = Field(None, description="Short product name")
+    device_name: str | None = Field(None, description="Full PCI device name")
+    subsystem_name: str | None = Field(None, description="PCI subsystem name")
+    vendor_id: str | None = None
+    device_id: str | None = None
+    subsystem_vendor_id: str | None = None
+    subsystem_device_id: str | None = None
+    driver: str | None = Field(None, description="Kernel driver")
+    firmware_version: str | None = Field(None, description="Firmware version")
+    temperatures: list[NICTemperature] = Field(default_factory=list)
+    ports: list[NICPort] = Field(default_factory=list)
+
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+
+class NICList(BaseModel):
+    """Physical network cards (GET /network/cards)."""
+
+    state: str | None = Field(None, description="pending or ok")
+    cards: list[NICCard] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list, description="Collection errors")
     timestamp: str | None = Field(None, description="Collection time")
 

@@ -366,11 +366,83 @@
       "storage_link_utilization": {
         "default": "mdi:gauge"
       },
+      "nic_firmware": {
+        "default": "mdi:chip"
+      },
+      "nic_link_speed": {
+        "default": "mdi:speedometer"
+      },
+      "nic_rx_power": {
+        "default": "mdi:arrow-collapse-down"
+      },
+      "nic_tx_power": {
+        "default": "mdi:arrow-expand-up"
+      },
+      "nic_module_vendor": {
+        "default": "mdi:expansion-card-variant"
+      },
+      "nic_module_part_number": {
+        "default": "mdi:barcode"
+      },
       "alerts_firing": {
         "default": "mdi:bell-alert-outline"
       },
       "hwmon_device_fan": {
         "default": "mdi:fan"
+      },
+      "zfs_pool_device_usage": {
+        "default": "mdi:database"
+      },
+      "zfs_pool_device_health": {
+        "default": "mdi:database-check"
+      },
+      "zfs_pool_device_scrub_status": {
+        "default": "mdi:database-search",
+        "state": {
+          "resilvering": "mdi:database-sync"
+        }
+      },
+      "zfs_pool_device_last_scrub": {
+        "default": "mdi:database-clock"
+      },
+      "zfs_pool_device_scrub_errors": {
+        "default": "mdi:database-alert"
+      },
+      "zfs_pool_device_scrub_repaired": {
+        "default": "mdi:database-refresh"
+      },
+      "zfs_pool_device_read_errors": {
+        "default": "mdi:alert-circle-outline"
+      },
+      "zfs_pool_device_write_errors": {
+        "default": "mdi:alert-circle-outline"
+      },
+      "zfs_pool_device_checksum_errors": {
+        "default": "mdi:alert-circle-outline"
+      },
+      "zfs_pool_device_fragmentation": {
+        "default": "mdi:chart-donut"
+      },
+      "zfs_pool_device_corrupted_files": {
+        "default": "mdi:file-alert"
+      },
+      "zfs_pool_device_drive_count": {
+        "default": "mdi:harddisk"
+      },
+      "zfs_pool_device_drive_max_temperature": {
+        "default": "mdi:thermometer"
+      },
+      "zfs_pool_device_drive_max_wear": {
+        "default": "mdi:chart-donut-variant"
+      },
+      "zfs_pool_device_drive_media_errors": {
+        "default": "mdi:harddisk-remove"
+      },
+      "zfs_pool_device_drives_failing": {
+        "default": "mdi:harddisk",
+        "range": {
+          "1": "mdi:alert-circle"
+        }
       }
     },
     "binary_sensor": {
@@ -496,11 +568,30 @@
           "on": "mdi:harddisk-remove"
         }
       },
+      "nic_module_problem": {
+        "default": "mdi:check-network-outline",
+        "state": {
+          "on": "mdi:alert-circle-outline"
+        }
+      },
       "alert_rule": {
         "default": "mdi:bell-check-outline",
         "state": {
           "on": "mdi:bell-alert",
           "off": "mdi:bell-check-outline"
+        }
+      },
+      "zfs_pool_device_problem": {
+        "default": "mdi:database-check",
+        "state": {
+          "on": "mdi:database-alert",
+          "off": "mdi:database-check"
+        }
+      },
+      "share_fuse_fallback": {
+        "default": "mdi:folder-alert",
+        "state": {
+          "off": "mdi:folder-check"
         }
       }
     },
