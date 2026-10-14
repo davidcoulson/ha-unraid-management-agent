@@ -277,6 +277,12 @@ def _sensor_description(
     vm_identifier: str, vm_name: str, sensor: Any
 ) -> UnraidVMGuestSensorEntityDescription:
     name = sensor.name
+    # Extra attributes can be large and change on every update (a graph
+    # string, say), so they are kept out of the recorder. The names are only
+    # known from the agent's data and are fixed when the entity is created, so
+    # an attribute that shows up later is left out until the integration is
+    # reloaded rather than recorded.
+    unrecorded = frozenset(sensor.attributes or ())
 
     def value(guest: VMGuestInfo) -> Any:
         text = getattr(_find(guest.sensors, "name", name), "value", None)
@@ -288,7 +294,11 @@ def _sensor_description(
     def attributes(guest: VMGuestInfo) -> dict[str, Any]:
         found = _find(guest.sensors, "name", name)
         return {
-            **(getattr(found, "attributes", None) or {}),
+            **{
+                key: val
+                for key, val in (getattr(found, "attributes", None) or {}).items()
+                if key in unrecorded
+            },
             "error": getattr(found, "error", None) or None,
             "updated_at": getattr(found, "updated_at", None),
         }
@@ -301,12 +311,7 @@ def _sensor_description(
         value_fn=value,
         attributes_fn=attributes,
         parse_number=True,
-        # Extra attributes can be large and change on every update (a graph
-        # string, say), so they are kept out of the recorder. The names are
-        # only known from the agent's data, so they are fixed when the entity
-        # is created: an attribute that shows up later is displayed but
-        # recorded until the integration is reloaded.
-        unrecorded_attributes=frozenset(sensor.attributes or ()),
+        unrecorded_attributes=unrecorded,
     )
 
 

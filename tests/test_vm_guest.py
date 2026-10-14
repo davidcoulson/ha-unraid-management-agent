@@ -576,8 +576,8 @@ async def test_sensor_attributes_are_exposed_and_kept_out_of_the_recorder(
         "UnraidVMGuestSensor"
     )
 
-    # An attribute that appears later is shown, and recorded until a reload
+    # An attribute that appears later is left out until a reload, never recorded
     sensors[0] = {**sensors[0], "attributes": {"graph": GRAPH, "extra": "x"}}
     await _push(hass, mock_config_entry, vm_guest=_guests(_guest(sensors=sensors)))
-    assert _state(hass, "frames_avg").attributes["extra"] == "x"
-    assert "extra" not in _unrecorded(hass, f"{PREFIX}frames_avg")
+    assert "extra" not in _state(hass, "frames_avg").attributes
+    assert _state(hass, "frames_avg").attributes["graph"] == GRAPH
