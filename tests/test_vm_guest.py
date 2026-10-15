@@ -33,6 +33,7 @@ from custom_components.unraid_management_agent.vm_guest import (
     _ident,
     parse_number,
     vm_guest_descriptions,
+    vm_guest_offline_prefixes,
 )
 
 from .const import MOCK_CONFIG, MOCK_OPTIONS
@@ -442,6 +443,19 @@ def test_cleanup_keys() -> None:
         UnraidData(vms=None, vm_guest=_guests(_guest())),
     ):
         assert "vmguest_" in _unavailable_data_prefixes(missing)
+
+
+def test_cleanup_keeps_sensors_of_offline_guest() -> None:
+    """A VM whose guest agent is not connected keeps its guest sensors."""
+    offline = UnraidData(vms=[_vm()], vm_guest=_guests(_guest(running=False, gpus=[])))
+    assert KEY in _unavailable_data_prefixes(offline)
+    assert KEY not in _unavailable_data_prefixes(
+        UnraidData(vms=[_vm()], vm_guest=_guests(_guest()))
+    )
+    # A guest entry without its VM in the VM list protects nothing.
+    assert not vm_guest_offline_prefixes(
+        UnraidData(vms=[], vm_guest=_guests(_guest(running=False)))
+    )
 
 
 def test_descriptions_skip_what_has_no_identity() -> None:
