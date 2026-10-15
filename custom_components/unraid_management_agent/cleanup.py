@@ -50,7 +50,11 @@ from .nut import (
     nut_device_key,
     secondary_nut_device_names,
 )
-from .vm_guest import VM_GUEST_KEY_PREFIX, vm_guest_descriptions
+from .vm_guest import (
+    VM_GUEST_KEY_PREFIX,
+    vm_guest_descriptions,
+    vm_guest_offline_prefixes,
+)
 from .zfs_drives import retained_roll_up_keys
 
 if TYPE_CHECKING:
@@ -429,6 +433,8 @@ def _unavailable_data_prefixes(data: UnraidData) -> set[str]:
         prefixes.add("vm_")
     if data.vms is None or data.vm_guest is None:
         prefixes.add(VM_GUEST_KEY_PREFIX)
+    else:
+        prefixes.update(vm_guest_offline_prefixes(data))
     if data.disks is None:
         prefixes.add("disk_")
     # fan_ covers fan_{name} (from system.fans) and fan_speed_{id} (from

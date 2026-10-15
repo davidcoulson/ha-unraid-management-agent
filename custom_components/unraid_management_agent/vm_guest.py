@@ -344,6 +344,25 @@ def _prefix(vm_identifier: str) -> str:
     return f"{VM_GUEST_KEY_PREFIX}{slugify(vm_identifier)}_"
 
 
+def vm_guest_offline_prefixes(data: UnraidData) -> set[str]:
+    """
+    Return the key prefixes of VMs whose guest agent is not connected.
+
+    The guest's GPUs, disks, filesystems and sensor keys are only known while
+    the agent answers, and an agent restart forgets them, so their absence then
+    says nothing about whether they still exist.
+    """
+    prefixes: set[str] = set()
+    for guest in data.vm_guest or []:
+        if guest.agent_connected:
+            continue
+        vm = _find(data.vms, "name", guest.vm_name)
+        vm_identifier = getattr(vm, "id", None) or getattr(vm, "name", None)
+        if vm_identifier:
+            prefixes.add(_prefix(vm_identifier))
+    return prefixes
+
+
 def vm_guest_descriptions(
     data: UnraidData | None,
 ) -> list[UnraidVMGuestSensorEntityDescription]:
