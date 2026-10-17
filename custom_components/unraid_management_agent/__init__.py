@@ -41,8 +41,11 @@ from .const import (
 )
 from .coordinator import (
     UnraidConfigEntry,
+    UnraidData,
     UnraidDataUpdateCoordinator,
     UnraidRuntimeData,
+    array_disks_absent,
+    has_no_array_disks,
 )
 from .entity import (
     DOCKER_DEVICE,
@@ -521,6 +524,76 @@ def _async_move_child_devices_to_groups(
             _LOGGER.debug("Moved device %s under %s", child.name, parent.name)
 
 
+# Parity entities are not created on pool-only servers (no Unraid array disks).
+# Registry entries left from before are disabled by the integration, and enabled
+# again if the server later reports array disks. Each entry is (domain, key).
+PARITY_ENTITY_KEYS: tuple[tuple[str, str], ...] = (
+    ("sensor", "parity_progress"),
+    ("sensor", "next_parity_check"),
+    ("sensor", "last_parity_check"),
+    ("binary_sensor", "parity_check_running"),
+    ("binary_sensor", "parity_valid"),
+    ("binary_sensor", "parity_check_scheduled"),
+    ("button", "parity_check_start"),
+    ("button", "parity_check_stop"),
+    ("button", "parity_check_pause"),
+    ("button", "parity_check_resume"),
+)
+
+# Client methods behind the parity actions; refused on pool-only servers.
+PARITY_SERVICE_METHODS: frozenset[str] = frozenset(
+    {
+        "start_parity_check",
+        "stop_parity_check",
+        "pause_parity_check",
+        "resume_parity_check",
+    }
+)
+
+
+@callback
+def _async_sync_parity_entities(
+    hass: HomeAssistant,
+    entry: UnraidConfigEntry,
+    coordinator: UnraidDataUpdateCoordinator,
+) -> None:
+    """
+    Disable parity entities on pool-only servers; re-enable them otherwise.
+
+    Unknown disk counts leave the registry unchanged.
+    """
+    no_array_disks = array_disks_absent(coordinator.data)
+    if no_array_disks is None:
+        return
+    parity_ids = {
+        (domain, f"{entry.entry_id}_{key}") for domain, key in PARITY_ENTITY_KEYS
+    }
+    registry = er.async_get(hass)
+    for registry_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if (registry_entry.domain, registry_entry.unique_id) not in parity_ids:
+            continue
+        entity_id = registry_entry.entity_id
+        if no_array_disks and registry_entry.disabled_by is None:
+            _LOGGER.info("Disabling %s: server has no Unraid array disks", entity_id)
+            registry.async_update_entity(
+                entity_id, disabled_by=er.RegistryEntryDisabler.INTEGRATION
+            )
+        elif (
+            not no_array_disks
+            and registry_entry.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+        ):
+            _LOGGER.info("Re-enabling %s: server reports array disks", entity_id)
+            registry.async_update_entity(entity_id, disabled_by=None)
+
+
+@callback
+def _array_started(data: UnraidData | None) -> bool:
+    """Return True if the agent reports the Unraid array as started."""
+    if data is None or data.array is None:
+        return False
+    return str(data.array.state or "").lower() == "started"
+
+
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up Unraid Management Agent integration."""
     # Register dashboard card frontend
@@ -585,6 +658,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
     entry.runtime_data = UnraidRuntimeData(
         coordinator=coordinator, client=client, platforms=platforms
     )
+    _async_sync_parity_entities(hass, entry, coordinator)
     if read_only:
         _async_remove_control_entities(hass, entry)
     if not coordinator.is_nic_devices_enabled():
@@ -612,11 +686,42 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
     if enable_websocket:
         await coordinator.async_start_websocket()
 
+    # Parity entities were set up for this answer. Unraid only changes the array
+    # disk layout while the array is stopped, so re-check it when the array
+    # starts or the agent answers again after being unreachable (it may have
+    # restarted), not on every update. Reload if the answer has changed. Unknown
+    # counts, at setup or later (such as a failed array fetch), keep the re-check
+    # pending until the agent reports them.
+    no_array_disks_at_setup = has_no_array_disks(coordinator.data)
+    array_was_started = _array_started(coordinator.data)
+    array_recheck_pending = array_disks_absent(coordinator.data) is None
+    parity_reload_scheduled = False
+
     # Register stale entity cleanup: runs on every successful coordinator update
     # and removes entity registry entries for items no longer returned by the API.
     @callback
     def _on_coordinator_update() -> None:
+        nonlocal array_was_started, array_recheck_pending, parity_reload_scheduled
         async_cleanup_stale_entities(hass, entry, coordinator)
+        if not coordinator.last_update_success:
+            array_recheck_pending = True
+            return
+        array_started = _array_started(coordinator.data)
+        if array_started and not array_was_started:
+            array_recheck_pending = True
+        array_was_started = array_started
+        if not array_recheck_pending or parity_reload_scheduled:
+            return
+        no_array_disks = array_disks_absent(coordinator.data)
+        if no_array_disks is None:
+            return
+        array_recheck_pending = False
+        if no_array_disks != no_array_disks_at_setup:
+            parity_reload_scheduled = True
+            _LOGGER.info(
+                "Array disk configuration changed; reloading to update parity entities"
+            )
+            hass.config_entries.async_schedule_reload(entry.entry_id)
 
     entry.async_on_unload(coordinator.async_add_listener(_on_coordinator_update))
 
@@ -821,6 +926,13 @@ async def async_setup_services(hass: HomeAssistant) -> None:
 
         async def handler(call: ServiceCall) -> None:
             coordinator = _get_coordinator(call)
+            if method_name in PARITY_SERVICE_METHODS and has_no_array_disks(
+                coordinator.data
+            ):
+                raise ServiceValidationError(
+                    translation_domain=DOMAIN,
+                    translation_key="no_parity_array",
+                )
             args: tuple[Any, ...] = ()
             placeholders: dict[str, str] | None = None
             if id_attr and id_placeholder:
