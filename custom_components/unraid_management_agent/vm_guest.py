@@ -98,10 +98,12 @@ def _reader(
 
 
 def _gpus(guest: VMGuestInfo) -> list[Any] | None:
+    """Return the guest's GPUs."""
     return guest.gpus
 
 
 def _disks(guest: VMGuestInfo) -> list[Any] | None:
+    """Return the guest's disks."""
     return guest.disks
 
 
@@ -166,7 +168,10 @@ _GPU_SENSORS: Final[tuple[tuple[str, str, str, dict[str, Any]], ...]] = (
 def _gpu_descriptions(
     vm_identifier: str, vm_name: str, index: int
 ) -> list[UnraidVMGuestSensorEntityDescription]:
+    """Return the sensor descriptions of the GPU with this index."""
+
     def attributes(guest: VMGuestInfo) -> dict[str, Any]:
+        """Return the GPU's name and total memory."""
         gpu = _find(guest.gpus, "index", index)
         return {
             "gpu_name": getattr(gpu, "name", None),
@@ -191,10 +196,12 @@ def _gpu_descriptions(
 def _disk_descriptions(
     vm_identifier: str, vm_name: str, disk: Any
 ) -> list[UnraidVMGuestSensorEntityDescription]:
+    """Return the temperature and wear descriptions of a disk, keyed by serial."""
     serial = disk.serial
     label = disk.model or serial
 
     def attributes(guest: VMGuestInfo) -> dict[str, Any]:
+        """Return the disk's model, serial and bus."""
         found = _find(guest.disks, "serial", serial)
         return {
             "model": getattr(found, "model", None),
@@ -238,18 +245,22 @@ def _disk_descriptions(
 
 
 def _filesystem_used_percent(guest: VMGuestInfo, mountpoint: str) -> float | None:
+    """Return the used percent of a filesystem, or None without both sizes."""
     fs = _find(guest.filesystems, "mountpoint", mountpoint)
     used = getattr(fs, "used_bytes", None)
     total = getattr(fs, "total_bytes", None)
     if used is None or not total:
         return None
-    return used / total * 100
+    return float(used / total * 100)
 
 
 def _filesystem_description(
     vm_identifier: str, vm_name: str, mountpoint: str
 ) -> UnraidVMGuestSensorEntityDescription:
+    """Return the used percent description of the filesystem at a mount point."""
+
     def attributes(guest: VMGuestInfo) -> dict[str, Any]:
+        """Return the filesystem's type and sizes."""
         fs = _find(guest.filesystems, "mountpoint", mountpoint)
         return {
             "mountpoint": mountpoint,
@@ -274,7 +285,10 @@ def _filesystem_description(
 def _sensor_description(
     vm_identifier: str, vm_name: str, name: str
 ) -> UnraidVMGuestSensorEntityDescription:
+    """Return the description of a custom sensor (number or text)."""
+
     def value(guest: VMGuestInfo) -> Any:
+        """Return the reading as a number when it parses as one, else as text."""
         text = getattr(_find(guest.sensors, "name", name), "value", None)
         if text is None:
             return None
@@ -282,6 +296,7 @@ def _sensor_description(
         return number if number is not None else text[:MAX_STATE_LENGTH]
 
     def attributes(guest: VMGuestInfo) -> dict[str, Any]:
+        """Return the sensor's last error and update time."""
         found = _find(guest.sensors, "name", name)
         return {
             "error": getattr(found, "error", None) or None,
@@ -302,6 +317,7 @@ def _sensor_description(
 def _hostname_description(
     vm_identifier: str, vm_name: str
 ) -> UnraidVMGuestSensorEntityDescription:
+    """Return the guest hostname description (OS and agent state as attributes)."""
     return UnraidVMGuestSensorEntityDescription(
         key=f"{_prefix(vm_identifier)}hostname",
         name="Guest hostname",
@@ -325,6 +341,7 @@ def _ident(value: str) -> str:
 
 
 def _prefix(vm_identifier: str) -> str:
+    """Return the key prefix of a VM's guest sensors."""
     return f"{VM_GUEST_KEY_PREFIX}{slugify(vm_identifier)}_"
 
 

@@ -17,9 +17,16 @@ from custom_components.unraid_management_agent.api import UnraidClient
 from custom_components.unraid_management_agent.api.constants import EventType
 from custom_components.unraid_management_agent.api.events import (
     VMGuestUpdateEvent,
+    VMListUpdateEvent,
     parse_event,
 )
-from custom_components.unraid_management_agent.api.models import VMGuestInfo, VMInfo
+from custom_components.unraid_management_agent.api.models import (
+    CollectorDetails,
+    CollectorStatus,
+    VMGuestInfo,
+    VMInfo,
+    VMSettings,
+)
 from custom_components.unraid_management_agent.cleanup import (
     _build_valid_dynamic_entity_keys,
     _unavailable_data_prefixes,
@@ -28,7 +35,10 @@ from custom_components.unraid_management_agent.const import (
     CONF_ENABLE_VM_DEVICES,
     DOMAIN,
 )
-from custom_components.unraid_management_agent.coordinator import UnraidData
+from custom_components.unraid_management_agent.coordinator import (
+    UnraidData,
+    _drop_replaced_vm_guests,
+)
 from custom_components.unraid_management_agent.vm_guest import (
     _ident,
     parse_number,
@@ -49,6 +59,7 @@ def _guest(*, running: bool = True, **overrides: Any) -> dict[str, Any]:
     """Build a guest entry the way the agent reports it (values from the DTO)."""
 
     def reading(value: Any) -> Any:
+        """Return the reading, or None while the VM is off."""
         return value if running else None
 
     payload: dict[str, Any] = {
@@ -106,6 +117,7 @@ def _guest(*, running: bool = True, **overrides: Any) -> dict[str, Any]:
 def _vm(
     *, vm_id: str = WIN11_ID, name: str = "Windows 11", state: str = "running"
 ) -> VMInfo:
+    """Build a VM list entry."""
     return VMInfo(
         id=vm_id,
         name=name,
@@ -118,6 +130,7 @@ def _vm(
 
 
 def _guests(*payloads: dict[str, Any]) -> list[VMGuestInfo]:
+    """Parse guest payloads into models."""
     return [VMGuestInfo.model_validate(p) for p in payloads]
 
 
@@ -144,6 +157,7 @@ def guest_client(mock_async_unraid_client: MagicMock) -> Generator[MagicMock]:
 
 
 async def _setup(hass: HomeAssistant, entry: MockConfigEntry) -> None:
+    """Set up the config entry and wait for it to settle."""
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
@@ -158,6 +172,7 @@ async def _push(hass: HomeAssistant, entry: MockConfigEntry, **fields: Any) -> N
 
 
 def _state(hass: HomeAssistant, name: str) -> Any:
+    """Return the state of a guest sensor on the Windows 11 VM device."""
     state = hass.states.get(f"{PREFIX}{name}")
     assert state is not None, name
     return state
@@ -566,3 +581,163 @@ async def test_client_get_vm_guest(
     aioclient_mock.clear_requests()
     aioclient_mock.get(url, text="null", headers={"Content-Type": "application/json"})
     assert await client.get_vm_guest() == []
+
+
+def _event(hass: HomeAssistant, entry: MockConfigEntry, event: Any) -> None:
+    """Hand a parsed websocket event to the coordinator."""
+    entry.runtime_data.coordinator._handle_websocket_event(event)
+
+
+@pytest.mark.usefixtures("guest_client", "mock_unraid_websocket_client_class")
+async def test_vm_list_update_drops_guest_data_of_a_replaced_vm(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
+    """A new VM reusing a name gets no sensors from the old VM's guest data."""
+    await _setup(hass, mock_config_entry)
+    new_id = "f" * 32
+    _event(hass, mock_config_entry, VMListUpdateEvent(data=[_vm(vm_id=new_id)]))
+    await hass.async_block_till_done()
+
+    coordinator = mock_config_entry.runtime_data.coordinator
+    assert coordinator.data.vm_guest == []
+    registered = er.async_entries_for_config_entry(er.async_get(hass), ENTRY_ID)
+    assert not [e for e in registered if f"vmguest_{new_id}_" in e.unique_id]
+    assert _state(hass, "fps").state == "unavailable"
+
+    # The new VM's own guest data then creates its sensors
+    _event(hass, mock_config_entry, VMGuestUpdateEvent(data=_guests(_guest())))
+    await hass.async_block_till_done()
+    registered = er.async_entries_for_config_entry(er.async_get(hass), ENTRY_ID)
+    assert [e for e in registered if f"vmguest_{new_id}_" in e.unique_id]
+
+
+@pytest.mark.usefixtures("guest_client", "mock_unraid_websocket_client_class")
+async def test_vm_list_update_keeps_guest_data_of_unchanged_vms(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
+    """A VM list update for the same VMs (here a single VM, not a list) keeps guests."""
+    await _setup(hass, mock_config_entry)
+    _event(
+        hass,
+        mock_config_entry,
+        VMListUpdateEvent.model_construct(data=_vm(state="paused")),
+    )
+    await hass.async_block_till_done()
+
+    coordinator = mock_config_entry.runtime_data.coordinator
+    assert [g.vm_name for g in coordinator.data.vm_guest] == ["Windows 11"]
+    assert _state(hass, "fps").state == "144.0"
+
+
+@pytest.mark.usefixtures("guest_client", "mock_unraid_websocket_client_class")
+async def test_vm_guest_update_with_a_single_entry(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
+    """A vm_guest_update carrying one entry instead of a list still applies."""
+    await _setup(hass, mock_config_entry)
+    sensors = [{"name": "fps", "value": "30"}]
+    single = _guests(_guest(sensors=sensors))[0]
+    _event(hass, mock_config_entry, VMGuestUpdateEvent.model_construct(data=single))
+    await hass.async_block_till_done()
+    assert _state(hass, "fps").state == "30.0"
+
+
+@pytest.mark.usefixtures("guest_client", "mock_unraid_websocket_client_class")
+async def test_null_guest_values_are_unknown(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
+    """A null hostname, OS name or used size gives unknown values, not errors."""
+    await _setup(hass, mock_config_entry)
+    filesystems = [{"mountpoint": "C:\\", "total_bytes": 100, "used_bytes": None}]
+    await _push(
+        hass,
+        mock_config_entry,
+        vm_guest=_guests(
+            _guest(hostname=None, os_name=None, error=None, filesystems=filesystems)
+        ),
+    )
+    hostname = _state(hass, "guest_hostname")
+    assert hostname.state == "unknown"
+    assert hostname.attributes["os_name"] is None
+    assert hostname.attributes["error"] is None
+    assert _state(hass, "filesystem_c_used").state == "unknown"
+
+
+def test_drop_replaced_vm_guests_without_guest_data() -> None:
+    """No guest data (older agent or none fetched yet) stays as it is."""
+    new_vms = [_vm(vm_id="f" * 32)]
+    assert _drop_replaced_vm_guests(None, [_vm()], new_vms) is None
+    assert _drop_replaced_vm_guests([], [_vm()], new_vms) == []
+
+
+def test_guest_without_collections_has_only_a_hostname() -> None:
+    """Null GPU, disk, filesystem and sensor lists give just the hostname sensor."""
+    bare = _guest(gpus=None, disks=None, filesystems=None, sensors=None)
+    descriptions = vm_guest_descriptions(
+        UnraidData(vms=[_vm()], vm_guest=_guests(bare))
+    )
+    assert [d.key for d in descriptions] == [f"{KEY}hostname"]
+
+
+def test_offline_prefix_of_a_vm_without_uuid_uses_its_name() -> None:
+    """An offline guest of a VM without a UUID is protected under its name."""
+    data = UnraidData(
+        vms=[VMInfo(name="Windows 11")], vm_guest=_guests(_guest(running=False))
+    )
+    assert vm_guest_offline_prefixes(data) == {"vmguest_windows_11_"}
+
+
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_sensors_of_a_vm_without_uuid(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_async_unraid_client: MagicMock,
+) -> None:
+    """A VM the agent reports without a UUID gets sensors keyed by its name."""
+    mock_async_unraid_client.list_vms.return_value = [
+        VMInfo(name="Windows 11", state="running")
+    ]
+    mock_async_unraid_client.get_vm_guest.return_value = _guests(_guest())
+    await _setup(hass, mock_config_entry)
+
+    registered = er.async_entries_for_config_entry(er.async_get(hass), ENTRY_ID)
+    fps = next(
+        e
+        for e in registered
+        if e.unique_id.startswith(f"{ENTRY_ID}_vmguest_windows_11_")
+        and e.unique_id.endswith(f"sensor_{_ident('fps')}")
+    )
+    state = hass.states.get(fps.entity_id)
+    assert state is not None
+    assert state.state == "144.0"
+
+
+@pytest.mark.parametrize(
+    ("collectors", "vm_settings"),
+    [
+        (
+            CollectorStatus(collectors=[CollectorDetails(name="vm", enabled=False)]),
+            None,
+        ),
+        (None, VMSettings(enabled=False)),
+    ],
+    ids=["vm_collector_off", "vm_service_off"],
+)
+@pytest.mark.usefixtures("mock_unraid_websocket_client_class")
+async def test_no_guest_sensors_when_vms_are_off_on_the_server(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_async_unraid_client: MagicMock,
+    collectors: CollectorStatus | None,
+    vm_settings: VMSettings | None,
+) -> None:
+    """VM devices on, but the VM collector or VM service off: no guest sensors."""
+    mock_async_unraid_client.list_vms.return_value = [_vm()]
+    mock_async_unraid_client.get_vm_guest.return_value = _guests(_guest())
+    if collectors is not None:
+        mock_async_unraid_client.get_collectors_status.return_value = collectors
+    mock_async_unraid_client.get_vm_settings.return_value = vm_settings
+    await _setup(hass, mock_config_entry)
+
+    registered = er.async_entries_for_config_entry(er.async_get(hass), ENTRY_ID)
+    assert not [e for e in registered if "_vmguest_" in e.unique_id]

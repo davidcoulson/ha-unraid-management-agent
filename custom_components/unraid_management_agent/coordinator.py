@@ -202,6 +202,35 @@ class UnraidRuntimeData:
 type UnraidConfigEntry = ConfigEntry[UnraidRuntimeData]
 
 
+def _drop_replaced_vm_guests(
+    guests: list[VMGuestInfo] | None,
+    old_vms: list[Any] | None,
+    new_vms: list[Any],
+) -> list[VMGuestInfo] | None:
+    """
+    Return the guest records without those of VMs replaced under the same name.
+
+    Guest records name their VM but carry no UUID. When a VM list update brings
+    a VM with a known name but a new UUID, the cached record belongs to the old
+    VM, so it is dropped until the agent reports the new VM's guest data.
+    """
+    if not guests:
+        return guests
+    old_ids = {
+        getattr(vm, "name", None): getattr(vm, "id", None) for vm in old_vms or []
+    }
+    replaced = {
+        name
+        for vm in new_vms
+        if (name := getattr(vm, "name", None)) is not None
+        and name in old_ids
+        and old_ids[name] != getattr(vm, "id", None)
+    }
+    if not replaced:
+        return guests
+    return [guest for guest in guests if guest.vm_name not in replaced]
+
+
 def _merge_collector_state(
     status: CollectorStatus | None, details: CollectorDetails
 ) -> CollectorStatus | None:
@@ -919,7 +948,11 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
                 event.data if isinstance(event.data, list) else [event.data]
             )
         elif event.event_type == EventType.VM_LIST_UPDATE:
-            self.data.vms = event.data if isinstance(event.data, list) else [event.data]
+            vms = event.data if isinstance(event.data, list) else [event.data]
+            self.data.vm_guest = _drop_replaced_vm_guests(
+                self.data.vm_guest, self.data.vms, vms
+            )
+            self.data.vms = vms
         elif event.event_type == EventType.VM_GUEST_UPDATE:
             self.data.vm_guest = (
                 event.data if isinstance(event.data, list) else [event.data]

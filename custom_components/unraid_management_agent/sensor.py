@@ -5292,6 +5292,7 @@ async def async_setup_entry(
     seen_vm_guest: set[str] = set()
 
     def _add_vm_guest_sensors() -> None:
+        """Add sensors for guest readings not seen before."""
         if not (
             vm_devices_enabled(coordinator)
             and coordinator.is_collector_enabled("vm")
