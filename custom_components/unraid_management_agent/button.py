@@ -18,6 +18,7 @@ from homeassistant.util import slugify
 
 from . import UnraidConfigEntry, UnraidDataUpdateCoordinator
 from .const import DOMAIN
+from .coordinator import has_no_array_disks
 from .entity import (
     UnraidBaseEntity,
     UnraidEntityDescription,
@@ -118,17 +119,26 @@ async def _async_reboot_system(coordinator: UnraidDataUpdateCoordinator) -> None
     await coordinator.async_request_refresh()
 
 
+def _has_array_disks(coordinator: UnraidDataUpdateCoordinator) -> bool:
+    """Return False on pool-only servers, where parity checks do not apply."""
+    return not has_no_array_disks(coordinator.data)
+
+
 BUTTON_DESCRIPTIONS: tuple[UnraidButtonEntityDescription, ...] = (
+    # Disabled by default so a dashboard tap cannot start or stop the array on
+    # new installs. Entities that already exist keep their enabled state.
     UnraidButtonEntityDescription(
         key="array_start",
         translation_key="array_start",
         icon="mdi:harddisk",
+        entity_registry_enabled_default=False,
         press_fn=_async_start_array,
     ),
     UnraidButtonEntityDescription(
         key="array_stop",
         translation_key="array_stop",
         icon="mdi:harddisk",
+        entity_registry_enabled_default=False,
         press_fn=_async_stop_array,
     ),
     UnraidButtonEntityDescription(
@@ -141,24 +151,28 @@ BUTTON_DESCRIPTIONS: tuple[UnraidButtonEntityDescription, ...] = (
     UnraidButtonEntityDescription(
         key="parity_check_start",
         translation_key="parity_check_start",
+        supported_fn=_has_array_disks,
         icon="mdi:shield-check",
         press_fn=_async_start_parity_check,
     ),
     UnraidButtonEntityDescription(
         key="parity_check_stop",
         translation_key="parity_check_stop",
+        supported_fn=_has_array_disks,
         icon="mdi:shield-check",
         press_fn=_async_stop_parity_check,
     ),
     UnraidButtonEntityDescription(
         key="parity_check_pause",
         translation_key="parity_check_pause",
+        supported_fn=_has_array_disks,
         icon="mdi:pause-circle",
         press_fn=_async_pause_parity_check,
     ),
     UnraidButtonEntityDescription(
         key="parity_check_resume",
         translation_key="parity_check_resume",
+        supported_fn=_has_array_disks,
         icon="mdi:play-circle",
         press_fn=_async_resume_parity_check,
     ),

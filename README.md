@@ -292,6 +292,10 @@ data:
 - `unraid_management_agent.parity_check_pause`: Pause parity check operations.
 - `unraid_management_agent.parity_check_resume`: Resume paused parity operations.
 
+The Start Array and Stop Array buttons are disabled by default, so the array cannot be started or stopped by an accidental tap on a dashboard. Enable them in the entity settings if you want them, or call these actions from a script, an automation or Developer Tools.
+
+On a server with no Unraid array disks (for example ZFS pools only), parity entities are not created and the parity actions fail with a "no parity array" error.
+
 ---
 
 ## Example Automations
@@ -315,6 +319,8 @@ automation:
 ```
 
 ### Critical UPS Battery Shutdown
+
+The Stop Array button is disabled by default; enable it first. The button targets this server, whereas the `array_stop` action acts on the first configured server.
 
 ```yaml
 automation:
