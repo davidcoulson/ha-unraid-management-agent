@@ -29,7 +29,7 @@ from .alerts import (
 from .api.models import ShareInfo, SystemService
 from .cleanup import async_prune_seen_names
 from .const import ATTR_PARITY_CHECK_STATUS
-from .coordinator import array_reports_no_parity
+from .coordinator import has_no_array_disks
 from .entity import (
     DOCKER_DEVICE,
     VMS_DEVICE,
@@ -314,7 +314,7 @@ def _has_parity_schedule(coordinator: UnraidDataUpdateCoordinator) -> bool:
     return (
         data is not None
         and data.parity_schedule is not None
-        and not array_reports_no_parity(data)
+        and not has_no_array_disks(data)
     )
 
 

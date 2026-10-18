@@ -908,6 +908,9 @@
     "parity_check_resume_failed": {
       "message": "Failed to resume parity check"
     },
+    "no_parity_array": {
+      "message": "This server has no parity array, so parity checks are not available."
+    },
     "button_error": {
       "message": "Failed to execute button action: {key}"
     },

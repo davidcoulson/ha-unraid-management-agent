@@ -5608,11 +5608,17 @@ def test_next_cron_occurrence_guard_unsatisfiable_returns_none() -> None:
 
 
 @pytest.mark.parametrize(
-    ("num_parity", "expected"),
-    [(0, False), (1, True), (2, True), (None, True)],
+    ("num_data", "num_parity", "expected"),
+    [
+        (0, 0, False),
+        (3, 0, True),
+        (3, 1, True),
+        (3, 2, True),
+        (None, None, True),
+    ],
 )
-def test_parity_sensors_gated_on_parity_disks(num_parity, expected) -> None:
-    """Parity sensors exist only when the array can have a parity disk."""
+def test_parity_sensors_gated_on_array_disks(num_data, num_parity, expected) -> None:
+    """Parity sensors are hidden only on a server with no array disks."""
     from custom_components.unraid_management_agent.api.models import (
         ArrayStatus,
         ParityCheckRecord,
@@ -5625,7 +5631,9 @@ def test_parity_sensors_gated_on_parity_disks(num_parity, expected) -> None:
     )
 
     data = UnraidData()
-    data.array = ArrayStatus(state="Started", num_parity_disks=num_parity)
+    data.array = ArrayStatus(
+        state="Started", num_data_disks=num_data, num_parity_disks=num_parity
+    )
     data.parity_schedule = ParitySchedule(mode="monthly", check_cron="0 1 1 * *")
     data.parity_history = ParityHistory(
         records=[ParityCheckRecord(date="2025-02-01T00:00:00Z")]

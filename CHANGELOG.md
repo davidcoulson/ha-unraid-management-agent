@@ -9,8 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **Parity sensors on servers without a parity disk, and the wrong next parity check date**:
-  - The next/last parity check, parity progress and parity check scheduled entities are no longer created when the agent reports `num_parity_disks: 0` (for example pool-only/ZFS servers with a leftover parity cron). Missing array data still counts as unknown, so a failed fetch never hides them.
+- **Wrong next parity check date for "first week" schedules**:
   - The next parity check no longer lands on any matching weekday for Unraid's "first week" schedules (e.g. first Friday of Jan/Apr/Jul/Oct). Unraid's `[[ $(date +%e) -le 7 ]]` guard is not part of `check_cron`, so it is re-applied for month-based schedules with a weekday and a wildcard day-of-month.
 - **Clean up Docker and VMs group devices when options are disabled**:
   - The **<hostname> Docker** and **<hostname> VMs** group devices are now cleanly removed from the device registry when "Show Docker containers as separate devices" (`enable_container_devices`) or "Show virtual machines as separate devices" (`enable_vm_devices`) is disabled in integration options.
@@ -19,6 +18,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Start Array and Stop Array buttons disabled by default**: New installs get
+  the `array_start` and `array_stop` buttons disabled, so the array cannot be
+  started or stopped by an accidental tap on a dashboard. Existing button
+  entities keep their current state, so automations that press them keep
+  working. The `unraid_management_agent.array_start` and
+  `unraid_management_agent.array_stop` actions are unchanged.
+- **Parity support on pool-only servers**: On servers with no Unraid array
+  disks (the agent reports zero data and zero parity disks, for example a
+  ZFS-only server), parity entities are no longer created: parity progress,
+  next and last parity check, parity check running, parity valid, parity check
+  scheduled, and the parity check buttons. Existing ones are disabled by the
+  integration rather than deleted, and are enabled again if the server later
+  reports array disks. Unraid only changes the array layout while the array is
+  stopped, so the disk counts are checked at setup, when the array starts, and
+  when the agent answers again after being unreachable. The `parity_check_*` actions stay registered but fail
+  with a "this server has no parity array" error instead of calling the agent.
+  Servers with an array, including arrays without parity disks (which run
+  read-checks), are unchanged. `array_start` and `array_stop` still work on
+  pool-only servers, where starting the array imports the pools and starts
+  Docker and VMs.
 - **Re-organized integration options**: Options in the configuration options dialog are now sorted alphabetically by display title with consistent active verb phrasing ("Enable...", "Show..."), proper punctuation, and clean formatting.
 - Dependabot also updates the frontend's npm dependencies (`frontend/`). The deprecated `reviewers` setting is removed; CODEOWNERS requests the review.
 - PR labeler (now the shared tinkerologie workflow) applies at most one type label: the title's Conventional Commit type decides (`feat` → `enhancement`, `fix` → `bug`, other types → neither), then the branch prefix, then a single ticked Type of Change box, then the linked issues. A contradicting type label added by automation is removed; one added by a person is kept. The label is re-evaluated when the title or description is edited, and a CHANGELOG.md-only change no longer adds `documentation`.

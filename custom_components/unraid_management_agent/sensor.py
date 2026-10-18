@@ -75,7 +75,7 @@ from .const import (
     DEFAULT_ENABLE_FAN_CONTROL,
     DOMAIN,
 )
-from .coordinator import UnraidData, array_reports_no_parity
+from .coordinator import UnraidData, has_no_array_disks
 from .entity import (
     DOCKER_DEVICE,
     UnraidBaseEntity,
@@ -1489,7 +1489,7 @@ ARRAY_SENSOR_DESCRIPTIONS: tuple[UnraidSensorEntityDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=_get_parity_progress,
         extra_state_attributes_fn=_get_parity_attrs,
-        supported_fn=lambda data: not array_reports_no_parity(data),
+        supported_fn=lambda data: not has_no_array_disks(data),
     ),
 )
 
@@ -1630,7 +1630,7 @@ PARITY_SCHEDULE_SENSOR_DESCRIPTIONS: tuple[UnraidSensorEntityDescription, ...] =
         supported_fn=lambda data: (
             data is not None
             and data.parity_schedule is not None
-            and not array_reports_no_parity(data)
+            and not has_no_array_disks(data)
         ),
     ),
     UnraidSensorEntityDescription(
@@ -1646,7 +1646,7 @@ PARITY_SCHEDULE_SENSOR_DESCRIPTIONS: tuple[UnraidSensorEntityDescription, ...] =
             and data.parity_history is not None
             and data.parity_history.records is not None
             and len(data.parity_history.records or []) > 0
-            and not array_reports_no_parity(data)
+            and not has_no_array_disks(data)
         ),
     ),
 )
