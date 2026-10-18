@@ -5637,6 +5637,26 @@ def test_next_parity_check_week_inferred_without_agent_week() -> None:
     assert "schedule_week" not in _get_next_parity_check_attrs(data)
 
 
+@pytest.mark.parametrize(
+    "cron",
+    ["0 22 * 1,4,7,10", "0 22 * * 5 extra", "0 22 * * *"],
+    ids=["four_fields", "six_fields", "any_weekday"],
+)
+def test_no_week_guard_without_a_five_field_weekday_cron(cron: str) -> None:
+    """Only a five-field cron with a weekday and a wildcard day-of-month is guarded."""
+    from custom_components.unraid_management_agent.api.models import ParitySchedule
+    from custom_components.unraid_management_agent.sensor import (
+        _get_next_parity_check_attrs,
+        _schedule_week,
+    )
+
+    schedule = ParitySchedule(mode="monthly", check_cron=cron, week_of_month="W2")
+    assert _schedule_week(schedule) == (None, False)
+    data = UnraidData()
+    data.parity_schedule = schedule
+    assert "schedule_week" not in _get_next_parity_check_attrs(data)
+
+
 def test_last_week_guard_handles_month_lengths() -> None:
     """WL is the last seven days of each month, including February."""
     from custom_components.unraid_management_agent.sensor import _in_schedule_week
