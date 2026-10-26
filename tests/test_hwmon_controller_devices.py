@@ -495,3 +495,18 @@ def test_fan_info_scale_matches_aquasuite():
     assert FanInfo(name="a", label="Water quality [%]").scale == (0.01, "%")
     assert FanInfo(name="a", label="Flow [dL/h]").scale == (1, "dL/h")
     assert FanInfo(name="a", label="Fan").scale == (1, None)
+
+
+def test_scaled_channel_without_device_id():
+    """A fan without a device_id still gets its label's scaling."""
+    from custom_components.unraid_management_agent.sensor import UnraidFanSensor
+
+    fan = FanInfo(name="highflownext_fan3", label="Conductivity [nS/cm]", rpm=735)
+    coordinator = MagicMock()
+    coordinator.data.system.fans = [fan]
+    coordinator.data.fan_control = None
+    sensor = UnraidFanSensor(
+        coordinator, MagicMock(), "highflownext_fan3", "highflownext_fan3"
+    )
+    assert sensor._attr_native_unit_of_measurement == "µS/cm"
+    assert sensor.native_value == pytest.approx(73.5)

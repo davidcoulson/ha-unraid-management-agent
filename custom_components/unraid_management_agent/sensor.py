@@ -2095,13 +2095,20 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
 
     @property
     def native_value(self) -> int | float | None:
-        """Return the fan speed."""
+        """Return the fan speed, scaled to the unit of its label."""
+        value = self._raw_value()
+        current = self._current_fan()
+        if value is None or not isinstance(current, FanInfo):
+            return value
+        factor = current.scale[0]
+        return value if factor == 1 else value * factor
+
+    def _raw_value(self) -> int | None:
+        """Return the reading as the driver reports it."""
         # A device-keyed fan's own reading is unambiguous; use only that
         current = self._current_fan()
         if self._device_keyed:
-            if not isinstance(current, FanInfo) or current.rpm is None:
-                return None
-            return current.rpm * current.scale[0]
+            return current.rpm if isinstance(current, FanInfo) else None
 
         # Prefer fan_control data (more detailed) over system.fans
         device = self._get_fan_control_device()
