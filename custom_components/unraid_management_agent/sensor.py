@@ -2030,10 +2030,14 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
         self._attr_translation_key = "fan"
         self._attr_translation_placeholders = {"name": normalized_name}
         current = self._current_fan()
-        if isinstance(current, FanInfo) and current.is_flow:
-            # A flow meter on a fan header (labelled in sensors.conf); the
-            # reading stays in RPM.
-            self._attr_icon = "mdi:waves-arrow-right"
+        if isinstance(current, FanInfo):
+            if current.is_flow:
+                # A flow meter on a fan header; the icon says so.
+                self._attr_icon = "mdi:waves-arrow-right"
+            if current.unit:
+                # The driver's own unit ("Flow [dL/h]"); a flow meter labelled
+                # in sensors.conf without one stays in RPM.
+                self._attr_native_unit_of_measurement = current.scale[1]
 
     def _get_fan_control_device(self) -> Any:
         """
@@ -2090,12 +2094,14 @@ class UnraidFanSensor(UnraidBaseEntity, SensorEntity):
         return super().available
 
     @property
-    def native_value(self) -> int | None:
+    def native_value(self) -> int | float | None:
         """Return the fan speed."""
         # A device-keyed fan's own reading is unambiguous; use only that
         current = self._current_fan()
         if self._device_keyed:
-            return current.rpm if isinstance(current, FanInfo) else None
+            if not isinstance(current, FanInfo) or current.rpm is None:
+                return None
+            return current.rpm * current.scale[0]
 
         # Prefer fan_control data (more detailed) over system.fans
         device = self._get_fan_control_device()

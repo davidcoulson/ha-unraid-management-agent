@@ -424,6 +424,17 @@ def test_controller_helpers() -> None:
     assert not FanInfo(name="octo_fan1").is_flow
 
 
+def test_fan_info_unit_from_bracketed_label() -> None:
+    """The driver's bracketed unit is the sensor's unit; other labels have none."""
+    assert FanInfo(name="highflownext_fan1", label="Flow [dL/h]").unit == "dL/h"
+    assert FanInfo(name="highflownext_fan2", label="Water quality [%]").unit == "%"
+    assert (
+        FanInfo(name="highflownext_fan3", label="Conductivity [nS/cm]").unit == "nS/cm"
+    )
+    assert FanInfo(name="octo_fan8", label="Coolant Flow (rpm)").unit is None
+    assert FanInfo(name="octo_fan1").unit is None
+
+
 @pytest.mark.usefixtures("mock_unraid_websocket_client_class")
 async def test_partial_inventory_never_removes_controller(
     hass: HomeAssistant, mock_async_unraid_client: MagicMock
@@ -476,3 +487,11 @@ async def test_partial_inventory_never_removes_controller(
         dr.async_get(hass).async_get_child_device_by_identifier(CONTROLLER_A, ENTRY_ID)
         is None
     )
+
+
+def test_fan_info_scale_matches_aquasuite():
+    """Conductivity is 0.1 µS/cm and water quality 0.01 %; flow is as is."""
+    assert FanInfo(name="a", label="Conductivity [nS/cm]").scale == (0.1, "µS/cm")
+    assert FanInfo(name="a", label="Water quality [%]").scale == (0.01, "%")
+    assert FanInfo(name="a", label="Flow [dL/h]").scale == (1, "dL/h")
+    assert FanInfo(name="a", label="Fan").scale == (1, None)

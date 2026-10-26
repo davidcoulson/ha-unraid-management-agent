@@ -114,6 +114,39 @@ class FanInfo(BaseModel):
         return "flow" in (self.label or "").lower()
 
     @property
+    def unit(self) -> str | None:
+        """
+        Return the unit the driver puts in brackets at the end of the label.
+
+        The Aquacomputer High flow NEXT reports flow, water quality and
+        conductivity on fan channels, labelled "Flow [dL/h]" and so on. A
+        label without brackets (a plain fan, "Coolant Flow (rpm)") has no unit
+        here and the reading stays in RPM.
+
+        Example:
+            >>> FanInfo(name="highflownext_fan1", label="Flow [dL/h]").unit
+            'dL/h'
+
+        """
+        match = re.search(r"\[([^\]]+)\]\s*$", self.label or "")
+        return match.group(1) if match else None
+
+    @property
+    def scale(self) -> tuple[float, str | None]:
+        """
+        Return the factor and unit that turn the raw reading into the real one.
+
+        Checked against Aquasuite: the driver's "nS/cm" conductivity is really
+        0.1 µS/cm and its water quality is in 0.01 %. Anything else is as is.
+        """
+        unit = self.unit
+        if unit == "nS/cm":
+            return 0.1, "µS/cm"
+        if unit == "%" and "water quality" in (self.label or "").lower():
+            return 0.01, unit
+        return 1, unit
+
+    @property
     def device_key(self) -> str | None:
         """
         Return a key that identifies this fan by its chip's device, or None.
