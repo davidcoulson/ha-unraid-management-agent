@@ -595,3 +595,9 @@ async def test_sensor_attributes_are_exposed_and_kept_out_of_the_recorder(
     await _push(hass, mock_config_entry, vm_guest=_guests(_guest(sensors=sensors)))
     assert "extra" not in _state(hass, "frames_avg").attributes
     assert _state(hass, "frames_avg").attributes["graph"] == GRAPH
+
+
+def test_cleanup_keeps_sensors_of_stopped_vm_without_guest_entry() -> None:
+    """A shut-off VM keeps its guest sensors even when the agent reports no guest."""
+    stopped = UnraidData(vms=[_vm(state="shut off")], vm_guest=[])
+    assert KEY in _unavailable_data_prefixes(stopped)

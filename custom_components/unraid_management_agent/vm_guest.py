@@ -360,6 +360,11 @@ def vm_guest_offline_prefixes(data: UnraidData) -> set[str]:
         vm_identifier = getattr(vm, "id", None) or getattr(vm, "name", None)
         if vm_identifier:
             prefixes.add(_prefix(vm_identifier))
+    # A VM that is shut off may have no guest entry at all.
+    for vm in data.vms or []:
+        vm_identifier = getattr(vm, "id", None) or getattr(vm, "name", None)
+        if vm_identifier and str(getattr(vm, "state", "")).lower() != "running":
+            prefixes.add(_prefix(vm_identifier))
     return prefixes
 
 
