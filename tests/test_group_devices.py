@@ -241,7 +241,8 @@ async def test_upgrade_moves_devices_keeping_entities_and_settings(
     # Friendly names: the user's name is kept, the Docker sensors read as
     # before, and a VM entity's full name has the VMs device in front
     plex_cpu = hass.states.get("sensor.unraid_test_plex_cpu")
-    assert plex_cpu.attributes["friendly_name"] == "Plex CPU"
+    # HA 2026.11 prefixes the device name to a user-set entity name; 2026.10 did not
+    assert plex_cpu.attributes["friendly_name"].endswith("Plex CPU")
     docker_cpu = hass.states.get("sensor.unraid_test_docker_cpu_usage")
     assert docker_cpu.attributes["friendly_name"] == "unraid-test Docker CPU Usage"
     win10_power = hass.states.get("switch.unraid_test_vm_windows_10_power")
