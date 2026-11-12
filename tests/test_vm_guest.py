@@ -743,3 +743,12 @@ async def test_no_guest_sensors_when_vms_are_off_on_the_server(
 
     registered = er.async_entries_for_config_entry(er.async_get(hass), ENTRY_ID)
     assert not [e for e in registered if "_vmguest_" in e.unique_id]
+
+
+def test_cleanup_keeps_sensors_of_stopped_vm_without_guest_entry() -> None:
+    """A shut-off VM keeps its guest sensors even when the agent reports no guest."""
+    stopped = UnraidData(vms=[_vm(state="shut off")], vm_guest=[])
+    assert KEY in _unavailable_data_prefixes(stopped)
+    assert KEY not in _unavailable_data_prefixes(
+        UnraidData(vms=[_vm()], vm_guest=[])
+    )
