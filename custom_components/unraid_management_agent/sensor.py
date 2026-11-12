@@ -1906,7 +1906,14 @@ def _hwmon_temperature_channels(
     sets the initial entity ID, so it may differ between setups without
     affecting identity.
     """
-    keyed = _hwmon_readings_by_key(system)
+    return _hwmon_channels_for(_hwmon_readings_by_key(system))
+
+
+@memo_by_identity
+def _hwmon_channels_for(
+    keyed: dict[str, TemperatureInfo],
+) -> list[tuple[str, TemperatureInfo, str]]:
+    """Build the channel list once per readings map (see _hwmon_temperature_channels)."""
 
     def short_chip(reading: TemperatureInfo) -> str:
         return (reading.source or "").split("-")[0]

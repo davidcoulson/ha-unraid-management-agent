@@ -26,9 +26,9 @@ from homeassistant.components.update import UpdateEntity, UpdateEntityFeature
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
-from homeassistant.util import slugify
 
 from . import UnraidConfigEntry, UnraidDataUpdateCoordinator
+from .api.models import memo_by_identity
 from .cleanup import async_prune_seen_names
 from .const import DOMAIN
 from .entity import (
@@ -37,6 +37,7 @@ from .entity import (
     container_devices_enabled,
     read_only_enabled,
 )
+from .util import cached_slugify as slugify
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -60,6 +61,15 @@ def _name_key(name: str) -> str:
     """Build a stable key from a name: readable slug plus a short hash."""
     name_hash = hashlib.md5(name.encode(), usedforsecurity=False).hexdigest()[:6]
     return f"{slugify(name)}_{name_hash}"
+
+
+@memo_by_identity
+def _plugins_by_name(plugins: list[Any]) -> dict[str, Any]:
+    """Map plugin names to plugins (first one wins); update entities read it on every state write."""
+    by_name: dict[str, Any] = {}
+    for plugin in plugins:
+        by_name.setdefault(plugin.name, plugin)
+    return by_name
 
 
 def plugin_update_key(name: str) -> str:
@@ -289,10 +299,7 @@ class UnraidPluginUpdate(_UnraidUpdateBase):
         data = self.coordinator.data
         if not data or not data.plugins or not data.plugins.plugins:
             return None
-        for plugin in data.plugins.plugins:
-            if plugin.name == self._plugin_name:
-                return plugin
-        return None
+        return _plugins_by_name(data.plugins.plugins).get(self._plugin_name)
 
     @property
     def available(self) -> bool:

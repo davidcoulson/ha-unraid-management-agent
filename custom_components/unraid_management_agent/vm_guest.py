@@ -46,9 +46,9 @@ from homeassistant.const import (
     UnitOfPower,
     UnitOfTemperature,
 )
-from homeassistant.util import slugify
 
 from .api.models import VMGuestInfo
+from .util import cached_slugify as slugify
 
 if TYPE_CHECKING:
     from .coordinator import UnraidData

@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Build the hwmon temperature and fan key maps once per message instead of once per sensor read, which blocked the event loop for 100–200 ms per WebSocket message on servers with many hwmon channels.
 
+- Cut the per-message work on the event loop: collector and plugin lookups are dictionary lookups built once per update, entity-key slugs are cached, and the storage, network card, ZFS drive location and hwmon channel data an entity reads is resolved once per update instead of on every state read.
+
 ### Added
 
 - **VM guest agent sensors** (needs an agent with the `vm_guest_agent` feature, tinkerologie/unraid-management-agent#272, and "Show virtual machines as separate devices"): data the agent reads from inside configured VMs through the QEMU guest agent is shown on each VM's device, from `GET /vm/guest` and the `vm_guest_update` WebSocket event:

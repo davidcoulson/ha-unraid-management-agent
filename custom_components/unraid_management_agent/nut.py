@@ -13,9 +13,9 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING, Final
 
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.util import slugify
 
 from .hwmon import async_adopt_unique_id
+from .util import cached_slugify as slugify
 
 if TYPE_CHECKING:
     from .api.models import NUTDeviceStatus

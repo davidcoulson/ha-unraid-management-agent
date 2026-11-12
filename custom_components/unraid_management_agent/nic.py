@@ -51,12 +51,12 @@ from homeassistant.helpers.device_registry import ChildDeviceInfo, DeviceInfo
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.typing import StateType
-from homeassistant.util import slugify
 
 from .api.models import NIC_STATE_OK, NICCard, NICList, NICModule, NICPort
 from .cleanup import async_prune_seen_names
 from .const import DOMAIN
 from .entity import UnraidBaseEntity
+from .util import cached_slugify as slugify
 
 if TYPE_CHECKING:
     from .coordinator import UnraidConfigEntry, UnraidDataUpdateCoordinator
@@ -638,6 +638,8 @@ class UnraidNICEntity(UnraidBaseEntity):
         """Initialize the entity."""
         super().__init__(coordinator, spec.key)
         self._spec = spec
+        # (source, context): resolved once per data object, not per state read
+        self._ctx_cache: tuple[Any, Any] = (None, None)
         self._attr_device_info = build_nic_device_info(
             coordinator, spec.card_id, spec.device_name
         )
@@ -649,11 +651,13 @@ class UnraidNICEntity(UnraidBaseEntity):
         cards = network_cards(self.coordinator)
         if cards is None:
             return None
-        ctx = resolve(cards, self._spec.card_id, self._spec.item)
-        exists_fn = self._spec.description.exists_fn
-        if ctx is None or (exists_fn is not None and not exists_fn(ctx)):
-            return None
-        return ctx
+        if self._ctx_cache[0] is not cards:
+            ctx = resolve(cards, self._spec.card_id, self._spec.item)
+            exists_fn = self._spec.description.exists_fn
+            if ctx is not None and exists_fn is not None and not exists_fn(ctx):
+                ctx = None
+            self._ctx_cache = (cards, ctx)
+        return self._ctx_cache[1]
 
     @property
     def available(self) -> bool:

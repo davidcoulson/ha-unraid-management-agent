@@ -12,6 +12,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from .api.models import memo_by_identity
+
 if TYPE_CHECKING:
     from .api.models import DriveHealth, StorageTopology, ZFSDrive, ZFSPool
 
@@ -180,6 +182,7 @@ def retained_roll_up_keys(pool: ZFSPool) -> list[str]:
     return keys
 
 
+@memo_by_identity
 def drive_locations(
     topology: StorageTopology | None,
 ) -> dict[str, tuple[str, int]]:

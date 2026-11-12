@@ -2514,10 +2514,17 @@ class CollectorStatus(BaseModel):
         """
         if self.collectors is None:
             return None
-        for collector in self.collectors:
-            if collector.name and collector.name.lower() == name.lower():
-                return collector
-        return None
+        return _collectors_by_name(self.collectors).get(name.lower())
+
+
+@memo_by_identity
+def _collectors_by_name(collectors: list[CollectorDetails]) -> dict[str, Any]:
+    """Map lower-cased collector names to collectors (first one wins)."""
+    by_name: dict[str, Any] = {}
+    for collector in collectors:
+        if collector.name:
+            by_name.setdefault(collector.name.lower(), collector)
+    return by_name
 
 
 # Issue #27: Parity schedule support
