@@ -94,9 +94,19 @@ _RECONNECT_REFRESH_DEBOUNCE = timedelta(seconds=10)
 _PARITY_HISTORY_INTERVAL = timedelta(minutes=15)
 
 
+# Fields of UnraidData read while a listener runs (see async_update_listeners)
+_read_fields: set[str] | None = None
+
+
 @dataclass
 class UnraidData:
     """Container for Unraid coordinator data."""
+
+    def __getattribute__(self, name: str) -> Any:
+        """Record the field read, so a WebSocket event wakes only its readers."""
+        if _read_fields is not None and not name.startswith("_"):
+            _read_fields.add(name)
+        return object.__getattribute__(self, name)
 
     system: SystemInfo | None = None
     array: ArrayStatus | None = None
@@ -251,6 +261,8 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
         # coordinator data; used by cleanup.py to defer removal until the item
         # has been absent for a sustained period (not just one bad poll).
         self.stale_entity_candidates: dict[str, datetime] = {}
+        # Listener ID -> UnraidData fields it has read (async_update_listeners)
+        self._listener_fields: dict[int, set[str]] = {}
         self._pending_system_action: str | None = None
         self._pending_system_action_message: str | None = None
         self._pending_system_action_requested_at: datetime | None = None
@@ -905,7 +917,42 @@ class UnraidDataUpdateCoordinator(DataUpdateCoordinator[UnraidData]):
         # Using async_set_updated_data would cancel and reschedule the poll
         # interval, which prevents periodic full REST polls from firing if
         # WebSocket events arrive frequently (e.g., during reconnect cycles).
-        self.async_update_listeners()
+        self.async_update_listeners(field)
+
+    @callback
+    def async_update_listeners(self, field: str | None = None) -> None:
+        """
+        Update listeners; with a field, only those that read it.
+
+        Each run records which UnraidData fields the listener read, and the
+        set only grows. A WebSocket event changes one field, so the hundreds
+        of entities that never read it are skipped. Everything else (a REST
+        poll, a disconnect) passes no field and updates every listener, so a
+        read missed here is at most one poll interval stale.
+        """
+        global _read_fields
+        if field is None:
+            self._listener_fields = {
+                listener_id: fields
+                for listener_id, fields in self._listener_fields.items()
+                if listener_id in self._listeners
+            }
+        for listener_id, (update_callback, _) in list(self._listeners.items()):
+            fields = self._listener_fields.get(listener_id)
+            if field is not None and fields is not None and field not in fields:
+                continue
+            outer, _read_fields = _read_fields, set()
+            try:
+                update_callback()
+            except Exception:
+                self.logger.exception(
+                    "Unexpected error updating listener %s for %s",
+                    id(update_callback),
+                    self.name,
+                )
+            finally:
+                read, _read_fields = _read_fields, outer
+            self._listener_fields.setdefault(listener_id, set()).update(read)
 
     def _handle_raw_message(self, data: dict) -> None:
         """Handle raw WebSocket message and parse to typed event."""

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from datetime import timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -3452,3 +3452,86 @@ class TestCoordinatorPollCadence:
         with patch.object(coordinator, "async_start_websocket", AsyncMock()) as start:
             await self._poll(coordinator)
         start.assert_awaited_once()
+
+
+class TestCoordinatorListenerFields:
+    """WebSocket events wake only the listeners that read the changed field."""
+
+    @pytest.fixture
+    def coordinator(self, hass: HomeAssistant) -> UnraidDataUpdateCoordinator:
+        """Create a coordinator with empty data."""
+        mock_client = MagicMock(host="192.168.1.100", port=8043)
+        coordinator = UnraidDataUpdateCoordinator(
+            hass,
+            entry=_create_mock_entry(hass),
+            client=mock_client,
+            enable_websocket=True,
+        )
+        coordinator.data = UnraidData()
+        return coordinator
+
+    async def test_field_update_skips_listeners_that_never_read_it(
+        self, coordinator
+    ) -> None:
+        """A field update calls new listeners and readers of that field only."""
+        calls: list[str] = []
+
+        def reads(name: str) -> Callable[[], None]:
+            def listener() -> None:
+                calls.append(name)
+                getattr(coordinator.data, name)
+
+            return listener
+
+        coordinator.async_add_listener(reads("system"))
+        coordinator.async_add_listener(reads("disks"))
+
+        coordinator.async_update_listeners("disks")  # unseen listeners all run
+        assert calls == ["system", "disks"]
+
+        calls.clear()
+        coordinator.async_update_listeners("disks")
+        assert calls == ["disks"]
+
+        calls.clear()
+        coordinator.async_update_listeners()
+        assert calls == ["system", "disks"]
+
+    async def test_listener_error_is_logged_and_others_still_run(
+        self, coordinator, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """A failing listener does not stop the others."""
+        calls: list[str] = []
+
+        def broken() -> None:
+            raise RuntimeError
+
+        coordinator.async_add_listener(broken)
+        coordinator.async_add_listener(lambda: calls.append("ok"))
+        coordinator.async_update_listeners()
+        assert calls == ["ok"]
+        assert "Unexpected error updating listener" in caplog.text
+
+    async def test_removed_listener_fields_are_dropped(self, coordinator) -> None:
+        """A full update forgets the fields of removed listeners."""
+        remove = coordinator.async_add_listener(lambda: coordinator.data.system)
+        coordinator.async_update_listeners()
+        assert len(coordinator._listener_fields) == 1
+        remove()
+        coordinator.async_update_listeners()
+        assert coordinator._listener_fields == {}
+
+    async def test_websocket_event_wakes_only_its_readers(self, coordinator) -> None:
+        """A system_update event skips a listener that only reads disks."""
+        calls: list[str] = []
+        coordinator.async_add_listener(
+            lambda: calls.append("disks") or coordinator.data.disks
+        )
+        coordinator.async_update_listeners()
+        calls.clear()
+
+        event = WebSocketEvent(
+            event_type=EventType.SYSTEM_UPDATE, data=mock_system_info()
+        )
+        coordinator._handle_websocket_event(event)
+        assert calls == []
