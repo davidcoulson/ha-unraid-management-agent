@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Stop the WebSocket reconnecting every minute on servers with a few thousand ZFS snapshots: the snapshot list (over 1 MiB) hit the client's default message size limit and the client closed with code 1009. The limit is now 64 MiB, and the disconnect warning names the code the integration sent when the agent sent none.
+
+- Build the hwmon temperature and fan key maps once per message instead of once per sensor read, which blocked the event loop for 100–200 ms per WebSocket message on servers with many hwmon channels.
+
 ### Added
 
 - **VM guest agent sensors** (needs an agent with the `vm_guest_agent` feature, tinkerologie/unraid-management-agent#272, and "Show virtual machines as separate devices"): data the agent reads from inside configured VMs through the QEMU guest agent is shown on each VM's device, from `GET /vm/guest` and the `vm_guest_update` WebSocket event:

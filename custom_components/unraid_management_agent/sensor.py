@@ -53,6 +53,7 @@ from .api.models import (
     TemperatureInfo,
     fan_sensor_keys,
     hwmon_temperature_keys,
+    memo_by_identity,
 )
 from .cleanup import async_prune_seen_names
 from .const import (
@@ -1880,10 +1881,14 @@ class UnraidSystemStatusSensor(UnraidBaseEntity, SensorEntity):
 
 def _hwmon_readings_by_key(system: Any) -> dict[str, TemperatureInfo]:
     """Map each hwmon temperature channel's entity key to its reading."""
+    return _readings_by_key(getattr(system, "temperatures", None))
+
+
+@memo_by_identity
+def _readings_by_key(temperatures: Any) -> dict[str, TemperatureInfo]:
+    """Build the mapping once per temperature list (one per message)."""
     keyed: dict[str, TemperatureInfo] = {}
-    for key, reading in hwmon_temperature_keys(
-        getattr(system, "temperatures", None)
-    ).items():
+    for key, reading in hwmon_temperature_keys(temperatures).items():
         keyed.setdefault(ha_slugify(key), reading)
     return keyed
 
