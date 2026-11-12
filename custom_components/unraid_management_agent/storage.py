@@ -59,7 +59,6 @@ from homeassistant.helpers.device_registry import ChildDeviceInfo, DeviceInfo
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.typing import StateType
-from homeassistant.util import slugify
 
 from .api.models import (
     STORAGE_TOPOLOGY_STATE_OK,
@@ -73,6 +72,7 @@ from .api.models import (
 from .cleanup import async_prune_seen_names
 from .const import DOMAIN
 from .entity import UnraidBaseEntity
+from .util import cached_slugify as slugify
 
 if TYPE_CHECKING:
     from .coordinator import UnraidConfigEntry, UnraidDataUpdateCoordinator
@@ -1004,6 +1004,8 @@ class UnraidStorageEntity(UnraidBaseEntity):
         """Initialize the entity."""
         super().__init__(coordinator, spec.key)
         self._spec = spec
+        # (source, context): resolved once per data object, not per state read
+        self._ctx_cache: tuple[Any, Any] = (None, None)
         self._attr_device_info = build_storage_device_info(
             coordinator, spec.kind, spec.owner_id, spec.device_name
         )
@@ -1015,11 +1017,15 @@ class UnraidStorageEntity(UnraidBaseEntity):
         topology = storage_topology(self.coordinator)
         if topology is None:
             return None
-        ctx = resolve(topology, self._spec.kind, self._spec.owner_id, self._spec.item)
-        exists_fn = self._spec.description.exists_fn
-        if ctx is None or (exists_fn is not None and not exists_fn(ctx)):
-            return None
-        return ctx
+        if self._ctx_cache[0] is not topology:
+            ctx = resolve(
+                topology, self._spec.kind, self._spec.owner_id, self._spec.item
+            )
+            exists_fn = self._spec.description.exists_fn
+            if ctx is not None and exists_fn is not None and not exists_fn(ctx):
+                ctx = None
+            self._ctx_cache = (topology, ctx)
+        return self._ctx_cache[1]
 
     @property
     def available(self) -> bool:

@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Cut the per-message work on the event loop: collector and plugin lookups are dictionary lookups built once per update, entity-key slugs are cached, and the storage, network card, ZFS drive location and hwmon channel data an entity reads is resolved once per update instead of on every state read.
+
 - A WebSocket message now updates only the entities that read the data it changed, instead of every entity of the server (363 entity updates per message on a large server). The coordinator records which data each entity reads when it updates; REST polls and reconnects still update every entity.
 
 ## [2026.11.2] — 2026-11-12
