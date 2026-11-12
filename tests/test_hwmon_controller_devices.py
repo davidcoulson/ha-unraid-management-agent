@@ -35,6 +35,10 @@ from custom_components.unraid_management_agent.hwmon import (
     hwmon_controller_names,
     hwmon_controller_of,
 )
+from custom_components.unraid_management_agent.sensor import (
+    UnraidDeviceFanSensor,
+    UnraidFanSensor,
+)
 
 from .const import MOCK_CONFIG, MOCK_OPTIONS
 
@@ -485,3 +489,83 @@ async def test_partial_inventory_never_removes_controller(
         dr.async_get(hass).async_get_child_device_by_identifier(CONTROLLER_A, ENTRY_ID)
         is None
     )
+
+
+def test_fan_info_unit_from_bracketed_label() -> None:
+    """The driver's bracketed unit is the sensor's unit; other labels have none."""
+    assert FanInfo(name="highflownext_fan1", label="Flow [dL/h]").unit == "dL/h"
+    assert FanInfo(name="highflownext_fan2", label="Water quality [%]").unit == "%"
+    assert (
+        FanInfo(name="highflownext_fan3", label="Conductivity [nS/cm]").unit == "nS/cm"
+    )
+    assert FanInfo(name="octo_fan8", label="Coolant Flow (rpm)").unit is None
+    assert FanInfo(name="octo_fan1").unit is None
+
+
+def test_fan_info_scale_matches_aquasuite() -> None:
+    """Conductivity is 0.1 µS/cm and water quality 0.01 %; flow is as is."""
+    assert FanInfo(name="a", label="Conductivity [nS/cm]").scale == (0.1, "µS/cm")
+    assert FanInfo(name="a", label="Water quality [%]").scale == (0.01, "%")
+    assert FanInfo(name="a", label="Flow [dL/h]").scale == (1, "dL/h")
+    assert FanInfo(name="a", label="Fan").scale == (1, None)
+    assert FanInfo(name="a", label="Battery [%]").scale == (1, "%")
+
+
+@pytest.mark.parametrize(
+    ("label", "unit", "value"),
+    [
+        ("Conductivity [nS/cm]", "µS/cm", 73.5),
+        ("Flow [dL/h]", "dL/h", 735),
+    ],
+)
+def test_scaled_channel_without_device_id(label: str, unit: str, value: float) -> None:
+    """A fan without a device_id still gets its label's unit and scaling."""
+    fan = FanInfo(name="highflownext_fan3", label=label, rpm=735)
+    coordinator = MagicMock()
+    coordinator.data.system.fans = [fan]
+    coordinator.data.fan_control = None
+    sensor = UnraidFanSensor(
+        coordinator, MagicMock(), "highflownext_fan3", "highflownext_fan3"
+    )
+    assert sensor.native_unit_of_measurement == unit
+    assert sensor.native_value == pytest.approx(value)
+    # Scaling follows the device-keyed fan too
+    keyed = FanInfo(
+        name="highflownext_fan3", label=label, rpm=735, device_id="07274-50017"
+    )
+    coordinator.data.system.fans = [keyed]
+    sensor = UnraidDeviceFanSensor(
+        coordinator,
+        MagicMock(),
+        "highflownext_fan3",
+        "highflownext_fan3",
+        keyed.device_key,
+    )
+    assert sensor.native_value == pytest.approx(value)
+
+
+def test_unlabelled_fan_stays_in_rpm_and_missing_reading_is_none() -> None:
+    """A plain fan keeps RPM; a fan with no reading has no value."""
+    coordinator = MagicMock()
+    coordinator.data.fan_control = None
+    coordinator.data.system.fans = [FanInfo(name="octo_fan1", rpm=None)]
+    sensor = UnraidFanSensor(coordinator, MagicMock(), "octo_fan1", "octo_fan1")
+    assert sensor.native_unit_of_measurement == "RPM"
+    assert sensor.native_value is None
+
+
+def test_fan_unit_follows_label_changes() -> None:
+    """Unit and scale come from the current label, so a relabelled channel stays consistent."""
+    coordinator = MagicMock()
+    coordinator.data.fan_control = None
+    sensor = UnraidFanSensor(coordinator, MagicMock(), "hfn_fan3", "hfn_fan3")
+    for label, unit, value in (
+        (None, "RPM", 735),
+        ("Conductivity [nS/cm]", "µS/cm", 73.5),
+        ("Flow [dL/h]", "dL/h", 735),
+    ):
+        coordinator.data.system.fans = [FanInfo(name="hfn_fan3", label=label, rpm=735)]
+        assert sensor.native_unit_of_measurement == unit
+        assert sensor.native_value == pytest.approx(value)
+    coordinator.data.system.fans = []
+    assert sensor.native_unit_of_measurement == "RPM"

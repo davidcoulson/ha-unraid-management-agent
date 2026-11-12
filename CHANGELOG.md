@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Keep the guest sensors of a stopped VM that the agent lists no guest entry for; they were removed as stale, and only guests listed with the agent disconnected were kept.
 
+- **Channels reported on fan headers use the unit from their label**: the Aquacomputer High Flow NEXT reports flow, water quality and conductivity on fan channels labelled `Flow [dL/h]`, `Water quality [%]` and `Conductivity [nS/cm]`, and all three were shown in RPM. A fan channel whose label ends in a bracketed unit now uses it as its unit; a label without one (a plain fan, `Coolant Flow (rpm)`) stays in RPM. Conductivity is shown in µS/cm (the driver's `nS/cm` reading is 0.1 µS/cm, checked against Aquasuite) and water quality as a percentage (the raw reading is in 0.01 %), on fans with and without a `device_id`.
+
 ### Added
 
 - Show the extra `attributes` a VM guest custom command sensor reports (for example a graph string) as attributes of its sensor, kept out of the recorder. Names that appear after the sensor was created are left out until the integration is reloaded.

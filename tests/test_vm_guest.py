@@ -749,9 +749,7 @@ def test_cleanup_keeps_sensors_of_stopped_vm_without_guest_entry() -> None:
     """A shut-off VM keeps its guest sensors even when the agent reports no guest."""
     stopped = UnraidData(vms=[_vm(state="shut off")], vm_guest=[])
     assert KEY in _unavailable_data_prefixes(stopped)
-    assert KEY not in _unavailable_data_prefixes(
-        UnraidData(vms=[_vm()], vm_guest=[])
-    )
+    assert KEY not in _unavailable_data_prefixes(UnraidData(vms=[_vm()], vm_guest=[]))
 
 
 GRAPH = "74|10.1,10.1,10.2"
