@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A WebSocket message now updates only the entities that read the data it changed, instead of every entity of the server (363 entity updates per message on a large server). The coordinator records which data each entity reads when it updates; REST polls and reconnects still update every entity.
 
+- Check stale-entity key prefixes in one `str.startswith` call instead of a Python loop. On a large server the loop made about 600,000 prefix checks a minute.
+
 ## [2026.11.2] — 2026-11-12
 
 ### Fixed
