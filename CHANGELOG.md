@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Check stale-entity key prefixes in one `str.startswith` call instead of a Python loop. On a large server the loop made about 600,000 prefix checks a minute.
 
+- Run stale-entity cleanup once per poll instead of after every WebSocket event, which took about 1 s a minute on a large server. While an entity is waiting out its removal grace period, cleanup still runs on every event, so an item that reappears restarts the grace period as before.
+
 ## [2026.11.2] — 2026-11-12
 
 ### Fixed
