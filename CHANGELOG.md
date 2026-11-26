@@ -391,6 +391,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   payloads still parse. Empty or `null` lists now count as empty lists. A collector event
   keeps the collector's other polled fields, and events the integration does not use no
   longer refresh every entity.
+- **`reload_code` blocked the event loop**: the dev-only `unraid_management_agent.reload_code`
+  action now imports the new platform modules (and repairs, diagnostics, config flow) in the
+  import executor, so Home Assistant no longer logs "Detected blocking call to import_module".
 
 ### Changed
 
