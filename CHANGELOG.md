@@ -37,6 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The agent reports pool usage as `allocated_bytes` (zpool ALLOC), but the
   integration only read `used_bytes`, so every "ZFS Pool … Usage" sensor was
   Unknown. The ZFS pool model now accepts both.
+- **`reload_code` blocked the event loop**: the dev-only `unraid_management_agent.reload_code`
+  action now imports the new platform modules (and repairs, diagnostics, config flow) in the
+  import executor, so Home Assistant no longer logs "Detected blocking call to import_module".
 
 ### Changed
 
