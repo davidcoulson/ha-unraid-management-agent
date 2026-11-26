@@ -430,7 +430,8 @@ async def test_reload_code_replaces_the_modules(
     await _setup_over_http(hass, mock_config_entry, aioclient_mock)
     old = sys.modules[PACKAGE]
     old_coordinator = mock_config_entry.runtime_data.coordinator
-    hass.services.async_remove(DOMAIN, "container_start")  # async_setup must bring it back
+    # async_setup must bring it back
+    hass.services.async_remove(DOMAIN, "container_start")
 
     await hass.services.async_call(DOMAIN, "reload_code", {}, blocking=True)
     await hass.async_block_till_done()
