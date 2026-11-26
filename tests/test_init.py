@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import re
+import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import aiohttp
 import pytest
+from homeassistant import config_entries
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -407,18 +411,6 @@ async def test_async_reload_entry(
         mock_reload.assert_called_once_with(mock_config_entry.entry_id)
 
 
-async def test_duplicate_services_setup(hass: HomeAssistant) -> None:
-    """Test async_setup_services exits early when services already registered."""
-    from custom_components.unraid_management_agent import async_setup_services
-
-    with (
-        patch("homeassistant.core.ServiceRegistry.has_service", return_value=True),
-        patch("homeassistant.core.ServiceRegistry.async_register") as mock_register,
-    ):
-        await async_setup_services(hass)
-        mock_register.assert_not_called()
-
-
 async def test_services_calls_and_actions(
     hass: HomeAssistant,
     mock_config_entry,
@@ -580,3 +572,75 @@ async def test_setup_removes_legacy_repair_issues(
     assert [key for key in issues if key[0] == DOMAIN] == [(DOMAIN, "future_notice")]
     assert ("other_domain", "disk_health_disk1_high_temp") in issues
     assert "acknowledged_disk_io_errors" not in mock_config_entry.options
+
+
+PACKAGE = "custom_components.unraid_management_agent"
+BASE_URL = "http://192.168.1.100:8043/api/v1"
+
+
+@pytest.fixture
+def keep_modules():
+    """Put the originally imported modules back so other tests' patches still hit them."""
+    saved = {n: m for n, m in sys.modules.items() if n.startswith(PACKAGE)}
+    # reload_code re-imports config_flow, which registers the new flow class
+    old_flow = config_entries.HANDLERS.get(DOMAIN)
+    yield
+    config_entries.HANDLERS[DOMAIN] = old_flow
+    for name in [n for n in sys.modules if n.startswith(PACKAGE)]:
+        del sys.modules[name]
+    sys.modules.update(saved)
+    setattr(sys.modules["custom_components"], DOMAIN, saved[PACKAGE])
+
+
+async def _setup_over_http(hass: HomeAssistant, entry, aioclient_mock) -> None:
+    """Set the entry up with only the HTTP layer faked, which a re-import keeps."""
+    aioclient_mock.get(f"{BASE_URL}/health", json={"status": "ok"})
+    aioclient_mock.get(f"{BASE_URL}/system", json={"hostname": "unraid-test"})
+    # Every other endpoint: the coordinator treats a failed fetch as "no data"
+    aioclient_mock.get(re.compile(f"{BASE_URL}/.*"), status=404)
+    # The websocket fake patches the old coordinator module, so run without one
+    hass.config_entries.async_update_entry(entry, options={"enable_websocket": False})
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.state is ConfigEntryState.LOADED
+
+
+async def test_reload_code_replaces_the_modules(
+    hass: HomeAssistant, mock_config_entry, aioclient_mock, keep_modules
+) -> None:
+    """reload_code re-imports the package, runs async_setup again, sets the entry up."""
+    await _setup_over_http(hass, mock_config_entry, aioclient_mock)
+    old = sys.modules[PACKAGE]
+    old_coordinator = mock_config_entry.runtime_data.coordinator
+    # async_setup must bring it back
+    hass.services.async_remove(DOMAIN, "container_start")
+
+    await hass.services.async_call(DOMAIN, "reload_code", {}, blocking=True)
+    await hass.async_block_till_done()
+
+    new = sys.modules[PACKAGE]
+    assert new is not old
+    assert mock_config_entry.state is ConfigEntryState.LOADED
+    coordinator = mock_config_entry.runtime_data.coordinator
+    assert coordinator is not old_coordinator
+    assert type(coordinator) is new.UnraidDataUpdateCoordinator
+    assert type(coordinator) is not old.UnraidDataUpdateCoordinator
+    assert hass.services.has_service(DOMAIN, "reload_code")
+    handler = hass.services.async_services_internal()[DOMAIN]["container_start"]
+    assert handler.job.target.__globals__ is vars(new)
+
+
+async def test_reload_code_reports_new_code_that_does_not_set_up(
+    hass: HomeAssistant, mock_config_entry, aioclient_mock, keep_modules
+) -> None:
+    """A failed setup after the re-import is an error, and the action stays to retry with."""
+    await _setup_over_http(hass, mock_config_entry, aioclient_mock)
+    aioclient_mock.clear_requests()
+    aioclient_mock.get(f"{BASE_URL}/health", exc=aiohttp.ClientConnectionError("down"))
+
+    with pytest.raises(HomeAssistantError, match="did not set up again"):
+        await hass.services.async_call(DOMAIN, "reload_code", {}, blocking=True)
+    await hass.async_block_till_done()
+
+    assert mock_config_entry.state is ConfigEntryState.SETUP_RETRY
+    assert hass.services.has_service(DOMAIN, "reload_code")
