@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import sys
 from unittest.mock import MagicMock, patch
 
+import aiohttp
+import pytest
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 
 from custom_components.unraid_management_agent import (
     _async_migrate_legacy_entity_unique_ids,
@@ -388,3 +392,53 @@ async def test_migrate_legacy_gpu_unique_ids_skips_when_target_exists(
         )
 
     assert registry.async_update_entity.call_count == 0
+
+
+@pytest.fixture
+def keep_modules():
+    """Put the originally imported modules back so other tests' patches still hit them."""
+    prefix = "custom_components.unraid_management_agent"
+    saved = {n: m for n, m in sys.modules.items() if n.startswith(prefix)}
+    yield
+    for name in [n for n in sys.modules if n.startswith(prefix)]:
+        del sys.modules[name]
+    sys.modules.update(saved)
+
+
+async def test_reload_code_replaces_the_modules(
+    hass: HomeAssistant,
+    mock_config_entry,
+    mock_async_unraid_client,
+    mock_websocket_client,
+    keep_modules,
+) -> None:
+    """reload_code re-imports the package, runs async_setup again, sets the entry up."""
+    with (
+        patch(
+            "custom_components.unraid_management_agent.UnraidClient",
+            return_value=mock_async_unraid_client,
+        ),
+        patch(
+            "custom_components.unraid_management_agent.UnraidWebSocketClient",
+            return_value=mock_websocket_client,
+        ),
+    ):
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+    assert mock_config_entry.state is ConfigEntryState.LOADED
+    old = sys.modules["custom_components.unraid_management_agent"]
+    hass.services.async_remove(DOMAIN, "container_start")  # async_setup must bring it back
+
+    # The patches above name the old module, so the new code runs unmocked: the
+    # entry cannot reach a server, ends in SETUP_RETRY and the action says so.
+    with pytest.raises(HomeAssistantError, match="did not set up again"), patch(
+        "aiohttp.ClientSession.request",
+        side_effect=aiohttp.ClientConnectionError("no server in tests"),
+    ):
+        await hass.services.async_call(DOMAIN, "reload_code", {}, blocking=True)
+    await hass.async_block_till_done()
+
+    assert sys.modules["custom_components.unraid_management_agent"] is not old
+    assert mock_config_entry.state is ConfigEntryState.SETUP_RETRY
+    assert hass.services.has_service(DOMAIN, "reload_code")
+    assert hass.services.has_service(DOMAIN, "container_start")
