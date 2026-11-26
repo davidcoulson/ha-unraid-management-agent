@@ -24,7 +24,6 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.service import async_register_admin_service
-from homeassistant.loader import async_get_integration
 from homeassistant.util import slugify
 
 from .api import (
@@ -646,6 +645,12 @@ async def async_setup_services(hass: HomeAssistant) -> None:
     _LOGGER.info("Registered %d services for Unraid Management Agent", total)
 
 
+def _import_code(package: str) -> None:
+    """Import the new package and its platforms in the executor, so HA's own import is a cache hit."""
+    for platform in importlib.import_module(package).PLATFORMS:
+        importlib.import_module(f"{package}.{platform}")
+
+
 def _forget_code(hass: HomeAssistant, package: str, domain: str) -> None:
     """Drop a package's modules so the next setup imports them from disk again.
 
@@ -679,9 +684,8 @@ def _register_reload_code(hass: HomeAssistant) -> None:
                 )
         _forget_code(hass, __name__, DOMAIN)
         try:
-            component = await (
-                await async_get_integration(hass, DOMAIN)
-            ).async_get_component()
+            await hass.async_add_import_executor_job(_import_code, __name__)
+            component = sys.modules[__name__]
             # Registers the services again, so they run the new code
             await component.async_setup(hass, {})
         except Exception as err:
