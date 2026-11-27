@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`reload_code` action (development)**: `unraid_management_agent.reload_code` unloads the integration, imports its Python files from disk again and sets it up, so a code change takes effect without restarting Home Assistant. Admin-only; config flow and manifest changes still need a restart.
+
 ## [2026.11.3] — 2026-11-17
 
 ### Changed

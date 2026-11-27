@@ -124,11 +124,13 @@ def test_all_actions_expose_the_same_server_selector():
     services = yaml.safe_load((root / "services.yaml").read_text())
     strings = json.loads((root / "strings.json").read_text())
     translated = json.loads((root / "translations" / "en.json").read_text())
-    assert len(services) == 22
+    assert len(services) == 23
     assert (
         services.keys() == strings["services"].keys() == translated["services"].keys()
     )
     for action, metadata in services.items():
+        if action == "reload_code":  # dev action for the whole integration, no server
+            continue
         field = metadata["fields"][ATTR_CONFIG_ENTRY_ID]
         assert field["required"] is False
         assert field["selector"] == {"config_entry": {"integration": DOMAIN}}
