@@ -9,7 +9,10 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Final
 
-from homeassistant.components.frontend import add_extra_js_url
+from homeassistant.components.frontend import (
+    add_extra_js_url,
+    remove_extra_js_url,
+)
 from homeassistant.components.http.server import StaticPathConfig
 from homeassistant.components.lovelace.const import LOVELACE_DATA
 from homeassistant.components.lovelace.resources import ResourceStorageCollection
@@ -27,6 +30,7 @@ FRONTEND_URL_BASE: Final = f"/{DOMAIN}"
 FRONTEND_PATH: Final = Path(__file__).parent / "frontend"
 CARD_FILES: Final = ("unraid-cards.js",)
 _REGISTERED: HassKey[bool] = HassKey(f"{DOMAIN}_frontend_registered")
+_EXTRA_URLS: HassKey[list[str]] = HassKey(f"{DOMAIN}_frontend_extra_urls")
 _STATIC_REGISTERED: HassKey[bool] = HassKey(f"{DOMAIN}_frontend_static_registered")
 
 
@@ -121,5 +125,11 @@ async def _async_register_resources(hass: HomeAssistant, urls: dict[str, str]) -
                     existing["id"], {"url": versioned_url, "res_type": "module"}
                 )
     else:
-        for url in urls.values():
-            add_extra_js_url(hass, url)
+        previous = hass.data.get(_EXTRA_URLS, [])
+        if previous != list(urls.values()):
+            # A re-registration (frontend-only update) must replace the old URL, not add a second.
+            for url in previous:
+                remove_extra_js_url(hass, url)
+            for url in urls.values():
+                add_extra_js_url(hass, url)
+            hass.data[_EXTRA_URLS] = list(urls.values())

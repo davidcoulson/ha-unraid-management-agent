@@ -68,7 +68,7 @@ from .entity import (
     group_device_identifier,
     is_group_device_enabled,
 )
-from .frontend import async_register_frontend
+from .frontend import _REGISTERED, async_register_frontend
 from .nic import async_remove_nic_devices
 from .presence import Presence, device_presence
 from .service_target import is_read_only, resolve_service_target
@@ -1099,6 +1099,9 @@ async def _clear_restart_if_same_code(hass: HomeAssistant) -> None:
         and await hass.async_add_executor_job(_code_signature) == _RUNNING_CODE
     ):
         _clear_marketplace_restart(hass, same_code=True)
+        # The card URL's digest was built when the frontend was first registered: rebuild it.
+        hass.data.pop(_REGISTERED, None)
+        await async_register_frontend(hass)
 
 
 def _listen_for_restart_repairs(hass: HomeAssistant) -> None:

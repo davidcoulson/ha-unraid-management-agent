@@ -226,3 +226,27 @@ async def test_async_setup_registers_frontend(
         result = await async_setup(hass, {})
         assert result is True
         mock_reg.assert_awaited_once_with(hass)
+
+
+async def test_re_registration_replaces_the_extra_js_url(
+    hass: HomeAssistant, http: MagicMock
+) -> None:
+    """A changed digest swaps the extra URL (no second one); an unchanged one does nothing."""
+    hass.data[LOVELACE_DATA] = SimpleNamespace(resources=None)
+    with (
+        patch.object(frontend, "add_extra_js_url") as add_js,
+        patch.object(frontend, "remove_extra_js_url") as remove_js,
+    ):
+        await async_register_frontend(hass)
+        first = [c.args[1] for c in add_js.call_args_list]
+        hass.data.pop(frontend._REGISTERED)
+        await async_register_frontend(hass)  # same files: no change
+        assert add_js.call_count == len(first)
+        remove_js.assert_not_called()
+        hass.data.pop(frontend._REGISTERED)
+        with patch.object(frontend, "_frontend_digest", return_value="newdigest"):
+            await async_register_frontend(hass)
+        assert [c.args[1] for c in remove_js.call_args_list] == first
+        assert all(
+            "newdigest" in c.args[1] for c in add_js.call_args_list[len(first) :]
+        )

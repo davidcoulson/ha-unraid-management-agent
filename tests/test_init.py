@@ -790,3 +790,21 @@ async def test_two_entries_register_one_listener(
     assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
     assert await hass.config_entries.async_unload(mock_config_entry.entry_id)
     assert "repair_unsub" not in hass.data[DOMAIN]
+
+
+async def test_same_code_clear_registers_the_frontend_again(
+    hass: HomeAssistant, monkeypatch
+) -> None:
+    """A frontend-only update gets its new card digest; different Python does not."""
+    import custom_components.unraid_management_agent as integration
+
+    monkeypatch.setattr(integration, "_RUNNING_CODE", "same")
+    monkeypatch.setattr(integration, "_code_signature", lambda: "other")
+    hass.data[integration._REGISTERED] = True
+    with patch.object(integration, "async_register_frontend", AsyncMock()) as register:
+        await integration._clear_restart_if_same_code(hass)
+        register.assert_not_awaited()
+        monkeypatch.setattr(integration, "_code_signature", lambda: "same")
+        await integration._clear_restart_if_same_code(hass)
+        register.assert_awaited_once_with(hass)
+    assert integration._REGISTERED not in hass.data
