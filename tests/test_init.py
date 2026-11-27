@@ -646,21 +646,26 @@ async def test_reload_code_reports_new_code_that_does_not_set_up(
     assert hass.services.has_service(DOMAIN, "reload_code")
 
 
-def test_reload_clears_only_marketplaces_unraid_management_agent_restart_repairs(
-    hass: HomeAssistant,
+def test_marketplace_restart_cleanup_matches_only_the_running_version(
+    hass: HomeAssistant, monkeypatch
 ):
-    """Only Marketplace's restart repairs for this integration are dropped."""
+    """Only Marketplace's restart repairs for this version of this integration are dropped."""
     from homeassistant.helpers import issue_registry as ir
 
-    from custom_components.unraid_management_agent import _clear_marketplace_restart
+    import custom_components.unraid_management_agent as integration
 
+    monkeypatch.setattr(integration, "_CODE_VERSION", "1.2.3")
+    kept = {
+        ("marketplace", "restart_required_1_tags/1.2.4"),
+        ("marketplace", "restart_required_2_tags/1.2.3"),
+        ("marketplace", "critical_x"),
+        ("unraid_management_agent", "restart_required_x"),
+    }
     for domain, issue_id, issue_domain in (
-        (
-            "marketplace",
-            "restart_required_1_tags/2026.11.27.2",
-            "unraid_management_agent",
-        ),
-        ("marketplace", "restart_required_2_tags/2026.11.26.01", "ssh"),
+        ("marketplace", "restart_required_1_tags/1.2.3", "unraid_management_agent"),
+        ("marketplace", "restart_required_1_tags/v1.2.3", "unraid_management_agent"),
+        ("marketplace", "restart_required_1_tags/1.2.4", "unraid_management_agent"),
+        ("marketplace", "restart_required_2_tags/1.2.3", "ssh"),
         ("marketplace", "critical_x", "unraid_management_agent"),
         ("unraid_management_agent", "restart_required_x", "unraid_management_agent"),
     ):
@@ -673,9 +678,16 @@ def test_reload_clears_only_marketplaces_unraid_management_agent_restart_repairs
             translation_key="x",
             issue_domain=issue_domain,
         )
-    _clear_marketplace_restart(hass)
-    assert set(ir.async_get(hass).issues) == {
-        ("marketplace", "restart_required_2_tags/2026.11.26.01"),
-        ("marketplace", "critical_x"),
-        ("unraid_management_agent", "restart_required_x"),
-    }
+    integration._clear_marketplace_restart(hass)
+    assert set(ir.async_get(hass).issues) == kept
+
+
+def test_code_version_is_the_manifest_version() -> None:
+    """The version the cleanup compares with is the one in manifest.json."""
+    import json
+    from pathlib import Path
+
+    import custom_components.unraid_management_agent as integration
+
+    manifest = Path(integration.__file__).parent / "manifest.json"
+    assert json.loads(manifest.read_text())["version"] == integration._CODE_VERSION

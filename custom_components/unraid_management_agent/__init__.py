@@ -5,9 +5,11 @@ from __future__ import annotations
 import hashlib
 import importlib
 import importlib.util
+import json
 import logging
 import sys
 from collections.abc import Callable, Coroutine
+from pathlib import Path
 from typing import Any, Final
 
 import probatio
@@ -775,6 +777,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
 
     entry.async_on_unload(coordinator.async_add_listener(_on_coordinator_update))
 
+    _clear_marketplace_restart(hass)
     return True
 
 
@@ -1026,17 +1029,25 @@ def _forget_code(hass: HomeAssistant, package: str, domain: str) -> None:
     importlib.invalidate_caches()  # a file added since the last import may not be found
 
 
+_CODE_VERSION = json.loads((Path(__file__).parent / "manifest.json").read_text())[
+    "version"
+]
+
+
 def _clear_marketplace_restart(hass: HomeAssistant) -> None:
     """
     Drop Marketplace's "restart to finish the update" repairs for Unraid Management Agent.
 
-    Marketplace cannot see reload_code, so they would stay until a restart.
+    Marketplace cannot see reload_code, so they would stay until a restart. Called from
+    entry setup, it uses the new code's version even when the old handler did the reload;
+    a repair for any other version still waits.
     """
     for (domain, issue_id), issue in list(ir.async_get(hass).issues.items()):
         if (
             domain == "marketplace"
             and issue_id.startswith("restart_required_")
             and issue.issue_domain == DOMAIN
+            and issue_id.rsplit("/", 1)[-1].removeprefix("v") == _CODE_VERSION
         ):
             ir.async_delete_issue(hass, domain, issue_id)
 
@@ -1076,6 +1087,5 @@ def _register_reload_code(hass: HomeAssistant) -> None:
             raise HomeAssistantError(
                 f"{DOMAIN} did not set up again for {failed}; see the log"
             )
-        _clear_marketplace_restart(hass)
 
     async_register_admin_service(hass, DOMAIN, "reload_code", _reload_code)
