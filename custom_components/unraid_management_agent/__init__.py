@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Final
 
 import probatio
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import (
     ATTR_CONFIG_ENTRY_ID,
     CONF_API_TOKEN,
@@ -20,7 +21,7 @@ from homeassistant.const import (
     CONF_PORT,
     Platform,
 )
-from homeassistant.core import HomeAssistant, ServiceCall, callback
+from homeassistant.core import Event, HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import (
     ConfigEntryAuthFailed,
     ConfigEntryNotReady,
@@ -67,7 +68,7 @@ from .entity import (
     group_device_identifier,
     is_group_device_enabled,
 )
-from .frontend import async_register_frontend
+from .frontend import _REGISTERED, async_register_frontend
 from .nic import async_remove_nic_devices
 from .presence import Presence, device_presence
 from .service_target import is_read_only, resolve_service_target
@@ -649,6 +650,9 @@ def _async_remove_legacy_repairs(hass: HomeAssistant, entry: UnraidConfigEntry) 
 
 async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bool:
     """Set up Unraid Management Agent from a config entry."""
+    global _RUNNING_CODE  # noqa: PLW0603
+    if _RUNNING_CODE is None:
+        _RUNNING_CODE = await hass.async_add_executor_job(_code_signature)
     _async_remove_legacy_repairs(hass, entry)
     host = entry.data[CONF_HOST]
     port = entry.data[CONF_PORT]
@@ -777,7 +781,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> bo
 
     entry.async_on_unload(coordinator.async_add_listener(_on_coordinator_update))
 
+    _listen_for_restart_repairs(
+        hass
+    )  # before the sweep: a repair raised in between is caught
     _clear_marketplace_restart(hass)
+    await _clear_restart_if_same_code(hass)
     return True
 
 
@@ -814,6 +822,12 @@ async def async_unload_entry(hass: HomeAssistant, entry: UnraidConfigEntry) -> b
         await entry.runtime_data.coordinator.async_stop_websocket()
         # Close the client session
         await entry.runtime_data.client.close()
+        # The last entry going also covers reload_code: the fresh module registers its own listener.
+        if not any(
+            e is not entry and e.state is ConfigEntryState.LOADED
+            for e in hass.config_entries.async_entries(DOMAIN)
+        ) and (unsub := hass.data.get(DOMAIN, {}).pop("repair_unsub", None)):
+            unsub()
 
     return unload_ok
 
@@ -1034,22 +1048,79 @@ _CODE_VERSION = json.loads((Path(__file__).parent / "manifest.json").read_text()
 ]
 
 
-def _clear_marketplace_restart(hass: HomeAssistant) -> None:
+def _code_signature() -> str | None:
+    """sha256 of the .py files and the manifest's requirements (blocking: run in the executor)."""
+    root = Path(__file__).parent
+    try:
+        digest = hashlib.sha256()
+        for path in sorted(
+            p for p in root.rglob("*.py") if "__pycache__" not in p.parts
+        ):
+            digest.update(str(path.relative_to(root)).encode())
+            digest.update(path.read_bytes())
+        manifest = json.loads((root / "manifest.json").read_text())
+        digest.update(json.dumps(manifest.get("requirements", [])).encode())
+    except OSError:
+        return None
+    return digest.hexdigest()
+
+
+# The Python this import is, hashed once: an options reload runs setup again on the same
+# modules, and reload_code imports fresh ones, which start at None.
+_RUNNING_CODE: str | None = None
+
+
+def _clear_marketplace_restart(hass: HomeAssistant, *, same_code: bool = False) -> None:
     """
     Drop Marketplace's "restart to finish the update" repairs for Unraid Management Agent.
 
     Marketplace cannot see reload_code, so they would stay until a restart. Called from
     entry setup, it uses the new code's version even when the old handler did the reload;
-    a repair for any other version still waits.
+    a repair for any other version still waits, unless ``same_code``: the Python on disk
+    is the code running, so the update changed only the frontend.
     """
     for (domain, issue_id), issue in list(ir.async_get(hass).issues.items()):
         if (
             domain == "marketplace"
             and issue_id.startswith("restart_required_")
             and issue.issue_domain == DOMAIN
-            and issue_id.rsplit("/", 1)[-1].removeprefix("v") == _CODE_VERSION
+            and (
+                same_code
+                or issue_id.rsplit("/", 1)[-1].removeprefix("v") == _CODE_VERSION
+            )
         ):
             ir.async_delete_issue(hass, domain, issue_id)
+
+
+async def _clear_restart_if_same_code(hass: HomeAssistant) -> None:
+    """Drop our restart repairs when the Python on disk is the code running (frontend-only)."""
+    if (
+        _RUNNING_CODE is not None
+        and await hass.async_add_executor_job(_code_signature) == _RUNNING_CODE
+    ):
+        _clear_marketplace_restart(hass, same_code=True)
+        # The card URL's digest was built when the frontend was first registered: rebuild it.
+        hass.data.pop(_REGISTERED, None)
+        await async_register_frontend(hass)
+
+
+def _listen_for_restart_repairs(hass: HomeAssistant) -> None:
+    """One listener for the domain, however many entries (the repair comes after the files)."""
+    data = hass.data.setdefault(DOMAIN, {})
+    if "repair_unsub" in data:
+        return
+
+    async def _on_issue(event: Event) -> None:
+        if (
+            event.data.get("action") in ("create", "update")
+            and event.data.get("domain") == "marketplace"
+            and str(event.data.get("issue_id", "")).startswith("restart_required_")
+        ):
+            await _clear_restart_if_same_code(hass)
+
+    data["repair_unsub"] = hass.bus.async_listen(
+        "repairs_issue_registry_updated", _on_issue
+    )
 
 
 @callback

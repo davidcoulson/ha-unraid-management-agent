@@ -691,3 +691,120 @@ def test_code_version_is_the_manifest_version() -> None:
 
     manifest = Path(integration.__file__).parent / "manifest.json"
     assert json.loads(manifest.read_text())["version"] == integration._CODE_VERSION
+
+
+def _restart_repairs(hass: HomeAssistant) -> None:
+    for domain, issue_id, issue_domain in (
+        ("marketplace", "restart_required_1_tags/1.2.3", "unraid_management_agent"),
+        ("marketplace", "restart_required_1_tags/1.2.4", "unraid_management_agent"),
+        ("marketplace", "restart_required_2_tags/1.2.3", "ssh"),
+        ("marketplace", "critical_x/1.2.3", "unraid_management_agent"),
+    ):
+        ir.async_create_issue(
+            hass,
+            domain,
+            issue_id,
+            is_fixable=False,
+            severity=ir.IssueSeverity.WARNING,
+            translation_key="x",
+            issue_domain=issue_domain,
+        )
+
+
+KEPT_REPAIRS = {
+    ("marketplace", "restart_required_2_tags/1.2.3"),
+    ("marketplace", "critical_x/1.2.3"),
+}
+
+
+async def test_same_python_clears_every_restart_repair_for_us(
+    hass: HomeAssistant, monkeypatch
+) -> None:
+    """A different signature leaves them; the same one (frontend-only) drops ours only."""
+    import custom_components.unraid_management_agent as integration
+
+    _restart_repairs(hass)
+    monkeypatch.setattr(integration, "_RUNNING_CODE", "old")
+    monkeypatch.setattr(integration, "_code_signature", lambda: "new")
+    await integration._clear_restart_if_same_code(hass)
+    assert len(ir.async_get(hass).issues) == 4
+    monkeypatch.setattr(integration, "_code_signature", lambda: "old")
+    await integration._clear_restart_if_same_code(hass)
+    assert set(ir.async_get(hass).issues) == KEPT_REPAIRS
+
+
+async def test_a_new_repair_is_cleared_by_the_listener(
+    hass: HomeAssistant, mock_config_entry, aioclient_mock, monkeypatch
+) -> None:
+    """Marketplace raises its repair after setup: the listener drops it when the Python is unchanged."""
+    import custom_components.unraid_management_agent as integration
+
+    await _setup_over_http(hass, mock_config_entry, aioclient_mock)
+    monkeypatch.setattr(
+        integration, "_code_signature", lambda: integration._RUNNING_CODE
+    )
+    _restart_repairs(hass)
+    await hass.async_block_till_done()
+    assert set(ir.async_get(hass).issues) == KEPT_REPAIRS
+
+
+def test_signature_follows_python_and_requirements(tmp_path, monkeypatch) -> None:
+    """Python in a subpackage and a requirements change both change the signature."""
+    import custom_components.unraid_management_agent as integration
+
+    (tmp_path / "sub").mkdir()
+    (tmp_path / "a.py").write_text("x = 1")
+    (tmp_path / "sub" / "b.py").write_text("y = 2")
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text('{"requirements": []}')
+    monkeypatch.setattr(integration, "__file__", str(tmp_path / "__init__.py"))
+    base = integration._code_signature()
+    manifest.write_text('{"requirements": ["foo==1"]}')
+    assert integration._code_signature() != base
+    manifest.write_text('{"requirements": []}')
+    assert integration._code_signature() == base
+    (tmp_path / "sub" / "b.py").write_text("y = 3")
+    assert integration._code_signature() != base
+    (tmp_path / "manifest.json").unlink()
+    assert integration._code_signature() is None
+
+
+async def test_two_entries_register_one_listener(
+    hass: HomeAssistant, mock_config_entry, aioclient_mock
+) -> None:
+    """A second entry's setup keeps the listener; the last unload removes it, another loaded entry keeps it."""
+    import custom_components.unraid_management_agent as integration
+
+    await _setup_over_http(hass, mock_config_entry, aioclient_mock)
+    first = hass.data[DOMAIN]["repair_unsub"]
+    integration._listen_for_restart_repairs(hass)
+    assert hass.data[DOMAIN]["repair_unsub"] is first
+    other = type("E", (), {"state": ConfigEntryState.LOADED})()
+    with patch.object(
+        type(hass.config_entries),
+        "async_entries",
+        return_value=[mock_config_entry, other],
+    ):
+        assert await hass.config_entries.async_unload(mock_config_entry.entry_id)
+    assert "repair_unsub" in hass.data[DOMAIN]
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    assert await hass.config_entries.async_unload(mock_config_entry.entry_id)
+    assert "repair_unsub" not in hass.data[DOMAIN]
+
+
+async def test_same_code_clear_registers_the_frontend_again(
+    hass: HomeAssistant, monkeypatch
+) -> None:
+    """A frontend-only update gets its new card digest; different Python does not."""
+    import custom_components.unraid_management_agent as integration
+
+    monkeypatch.setattr(integration, "_RUNNING_CODE", "same")
+    monkeypatch.setattr(integration, "_code_signature", lambda: "other")
+    hass.data[integration._REGISTERED] = True
+    with patch.object(integration, "async_register_frontend", AsyncMock()) as register:
+        await integration._clear_restart_if_same_code(hass)
+        register.assert_not_awaited()
+        monkeypatch.setattr(integration, "_code_signature", lambda: "same")
+        await integration._clear_restart_if_same_code(hass)
+        register.assert_awaited_once_with(hass)
+    assert integration._REGISTERED not in hass.data
