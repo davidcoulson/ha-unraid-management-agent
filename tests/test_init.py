@@ -644,3 +644,50 @@ async def test_reload_code_reports_new_code_that_does_not_set_up(
 
     assert mock_config_entry.state is ConfigEntryState.SETUP_RETRY
     assert hass.services.has_service(DOMAIN, "reload_code")
+
+
+def test_marketplace_restart_cleanup_matches_only_the_running_version(
+    hass: HomeAssistant, monkeypatch
+):
+    """Only Marketplace's restart repairs for this version of this integration are dropped."""
+    from homeassistant.helpers import issue_registry as ir
+
+    import custom_components.unraid_management_agent as integration
+
+    monkeypatch.setattr(integration, "_CODE_VERSION", "1.2.3")
+    kept = {
+        ("marketplace", "restart_required_1_tags/1.2.4"),
+        ("marketplace", "restart_required_2_tags/1.2.3"),
+        ("marketplace", "critical_x"),
+        ("unraid_management_agent", "restart_required_x"),
+    }
+    for domain, issue_id, issue_domain in (
+        ("marketplace", "restart_required_1_tags/1.2.3", "unraid_management_agent"),
+        ("marketplace", "restart_required_1_tags/v1.2.3", "unraid_management_agent"),
+        ("marketplace", "restart_required_1_tags/1.2.4", "unraid_management_agent"),
+        ("marketplace", "restart_required_2_tags/1.2.3", "ssh"),
+        ("marketplace", "critical_x", "unraid_management_agent"),
+        ("unraid_management_agent", "restart_required_x", "unraid_management_agent"),
+    ):
+        ir.async_create_issue(
+            hass,
+            domain,
+            issue_id,
+            is_fixable=False,
+            severity=ir.IssueSeverity.WARNING,
+            translation_key="x",
+            issue_domain=issue_domain,
+        )
+    integration._clear_marketplace_restart(hass)
+    assert set(ir.async_get(hass).issues) == kept
+
+
+def test_code_version_is_the_manifest_version() -> None:
+    """The version the cleanup compares with is the one in manifest.json."""
+    import json
+    from pathlib import Path
+
+    import custom_components.unraid_management_agent as integration
+
+    manifest = Path(integration.__file__).parent / "manifest.json"
+    assert json.loads(manifest.read_text())["version"] == integration._CODE_VERSION
