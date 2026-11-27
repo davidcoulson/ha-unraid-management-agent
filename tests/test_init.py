@@ -644,3 +644,38 @@ async def test_reload_code_reports_new_code_that_does_not_set_up(
 
     assert mock_config_entry.state is ConfigEntryState.SETUP_RETRY
     assert hass.services.has_service(DOMAIN, "reload_code")
+
+
+def test_reload_clears_only_marketplaces_unraid_management_agent_restart_repairs(
+    hass: HomeAssistant,
+):
+    """Only Marketplace's restart repairs for this integration are dropped."""
+    from homeassistant.helpers import issue_registry as ir
+
+    from custom_components.unraid_management_agent import _clear_marketplace_restart
+
+    for domain, issue_id, issue_domain in (
+        (
+            "marketplace",
+            "restart_required_1_tags/2026.11.27.2",
+            "unraid_management_agent",
+        ),
+        ("marketplace", "restart_required_2_tags/2026.11.26.01", "ssh"),
+        ("marketplace", "critical_x", "unraid_management_agent"),
+        ("unraid_management_agent", "restart_required_x", "unraid_management_agent"),
+    ):
+        ir.async_create_issue(
+            hass,
+            domain,
+            issue_id,
+            is_fixable=False,
+            severity=ir.IssueSeverity.WARNING,
+            translation_key="x",
+            issue_domain=issue_domain,
+        )
+    _clear_marketplace_restart(hass)
+    assert set(ir.async_get(hass).issues) == {
+        ("marketplace", "restart_required_2_tags/2026.11.26.01"),
+        ("marketplace", "critical_x"),
+        ("unraid_management_agent", "restart_required_x"),
+    }
