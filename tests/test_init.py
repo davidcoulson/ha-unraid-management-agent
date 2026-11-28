@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import sys
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import aiohttp
@@ -21,6 +22,7 @@ from custom_components.unraid_management_agent import (
 from custom_components.unraid_management_agent.api import UnraidConnectionError
 from custom_components.unraid_management_agent.const import DOMAIN
 from custom_components.unraid_management_agent.coordinator import UnraidData
+from custom_components.unraid_management_agent.frontend import _REGISTERED
 
 
 async def test_setup_entry_success(
@@ -808,3 +810,96 @@ async def test_same_code_clear_registers_the_frontend_again(
         await integration._clear_restart_if_same_code(hass)
         register.assert_awaited_once_with(hass)
     assert integration._REGISTERED not in hass.data
+
+
+@pytest.fixture
+def edit_code():
+    """Rewrite a real package file for one test; the original bytes come back after."""
+    saved: dict[Path, bytes] = {}
+
+    def _edit(name: str, text: str) -> None:
+        path = Path(sys.modules[PACKAGE].__file__).parent / name
+        saved.setdefault(path, path.read_bytes())
+        path.write_text(text)
+
+    def _append(name: str, text: str) -> None:
+        path = Path(sys.modules[PACKAGE].__file__).parent / name
+        _edit(name, (saved.get(path) or path.read_bytes()).decode() + text)
+
+    _append.reset = lambda name: _edit(
+        name, saved[Path(sys.modules[PACKAGE].__file__).parent / name].decode()
+    )
+    yield _append
+    for path, data in saved.items():
+        path.write_bytes(data)
+
+
+async def test_a_syntax_error_unloads_nothing(
+    hass: HomeAssistant, mock_config_entry, aioclient_mock, keep_modules, edit_code
+) -> None:
+    """A file that does not compile is reported before anything is unloaded."""
+    await _setup_over_http(hass, mock_config_entry, aioclient_mock)
+    old = sys.modules[PACKAGE]
+    # The card stays registered: the old async_setup runs again and finds it done
+    hass.data[_REGISTERED] = registered = True
+    edit_code("const.py", "\nX = (\n")
+
+    with pytest.raises(HomeAssistantError, match=r"const.py line \d+.*unchanged"):
+        await hass.services.async_call(DOMAIN, "reload_code", {}, blocking=True)
+
+    assert mock_config_entry.state is ConfigEntryState.LOADED
+    assert sys.modules[PACKAGE] is old
+    assert hass.data.get(_REGISTERED) == registered
+
+
+async def test_an_import_error_puts_the_previous_code_back(
+    hass: HomeAssistant, mock_config_entry, aioclient_mock, keep_modules, edit_code
+) -> None:
+    """New code that fails to import rolls back; a fixed reload works afterwards."""
+    await _setup_over_http(hass, mock_config_entry, aioclient_mock)
+    old = sys.modules[PACKAGE]
+    # The card stays registered: the old async_setup runs again and finds it done
+    hass.data[_REGISTERED] = registered = True
+    edit_code("const.py", "\nNAME = no_such_name\n")
+
+    with pytest.raises(HomeAssistantError, match="previous code is running again"):
+        await hass.services.async_call(DOMAIN, "reload_code", {}, blocking=True)
+    await hass.async_block_till_done()
+
+    assert mock_config_entry.state is ConfigEntryState.LOADED
+    assert sys.modules[PACKAGE] is old
+    assert hass.services.has_service(DOMAIN, "reload_code")
+    assert hass.data.get(_REGISTERED) == registered
+
+    edit_code.reset("const.py")
+    await hass.services.async_call(DOMAIN, "reload_code", {}, blocking=True)
+    await hass.async_block_till_done()
+    assert sys.modules[PACKAGE] is not old
+    assert mock_config_entry.state is ConfigEntryState.LOADED
+
+
+async def test_a_setup_error_puts_the_previous_code_back(
+    hass: HomeAssistant, mock_config_entry, aioclient_mock, keep_modules, edit_code
+) -> None:
+    """An async_setup_entry that raises in the new code rolls back to the old code."""
+    await _setup_over_http(hass, mock_config_entry, aioclient_mock)
+    old = sys.modules[PACKAGE]
+    # The card stays registered: the old async_setup runs again and finds it done
+    hass.data[_REGISTERED] = registered = True
+    hass.services.async_remove(
+        DOMAIN, "container_start"
+    )  # async_setup must bring it back
+    edit_code(
+        "__init__.py",
+        "\n\nasync def async_setup_entry(hass, entry):\n    raise RuntimeError('boom')\n",
+    )
+
+    with pytest.raises(HomeAssistantError, match="previous code is running again"):
+        await hass.services.async_call(DOMAIN, "reload_code", {}, blocking=True)
+    await hass.async_block_till_done()
+
+    assert mock_config_entry.state is ConfigEntryState.LOADED
+    assert sys.modules[PACKAGE] is old
+    assert hass.data.get(_REGISTERED) == registered
+    assert "repair_unsub" in hass.data[DOMAIN]
+    assert hass.services.has_service(DOMAIN, "container_start")

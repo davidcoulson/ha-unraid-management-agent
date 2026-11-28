@@ -1025,22 +1025,57 @@ def _import_code(package: str) -> None:
             importlib.import_module(f"{package}.{name}")
 
 
-def _forget_code(hass: HomeAssistant, package: str, domain: str) -> None:
+def _syntax_error() -> str | None:
+    """Return the first .py file of the package that does not compile, as "file line N: msg"."""
+    root = Path(__file__).parent
+    for path in sorted(p for p in root.rglob("*.py") if "__pycache__" not in p.parts):
+        try:
+            compile(path.read_bytes(), str(path), "exec")
+        except (SyntaxError, ValueError) as err:
+            line = getattr(err, "lineno", None)
+            return f"{path.relative_to(root)} line {line}: {getattr(err, 'msg', err)}"
+    return None
+
+
+def _forget_code(
+    hass: HomeAssistant, package: str, domain: str
+) -> list[tuple[dict, str, Any]]:
     """
     Drop a package's modules so the next setup imports them from disk again.
 
     Home Assistant keeps its own copy of each imported integration module
     (hass.data["components"], keyed "<domain>" and "<domain>.<platform>") next
-    to Python's sys.modules; both have to go.
+    to Python's sys.modules; both have to go. Returns what was dropped as
+    (cache, name, module), for _restore_code.
     """
+    dropped = []
     for cache, root in (
         (sys.modules, package),
         (hass.data.get("components", {}), domain),
         (hass.data.get("missing_platforms", {}), domain),
     ):
         for name in [n for n in cache if n == root or n.startswith(root + ".")]:
-            del cache[name]
+            dropped.append((cache, name, cache.pop(name)))
     importlib.invalidate_caches()  # a file added since the last import may not be found
+    return dropped
+
+
+def _restore_code(
+    hass: HomeAssistant,
+    package: str,
+    domain: str,
+    dropped: list[tuple[dict, str, Any]],
+) -> None:
+    """Swap the new modules out and the ones _forget_code dropped back in."""
+    _forget_code(hass, package, domain)
+    for cache, name, module in dropped:
+        cache[name] = module
+
+
+def _stop_repair_listener(hass: HomeAssistant) -> None:
+    """Stop the Marketplace repair listener, if one is running."""
+    if unsub := hass.data.get(DOMAIN, {}).pop("repair_unsub", None):
+        unsub()
 
 
 _CODE_VERSION = json.loads((Path(__file__).parent / "manifest.json").read_text())[
@@ -1125,9 +1160,43 @@ def _listen_for_restart_repairs(hass: HomeAssistant) -> None:
 
 @callback
 def _register_reload_code(hass: HomeAssistant) -> None:
-    """Dev: unraid_management_agent.reload_code loads the Python files from disk without a restart."""
+    """
+    Dev: unraid_management_agent.reload_code loads the Python files from disk.
+
+    A syntax error is found before anything is unloaded; an error while importing or
+    setting up puts the previous code back (in memory only: a module imported lazily
+    later loads the new file).
+    """
+
+    async def _async_setup_component() -> None:
+        # Registers the services again, so they run the code now in sys.modules
+        await sys.modules[__name__].async_setup(hass, {})
+
+    async def _async_roll_back(entries: list, previous: list) -> None:
+        """Put the code that ran before back and set the entries up on it."""
+        for entry in entries:
+            await hass.config_entries.async_unload(entry.entry_id)
+        # An entry that failed setup is not unloaded, so its listener may still run.
+        _stop_repair_listener(hass)
+        _restore_code(hass, __name__, DOMAIN, previous)
+        await _async_setup_component()
+        failed = [
+            e.title
+            for e in entries
+            if not await hass.config_entries.async_setup(e.entry_id)
+        ]
+        if failed:
+            raise HomeAssistantError(
+                f"{DOMAIN}'s new code failed, and the previous code did not set up "
+                f"{failed} again either; restart Home Assistant"
+            )
 
     async def _reload_code(call: ServiceCall) -> None:
+        # Checked before anything is unloaded, so a typo costs nothing.
+        if problem := await hass.async_add_executor_job(_syntax_error):
+            raise HomeAssistantError(
+                f"{DOMAIN} was not reloaded: {problem}. The running code is unchanged"
+            )
         # Disabled and ignored entries are never set up, so they are not ours to reload.
         entries = hass.config_entries.async_entries(
             DOMAIN, include_ignore=False, include_disabled=False
@@ -1137,23 +1206,30 @@ def _register_reload_code(hass: HomeAssistant) -> None:
                 raise HomeAssistantError(
                     f"{DOMAIN} did not unload; restart Home Assistant instead"
                 )
-        _forget_code(hass, __name__, DOMAIN)
+        _stop_repair_listener(hass)  # the fresh module registers its own
+        previous = _forget_code(hass, __name__, DOMAIN)
         try:
             await hass.async_add_import_executor_job(_import_code, __name__)
-            component = sys.modules[__name__]
-            # Registers the services again, so they run the new code
-            await component.async_setup(hass, {})
+            await _async_setup_component()
         except Exception as err:
+            await _async_roll_back(entries, previous)
             # This handler stays registered, so the action works again once the code is fixed.
             raise HomeAssistantError(
-                f"{DOMAIN} is unloaded: the new code did not load ({err}). "
-                f"Fix it and call {DOMAIN}.reload_code again"
+                f"{DOMAIN}'s new code did not load ({err}), so the previous code is "
+                f"running again. Fix it and call {DOMAIN}.reload_code again"
             ) from err
         failed = [
             e.title
             for e in entries
             if not await hass.config_entries.async_setup(e.entry_id)
         ]
+        # A setup error is the new code's fault; a retry (the device is offline) is not.
+        if any(e.state is ConfigEntryState.SETUP_ERROR for e in entries):
+            await _async_roll_back(entries, previous)
+            raise HomeAssistantError(
+                f"{DOMAIN}'s new code did not set up {failed}, so the previous code "
+                "is running again; see the log"
+            )
         if failed:
             raise HomeAssistantError(
                 f"{DOMAIN} did not set up again for {failed}; see the log"
