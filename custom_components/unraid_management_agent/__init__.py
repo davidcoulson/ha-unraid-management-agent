@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import importlib
 import importlib.util
@@ -1070,6 +1071,14 @@ def _restore_code(
     _forget_code(hass, package, domain)
     for cache, name, module in dropped:
         cache[name] = module
+    # The import system also keeps the module as an attribute of its parent package
+    if (
+        parent := sys.modules.get(package.rpartition(".")[0])
+    ) and package in sys.modules:
+        setattr(parent, domain, sys.modules[package])
+
+
+_RELOADING = "unraid_management_agent_reloading"
 
 
 def _stop_repair_listener(hass: HomeAssistant) -> None:
@@ -1170,20 +1179,37 @@ def _register_reload_code(hass: HomeAssistant) -> None:
 
     async def _async_setup_component() -> None:
         # Registers the services again, so they run the code now in sys.modules
-        await sys.modules[__name__].async_setup(hass, {})
+        if not await sys.modules[__name__].async_setup(hass, {}):
+            raise HomeAssistantError(f"{DOMAIN} async_setup returned False")
 
     async def _async_roll_back(entries: list, previous: list) -> None:
         """Put the code that ran before back and set the entries up on it."""
+        platforms = getattr(sys.modules.get(__name__), "PLATFORMS", ())
         for entry in entries:
-            await hass.config_entries.async_unload(entry.entry_id)
+            if entry.state is ConfigEntryState.SETUP_ERROR:
+                # HA never unloads a failed setup, but the new code may have set platforms
+                # up before it failed: their entities would outlive the rollback.
+                for platform in platforms:
+                    with contextlib.suppress(ValueError):  # platform never set up
+                        await hass.config_entries.async_forward_entry_unload(
+                            entry, platform
+                        )
+            if not await hass.config_entries.async_unload(entry.entry_id):
+                raise HomeAssistantError(
+                    f"{DOMAIN}'s new code failed and {entry.title} did not unload, "
+                    "so the previous code was not put back; restart Home Assistant"
+                )
         # An entry that failed setup is not unloaded, so its listener may still run.
         _stop_repair_listener(hass)
         _restore_code(hass, __name__, DOMAIN, previous)
         await _async_setup_component()
+        for entry in entries:
+            await hass.config_entries.async_setup(entry.entry_id)
+        # A retry (the device is offline) is not a failure of the old code.
         failed = [
             e.title
             for e in entries
-            if not await hass.config_entries.async_setup(e.entry_id)
+            if e.state not in (ConfigEntryState.LOADED, ConfigEntryState.SETUP_RETRY)
         ]
         if failed:
             raise HomeAssistantError(
@@ -1192,6 +1218,16 @@ def _register_reload_code(hass: HomeAssistant) -> None:
             )
 
     async def _reload_code(call: ServiceCall) -> None:
+        # A plain hass.data key, so it survives the module swap.
+        if hass.data.get(_RELOADING):
+            raise HomeAssistantError(f"{DOMAIN} is already reloading its code")
+        hass.data[_RELOADING] = True
+        try:
+            await _reload(call)
+        finally:
+            hass.data.pop(_RELOADING, None)
+
+    async def _reload(call: ServiceCall) -> None:
         # Checked before anything is unloaded, so a typo costs nothing.
         if problem := await hass.async_add_executor_job(_syntax_error):
             raise HomeAssistantError(

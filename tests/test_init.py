@@ -878,20 +878,20 @@ async def test_an_import_error_puts_the_previous_code_back(
     assert mock_config_entry.state is ConfigEntryState.LOADED
 
 
-async def test_a_setup_error_puts_the_previous_code_back(
+async def test_a_late_setup_error_puts_the_previous_code_back(
     hass: HomeAssistant, mock_config_entry, aioclient_mock, keep_modules, edit_code
 ) -> None:
-    """An async_setup_entry that raises in the new code rolls back to the old code."""
+    """New code that fails after setting the entry up is replaced by the old code."""
     await _setup_over_http(hass, mock_config_entry, aioclient_mock)
     old = sys.modules[PACKAGE]
-    # The card stays registered: the old async_setup runs again and finds it done
-    hass.data[_REGISTERED] = registered = True
-    hass.services.async_remove(
-        DOMAIN, "container_start"
-    )  # async_setup must bring it back
+    entity_count = len(hass.states.async_entity_ids())
+    listeners = hass.bus.async_listeners()["repairs_issue_registry_updated"]
     edit_code(
         "__init__.py",
-        "\n\nasync def async_setup_entry(hass, entry):\n    raise RuntimeError('boom')\n",
+        "\n\n_real_setup_entry = async_setup_entry\n\n\n"
+        "async def async_setup_entry(hass, entry):\n"
+        "    await _real_setup_entry(hass, entry)\n"
+        "    raise RuntimeError('boom')\n",
     )
 
     with pytest.raises(HomeAssistantError, match="previous code is running again"):
@@ -900,6 +900,24 @@ async def test_a_setup_error_puts_the_previous_code_back(
 
     assert mock_config_entry.state is ConfigEntryState.LOADED
     assert sys.modules[PACKAGE] is old
-    assert hass.data.get(_REGISTERED) == registered
-    assert "repair_unsub" in hass.data[DOMAIN]
-    assert hass.services.has_service(DOMAIN, "container_start")
+    assert getattr(sys.modules["custom_components"], DOMAIN) is old
+    assert type(mock_config_entry.runtime_data.coordinator).__module__.startswith(
+        PACKAGE
+    )
+    handler = hass.services.async_services_internal()[DOMAIN]["container_start"]
+    assert handler.job.target.__globals__ is vars(old)
+    assert len(hass.states.async_entity_ids()) == entity_count
+    assert hass.bus.async_listeners()["repairs_issue_registry_updated"] == listeners
+
+
+async def test_reload_code_refuses_to_overlap(
+    hass: HomeAssistant, mock_config_entry, aioclient_mock, keep_modules
+) -> None:
+    """A second call while one is running is refused, and the flag clears after."""
+    await _setup_over_http(hass, mock_config_entry, aioclient_mock)
+    hass.data["unraid_management_agent_reloading"] = True
+    with pytest.raises(HomeAssistantError, match="already reloading"):
+        await hass.services.async_call(DOMAIN, "reload_code", {}, blocking=True)
+    hass.data.pop("unraid_management_agent_reloading")
+    await hass.services.async_call(DOMAIN, "reload_code", {}, blocking=True)
+    assert "unraid_management_agent_reloading" not in hass.data
